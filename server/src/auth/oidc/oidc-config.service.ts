@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import type { OidcConfig } from './oidc.types';
@@ -196,7 +196,7 @@ export class OidcConfigService {
     disableInternalAuth?: boolean;
   }): Promise<void> {
     if (this.isLockedByEnv()) {
-      throw new Error(
+      throw new ForbiddenException(
         'OIDC settings are locked by environment variables. Remove OIDC_ENABLED, OIDC_ISSUER_URL and OIDC_CLIENT_ID to manage from UI.',
       );
     }
