@@ -1,12 +1,18 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  Inject,
+  BadRequestException,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { NoteAccessService } from '../notes/services/note-access.service';
 import { AttachmentType, NoteState } from 'src/generated/prisma/enums';
 import {
   ATTACHMENT_ALLOWED_MIME_TYPES,
   ATTACHMENT_MAX_FILE_SIZE,
-  ATTACHMENTS_BASE_DIR,
 } from '../notes/constants/notes.constants';
+import { StorageConfig } from '../config/configuration';
 import { toAttachmentResponse } from '../notes/dto/attachment-response.dto';
 import { IMPORT_ALLOWED_BACKGROUNDS } from './constants/import.constants';
 import {
@@ -34,6 +40,8 @@ export class ImportService {
   constructor(
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
+    @Inject(StorageConfig.KEY)
+    private storageConfig: ConfigType<typeof StorageConfig>,
   ) {}
 
   async importNotes(
@@ -292,7 +300,7 @@ export class ImportService {
       );
     }
 
-    const noteDir = path.join(ATTACHMENTS_BASE_DIR, noteId);
+    const noteDir = path.join(this.storageConfig.attachmentsDir, noteId);
     await fs.mkdir(noteDir, { recursive: true });
 
     const ext = path.extname(file.originalname).toLowerCase();

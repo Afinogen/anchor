@@ -24,6 +24,7 @@ import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { LogoutDto } from './dto/logout.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
+import { PROFILE_IMAGE_MAX_BYTES } from './constants/auth.constants';
 import type { User } from 'src/generated/prisma/client';
 
 @Controller('api/auth')
@@ -111,7 +112,7 @@ export class AuthController {
       new ParseFilePipe({
         fileIsRequired: true,
         validators: [
-          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new MaxFileSizeValidator({ maxSize: PROFILE_IMAGE_MAX_BYTES }),
           new FileTypeValidator({
             fileType: /(image\/jpeg|image\/png|image\/webp)/,
           }),

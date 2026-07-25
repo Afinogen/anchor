@@ -1,9 +1,11 @@
 import {
+  Inject,
   Injectable,
   NotFoundException,
   BadRequestException,
   Logger,
 } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NoteAccessService } from './note-access.service';
 import {
@@ -13,9 +15,8 @@ import {
 import {
   ATTACHMENT_MAX_FILE_SIZE,
   ATTACHMENT_ALLOWED_MIME_TYPES,
-  ATTACHMENTS_BASE_DIR,
-  attachmentFilePath,
 } from '../constants/notes.constants';
+import { StorageConfig } from '../../config/configuration';
 import { toAttachmentResponse } from '../dto/attachment-response.dto';
 import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
@@ -29,7 +30,17 @@ export class NoteAttachmentsService {
   constructor(
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
+    @Inject(StorageConfig.KEY)
+    private storageConfig: ConfigType<typeof StorageConfig>,
   ) {}
+
+  private attachmentDir(noteId: string): string {
+    return path.join(this.storageConfig.attachmentsDir, noteId);
+  }
+
+  private attachmentPath(noteId: string, storedFilename: string): string {
+    return path.join(this.storageConfig.attachmentsDir, noteId, storedFilename);
+  }
 
   async upload(userId: string, noteId: string, file: Express.Multer.File) {
     // Require editor or owner access to upload
@@ -56,7 +67,7 @@ export class NoteAttachmentsService {
       );
     }
 
-    const noteDir = path.join(ATTACHMENTS_BASE_DIR, noteId);
+    const noteDir = this.attachmentDir(noteId);
     await fs.mkdir(noteDir, { recursive: true });
 
     const ext = path.extname(file.originalname).toLowerCase();
@@ -142,7 +153,7 @@ export class NoteAttachmentsService {
       throw new NotFoundException('Attachment not found');
     }
 
-    const filePath = attachmentFilePath(noteId, attachment.storedFilename);
+    const filePath = this.attachmentPath(noteId, attachment.storedFilename);
     if (!existsSync(filePath)) {
       throw new NotFoundException('Attachment file not found');
     }
@@ -185,7 +196,7 @@ export class NoteAttachmentsService {
       data: { updatedAt: new Date() },
     });
 
-    const filePath = attachmentFilePath(noteId, attachment.storedFilename);
+    const filePath = this.attachmentPath(noteId, attachment.storedFilename);
     try {
       await fs.unlink(filePath);
     } catch (error) {
@@ -241,7 +252,7 @@ export class NoteAttachmentsService {
   }
 
   async deleteAllForNote(noteId: string) {
-    const noteDir = path.join(ATTACHMENTS_BASE_DIR, noteId);
+    const noteDir = this.attachmentDir(noteId);
     try {
       await fs.rm(noteDir, { recursive: true, force: true });
     } catch (error) {

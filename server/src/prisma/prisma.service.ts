@@ -1,12 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { PrismaClient } from '../generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { DatabaseConfig } from '../config/configuration';
 
 @Injectable()
 export class PrismaService extends PrismaClient {
-  constructor() {
+  constructor(
+    @Inject(DatabaseConfig.KEY)
+    databaseConfig: ConfigType<typeof DatabaseConfig>,
+  ) {
     const adapter = new PrismaPg({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: databaseConfig.url,
     });
     super({
       adapter,

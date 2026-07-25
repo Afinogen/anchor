@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { configurations } from './config/configuration';
+import { validate } from './config/env.validation';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { NotesModule } from './notes/notes.module';
@@ -15,6 +17,9 @@ import { ImportExportModule } from './import-export/import-export.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      cache: true,
+      validate,
+      load: configurations,
     }),
     PrismaModule,
     AuthModule,

@@ -4,6 +4,7 @@ import { ImportService } from './import.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { NoteAccessService } from '../notes/services/note-access.service';
 import { ImportNoteItemDto } from './dto/import-notes.dto';
+import { StorageConfig } from '../config/configuration';
 import { createMockPrisma, MockPrismaService } from '../../test/prisma-mock';
 
 const USER_ID = 'user-1';
@@ -60,6 +61,15 @@ describe('ImportService.importNotes', () => {
         {
           provide: NoteAccessService,
           useValue: { verifyNoteOwnership: jest.fn() },
+        },
+        {
+          provide: StorageConfig.KEY,
+          useValue: {
+            root: '/data',
+            uploadsDir: '/data/uploads',
+            profilesDir: '/data/uploads/profiles',
+            attachmentsDir: '/data/uploads/attachments',
+          },
         },
       ],
     }).compile();

@@ -3,7 +3,9 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule, type ConfigType } from '@nestjs/config';
+import { AuthConfig } from '../config/configuration';
+import { ACCESS_TOKEN_TTL } from './constants/auth.constants';
 import { JwtStrategy } from './jwt.strategy';
 import { TokenResolverService } from './token-resolver.service';
 import { AuthGuard } from './auth.guard';
@@ -21,11 +23,11 @@ import { OidcUserService } from './oidc/oidc-user.service';
     PassportModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '15m' },
+      useFactory: (authConfig: ConfigType<typeof AuthConfig>) => ({
+        secret: authConfig.jwtSecret,
+        signOptions: { expiresIn: ACCESS_TOKEN_TTL },
       }),
-      inject: [ConfigService],
+      inject: [AuthConfig.KEY],
     }),
     SettingsModule,
     PrismaModule,

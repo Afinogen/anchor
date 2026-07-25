@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   UnauthorizedException,
   ConflictException,
@@ -6,6 +7,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
@@ -19,8 +21,14 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { generateApiToken } from './utils/generate-api-token';
-
-const REFRESH_TOKEN_VALIDITY_DAYS = 90;
+import { StorageConfig } from '../config/configuration';
+import { PUBLIC_PROFILES_PREFIX } from '../config/storage.constants';
+import {
+  API_TOKEN_MAX_GENERATION_RETRIES,
+  BCRYPT_SALT_ROUNDS,
+  REFRESH_TOKEN_BYTES,
+  REFRESH_TOKEN_VALIDITY_DAYS,
+} from './constants/auth.constants';
 
 @Injectable()
 export class AuthService {
@@ -30,6 +38,8 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private settingsService: SettingsService,
+    @Inject(StorageConfig.KEY)
+    private storageConfig: ConfigType<typeof StorageConfig>,
   ) {}
 
   async getRegistrationMode() {
@@ -53,7 +63,10 @@ export class AuthService {
       throw new ConflictException('User already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const hashedPassword = await bcrypt.hash(
+      registerDto.password,
+      BCRYPT_SALT_ROUNDS,
+    );
 
     // Check if this is the first user (no admins exist)
     const adminCount = await this.prisma.user.count({
@@ -305,7 +318,10 @@ export class AuthService {
     }
 
     // Hash and update password
-    const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
+    const hashedPassword = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      BCRYPT_SALT_ROUNDS,
+    );
 
     await this.prisma.user.update({
       where: { id: userId },
@@ -360,7 +376,7 @@ export class AuthService {
     }
 
     // Ensure uploads directory exists
-    const uploadsDir = '/data/uploads/profiles';
+    const uploadsDir = this.storageConfig.profilesDir;
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
@@ -371,7 +387,7 @@ export class AuthService {
     const ext = path.extname(file.originalname);
     const filename = `${userId}-${timestamp}${ext}`;
     const filePath = path.join(uploadsDir, filename);
-    const imagePath = `/uploads/profiles/${filename}`;
+    const imagePath = `${PUBLIC_PROFILES_PREFIX}/${filename}`;
 
     const oldImagePath: string | null = user.profileImage || null;
     let fileSaved = false;
@@ -465,12 +481,7 @@ export class AuthService {
     if (!profileImagePath) return;
 
     try {
-      // Remove /uploads prefix to get actual file path
-      const relativePath = profileImagePath.startsWith('/uploads/')
-        ? profileImagePath.substring('/uploads/'.length)
-        : profileImagePath;
-
-      const fullPath = path.join('/data', relativePath);
+      const fullPath = path.join(this.storageConfig.root, profileImagePath);
       if (fs.existsSync(fullPath)) {
         fs.unlinkSync(fullPath);
       }
@@ -483,12 +494,12 @@ export class AuthService {
 
   // Generate a secure random refresh token
   private generateRefreshTokenString(): string {
-    return crypto.randomBytes(64).toString('hex');
+    return crypto.randomBytes(REFRESH_TOKEN_BYTES).toString('hex');
   }
 
   private async generateUniqueApiToken(): Promise<string> {
     // Retry a few times to avoid edge-case collisions on the unique column.
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < API_TOKEN_MAX_GENERATION_RETRIES; i++) {
       const candidate = generateApiToken();
       const existingUser = await this.prisma.user.findUnique({
         where: { apiToken: candidate },

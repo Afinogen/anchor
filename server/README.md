@@ -19,10 +19,16 @@ Nest.js backend for Anchor application.
     Copy `.env.example` to `.env` (if it exists) or ensure `.env` has:
 
     ```env
-    DATABASE_URL="postgresql://anchor:password@localhost:5432/anchor?schema=public"
-    JWT_SECRET="supersecretkey"
     PORT=3001
+    DATABASE_URL="postgresql://anchor:password@localhost:5432/anchor?schema=public"
+    JWT_SECRET="anchor-local-development-secret"
     ```
+
+    Environment variables are validated at startup (see `src/config/`), so the
+    app fails fast with a clear message if a required value is missing or
+    invalid. `DATABASE_URL` and `JWT_SECRET` are required; `JWT_SECRET` must be
+    at least 16 characters. Optional: `APP_URL`, `DATA_DIR` (uploads root,
+    defaults to `/data`), `CORS_ORIGINS` (comma-separated allowlist).
 
 3.  Start Database:
     From the project root:

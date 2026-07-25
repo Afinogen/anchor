@@ -159,11 +159,23 @@ describe('AuthService', () => {
     getRegistrationMode: jest.fn(() => Promise.resolve(registrationMode)),
   } as unknown as SettingsService;
 
+  const storageConfig = {
+    root: '/data',
+    uploadsDir: '/data/uploads',
+    profilesDir: '/data/uploads/profiles',
+    attachmentsDir: '/data/uploads/attachments',
+  };
+
   beforeEach(() => {
     users = new Map();
     refreshTokens = new Map();
     registrationMode = 'open';
-    service = new AuthService(prisma, jwtService, settingsService);
+    service = new AuthService(
+      prisma,
+      jwtService,
+      settingsService,
+      storageConfig,
+    );
     jest.clearAllMocks();
   });
 
