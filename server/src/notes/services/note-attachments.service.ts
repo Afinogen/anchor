@@ -8,17 +8,15 @@ import {
 import type { ConfigType } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NoteAccessService } from './note-access.service';
-import {
-  NoteSharePermission,
-  AttachmentType,
-} from 'src/generated/prisma/enums';
-import {
-  ATTACHMENT_MAX_FILE_SIZE,
-  ATTACHMENT_ALLOWED_MIME_TYPES,
-} from '../constants/notes.constants';
+import { NoteSharePermission } from 'src/generated/prisma/enums';
 import { StorageConfig } from '../../config/configuration';
+import { deleteFileIfExists } from '../../common/utils/file-system.util';
+import {
+  assertValidAttachmentFile,
+  attachmentTypeForMime,
+  writeAttachmentFile,
+} from '../utils/attachment-storage.util';
 import { toAttachmentResponse } from '../dto/attachment-response.dto';
-import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { createReadStream, existsSync } from 'fs';
@@ -51,37 +49,18 @@ export class NoteAttachmentsService {
     );
     await this.noteAccessService.ensureNoteIsActive(noteId);
 
-    if (!file) {
-      throw new BadRequestException('No file provided');
-    }
+    assertValidAttachmentFile(file);
 
-    if (!ATTACHMENT_ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      throw new BadRequestException(
-        `File type ${file.mimetype} is not allowed`,
-      );
-    }
+    const attachmentType = attachmentTypeForMime(file.mimetype);
 
-    if (file.size > ATTACHMENT_MAX_FILE_SIZE) {
-      throw new BadRequestException(
-        `File size exceeds ${ATTACHMENT_MAX_FILE_SIZE / 1024 / 1024}MB limit`,
-      );
-    }
-
-    const noteDir = this.attachmentDir(noteId);
-    await fs.mkdir(noteDir, { recursive: true });
-
-    const ext = path.extname(file.originalname).toLowerCase();
-    const storedFilename = `${crypto.randomUUID()}-${Date.now()}${ext}`;
-    const filePath = path.join(noteDir, storedFilename);
-
-    const attachmentType: AttachmentType = file.mimetype.startsWith('image/')
-      ? AttachmentType.image
-      : AttachmentType.audio;
-
-    let fileSaved = false;
+    let stored: { storedFilename: string; filePath: string } | null = null;
     try {
-      await fs.writeFile(filePath, file.buffer);
-      fileSaved = true;
+      stored = await writeAttachmentFile(
+        this.attachmentDir(noteId),
+        file.originalname,
+        file.buffer,
+      );
+      const { storedFilename } = stored;
 
       const attachment = await this.prisma.$transaction(async (tx) => {
         // Shift all existing attachments down to make room at position 0
@@ -112,14 +91,8 @@ export class NoteAttachmentsService {
 
       return toAttachmentResponse(attachment);
     } catch {
-      if (fileSaved) {
-        try {
-          await fs.unlink(filePath);
-        } catch {
-          this.logger.error(
-            `Failed to delete file after DB error: ${filePath}`,
-          );
-        }
+      if (stored) {
+        await deleteFileIfExists(stored.filePath, this.logger);
       }
       throw new BadRequestException('Failed to upload attachment');
     }
@@ -197,14 +170,7 @@ export class NoteAttachmentsService {
     });
 
     const filePath = this.attachmentPath(noteId, attachment.storedFilename);
-    try {
-      await fs.unlink(filePath);
-    } catch (error) {
-      // File may not exist, log only if it's not ENOENT
-      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
-        this.logger.error(`Failed to delete attachment file: ${filePath}`);
-      }
-    }
+    await deleteFileIfExists(filePath, this.logger);
 
     return { success: true };
   }

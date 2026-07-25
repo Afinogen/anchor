@@ -1,7 +1,8 @@
 import { Inject, Injectable, Logger, ConflictException } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
+import { deleteFileIfExists } from '../../common/utils/file-system.util';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserStatus } from '../../generated/prisma/enums';
@@ -211,10 +212,8 @@ export class OidcUserService {
       const filePath = path.join(profilesDir, filename);
       const imagePath = `${PUBLIC_PROFILES_PREFIX}/${filename}`;
 
-      if (!fs.existsSync(profilesDir)) {
-        fs.mkdirSync(profilesDir, { recursive: true });
-      }
-      fs.writeFileSync(filePath, Buffer.from(await response.arrayBuffer()));
+      await fs.mkdir(profilesDir, { recursive: true });
+      await fs.writeFile(filePath, Buffer.from(await response.arrayBuffer()));
 
       if (
         oldProfileImagePath?.startsWith(PUBLIC_PROFILES_PREFIX) &&
@@ -224,15 +223,7 @@ export class OidcUserService {
           profilesDir,
           path.basename(oldProfileImagePath),
         );
-        if (fs.existsSync(oldFullPath)) {
-          try {
-            fs.unlinkSync(oldFullPath);
-          } catch {
-            this.logger.warn(
-              `Failed to delete old profile image: ${oldFullPath}`,
-            );
-          }
-        }
+        await deleteFileIfExists(oldFullPath, this.logger);
       }
 
       this.logger.log(`Downloaded OIDC avatar for user ${userId}`);

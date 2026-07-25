@@ -18,9 +18,10 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserStatus } from '../generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import { generateApiToken } from './utils/generate-api-token';
+import { deleteFileIfExists } from '../common/utils/file-system.util';
 import { StorageConfig } from '../config/configuration';
 import { PUBLIC_PROFILES_PREFIX } from '../config/storage.constants';
 import {
@@ -375,14 +376,10 @@ export class AuthService {
       throw new ForbiddenException('User not found');
     }
 
-    // Ensure uploads directory exists
     const uploadsDir = this.storageConfig.profilesDir;
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+    await fs.mkdir(uploadsDir, { recursive: true });
 
     // File validation is handled at controller level with ParseFilePipe
-    // Generate unique filename
     const timestamp = Date.now();
     const ext = path.extname(file.originalname);
     const filename = `${userId}-${timestamp}${ext}`;
@@ -394,7 +391,7 @@ export class AuthService {
 
     try {
       // Save new file first
-      fs.writeFileSync(filePath, file.buffer);
+      await fs.writeFile(filePath, file.buffer);
       fileSaved = true;
 
       // Update database with new image path
@@ -415,20 +412,14 @@ export class AuthService {
 
       // Delete old image only after successful database update
       if (oldImagePath && oldImagePath !== imagePath) {
-        this.deleteProfileImage(oldImagePath);
+        await this.deleteProfileImage(oldImagePath);
       }
 
       return updatedUser;
     } catch {
       // If database update fails, delete the newly uploaded file
-      if (fileSaved && fs.existsSync(filePath)) {
-        try {
-          fs.unlinkSync(filePath);
-        } catch {
-          this.logger.error(
-            `Failed to delete newly uploaded file after DB error: ${filePath}`,
-          );
-        }
+      if (fileSaved) {
+        await deleteFileIfExists(filePath, this.logger);
       }
       throw new BadRequestException(
         'Failed to upload profile image. Please try again.',
@@ -466,7 +457,7 @@ export class AuthService {
 
       // Delete old image only after successful database update
       if (oldImagePath) {
-        this.deleteProfileImage(oldImagePath);
+        await this.deleteProfileImage(oldImagePath);
       }
 
       return updatedUser;
@@ -477,19 +468,10 @@ export class AuthService {
     }
   }
 
-  private deleteProfileImage(profileImagePath: string): void {
+  private async deleteProfileImage(profileImagePath: string): Promise<void> {
     if (!profileImagePath) return;
-
-    try {
-      const fullPath = path.join(this.storageConfig.root, profileImagePath);
-      if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
-      }
-    } catch {
-      this.logger.error(
-        `Failed to delete old profile image at ${profileImagePath}`,
-      );
-    }
+    const fullPath = path.join(this.storageConfig.root, profileImagePath);
+    await deleteFileIfExists(fullPath, this.logger);
   }
 
   // Generate a secure random refresh token

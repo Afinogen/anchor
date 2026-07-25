@@ -7,12 +7,14 @@ import {
 import type { ConfigType } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { NoteAccessService } from '../notes/services/note-access.service';
-import { AttachmentType, NoteState } from 'src/generated/prisma/enums';
-import {
-  ATTACHMENT_ALLOWED_MIME_TYPES,
-  ATTACHMENT_MAX_FILE_SIZE,
-} from '../notes/constants/notes.constants';
+import { NoteState } from 'src/generated/prisma/enums';
 import { StorageConfig } from '../config/configuration';
+import { deleteFileIfExists } from '../common/utils/file-system.util';
+import {
+  assertValidAttachmentFile,
+  attachmentTypeForMime,
+  writeAttachmentFile,
+} from '../notes/utils/attachment-storage.util';
 import { toAttachmentResponse } from '../notes/dto/attachment-response.dto';
 import { IMPORT_ALLOWED_BACKGROUNDS } from './constants/import.constants';
 import {
@@ -21,8 +23,6 @@ import {
   ImportNotesDto,
   ImportNotesResponse,
 } from './dto/import-notes.dto';
-import * as crypto from 'crypto';
-import * as fs from 'fs/promises';
 import * as path from 'path';
 
 /**
@@ -286,43 +286,25 @@ export class ImportService {
   ) {
     await this.noteAccessService.verifyNoteOwnership(userId, noteId);
 
-    if (!file) {
-      throw new BadRequestException('No file provided');
-    }
-    if (!ATTACHMENT_ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      throw new BadRequestException(
-        `File type ${file.mimetype} is not allowed`,
-      );
-    }
-    if (file.size > ATTACHMENT_MAX_FILE_SIZE) {
-      throw new BadRequestException(
-        `File size exceeds ${ATTACHMENT_MAX_FILE_SIZE / 1024 / 1024}MB limit`,
-      );
-    }
+    assertValidAttachmentFile(file);
 
     const noteDir = path.join(this.storageConfig.attachmentsDir, noteId);
-    await fs.mkdir(noteDir, { recursive: true });
 
-    const ext = path.extname(file.originalname).toLowerCase();
-    const storedFilename = `${crypto.randomUUID()}-${Date.now()}${ext}`;
-    const filePath = path.join(noteDir, storedFilename);
-
-    const attachmentType: AttachmentType = file.mimetype.startsWith('image/')
-      ? AttachmentType.image
-      : AttachmentType.audio;
-
-    let fileSaved = false;
+    let stored: { storedFilename: string; filePath: string } | null = null;
     try {
-      await fs.writeFile(filePath, file.buffer);
-      fileSaved = true;
+      stored = await writeAttachmentFile(
+        noteDir,
+        file.originalname,
+        file.buffer,
+      );
 
       const attachment = await this.prisma.noteAttachment.create({
         data: {
           noteId,
           uploadedByUserId: userId,
-          type: attachmentType,
+          type: attachmentTypeForMime(file.mimetype),
           originalFilename: file.originalname,
-          storedFilename,
+          storedFilename: stored.storedFilename,
           mimeType: file.mimetype,
           fileSize: file.size,
           position,
@@ -331,14 +313,8 @@ export class ImportService {
 
       return toAttachmentResponse(attachment);
     } catch {
-      if (fileSaved) {
-        try {
-          await fs.unlink(filePath);
-        } catch {
-          this.logger.error(
-            `Failed to delete file after DB error: ${filePath}`,
-          );
-        }
+      if (stored) {
+        await deleteFileIfExists(stored.filePath, this.logger);
       }
       throw new BadRequestException('Failed to import attachment');
     }
