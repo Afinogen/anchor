@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'auth_controller.dart';
 import '../data/repository/auth_repository.dart';
@@ -52,7 +53,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             if (mounted) {
               AppSnackbar.showSuccess(
                 context,
-                message: 'Registration successful!',
+                message: context.l10n.registrationSuccessful,
               );
               context.go(AppRoutes.home);
             }
@@ -61,8 +62,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             if (mounted) {
               AppSnackbar.showSuccess(
                 context,
-                message:
-                    'Registration successful! Your account is pending approval.',
+                message: context.l10n.registrationPendingApproval,
               );
               context.go(AppRoutes.login);
             }
@@ -102,7 +102,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Create Account',
+                    context.l10n.createAccount,
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -110,7 +110,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Start capturing your ideas',
+                    context.l10n.startCapturingIdeas,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Theme.of(context).hintColor,
                     ),
@@ -123,7 +123,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                     textCapitalization: TextCapitalization.words,
                     decoration: InputDecoration(
-                      labelText: 'Name',
+                      labelText: context.l10n.name,
                       prefixIcon: const Icon(LucideIcons.user),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -131,10 +131,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your name';
+                        return context.l10n.pleaseEnterName;
                       }
                       if (value.trim().length > 100) {
-                        return 'Name must be less than 100 characters';
+                        return context.l10n.nameTooLong;
                       }
                       return null;
                     },
@@ -146,7 +146,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     textInputAction: TextInputAction.next,
                     keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
-                      labelText: 'Email',
+                      labelText: context.l10n.email,
                       prefixIcon: const Icon(LucideIcons.mail),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -154,7 +154,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter email';
+                        return context.l10n.pleaseEnterEmail;
                       }
                       return null;
                     },
@@ -166,7 +166,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     autofillHints: const [AutofillHints.newPassword],
                     textInputAction: TextInputAction.next,
                     decoration: InputDecoration(
-                      labelText: 'Password',
+                      labelText: context.l10n.password,
                       prefixIcon: const Icon(LucideIcons.lock),
                       suffixIcon: _passwordController.text.isEmpty
                           ? null
@@ -192,10 +192,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     obscureText: !_isPasswordVisible,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter password';
+                        return context.l10n.pleaseEnterPassword;
                       }
                       if (value.length < 8) {
-                        return 'Password must be at least 8 characters';
+                        return context.l10n.passwordMinLength;
                       }
                       return null;
                     },
@@ -208,7 +208,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     textInputAction: TextInputAction.done,
                     onFieldSubmitted: (_) => _register(),
                     decoration: InputDecoration(
-                      labelText: 'Confirm Password',
+                      labelText: context.l10n.confirmPassword,
                       prefixIcon: const Icon(LucideIcons.keyRound),
                       suffixIcon: _confirmPasswordController.text.isEmpty
                           ? null
@@ -235,7 +235,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     obscureText: !_isConfirmPasswordVisible,
                     validator: (value) {
                       if (value != _passwordController.text) {
-                        return 'Passwords do not match';
+                        return context.l10n.passwordsDoNotMatch;
                       }
                       return null;
                     },
@@ -255,7 +255,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Create Account'),
+                        : Text(context.l10n.createAccount),
                   ),
                 ],
               ),

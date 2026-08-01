@@ -3,6 +3,8 @@ import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../../l10n/app_localizations.dart';
+import '../app_initializer.dart' as app_init;
 import '../logging/app_logger.dart';
 import '../logging/dio_logging_interceptor.dart';
 import 'server_config_provider.dart';
@@ -46,6 +48,7 @@ Dio dio(Ref ref) {
   dio.options.headers = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'Accept-Language': app_init.currentAppLocale.languageCode,
   };
 
   // Allow self-signed certificates when the user has enabled the setting
@@ -95,6 +98,7 @@ Dio dio(Ref ref) {
               refreshDio.options.headers = {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
+                'Accept-Language': app_init.currentAppLocale.languageCode,
               };
               if (allowSelfSigned &&
                   serverUrl != null &&
@@ -203,64 +207,66 @@ DioException _transformError(DioException e) {
     }
   }
 
+  // Localize using the active locale; this runs outside the widget tree so we
+  // resolve AppLocalizations from the locale mirror kept by the controller.
+  final l10n = lookupAppLocalizations(app_init.currentAppLocale);
+
   // Transform based on error type
   String message;
   switch (e.type) {
     case DioExceptionType.connectionTimeout:
-      message =
-          'Connection timeout. Please check your internet connection and try again.';
+      message = l10n.errorConnectionTimeout;
       break;
     case DioExceptionType.sendTimeout:
-      message = 'Request timeout. Please try again.';
+      message = l10n.errorSendTimeout;
       break;
     case DioExceptionType.receiveTimeout:
-      message = 'Response timeout. Please try again.';
+      message = l10n.errorReceiveTimeout;
       break;
     case DioExceptionType.connectionError:
-      message = 'No internet connection. Please check your network settings.';
+      message = l10n.errorConnection;
       break;
     case DioExceptionType.badCertificate:
-      message =
-          'Certificate error. If using a self-signed certificate, enable "Allow self-signed certificates" in server settings.';
+      message = l10n.errorCertificate;
       break;
     case DioExceptionType.badResponse:
       // Handle specific status codes
       final statusCode = e.response?.statusCode;
       switch (statusCode) {
         case 400:
-          message = 'Invalid request. Please check your input.';
+          message = l10n.errorBadRequest;
           break;
         case 401:
-          message = 'Authentication required. Please log in again.';
+          message = l10n.errorUnauthorized;
           break;
         case 403:
-          message = 'Permission denied.';
+          message = l10n.errorForbidden;
           break;
         case 404:
-          message = 'Resource not found.';
+          message = l10n.errorNotFound;
           break;
         case 500:
-          message = 'Server error. Please try again later.';
+          message = l10n.errorServer;
           break;
         case 502:
         case 503:
         case 504:
-          message = 'Server unavailable. Please try again later.';
+          message = l10n.errorServerUnavailable;
           break;
         default:
-          message = 'Request failed. Please try again.';
+          message = l10n.errorRequestFailed;
       }
       break;
     case DioExceptionType.cancel:
-      message = 'Request cancelled.';
+      message = l10n.errorCancelled;
       break;
     case DioExceptionType.unknown:
       // Check if it's a network-related error
       if (e.error?.toString().contains('SocketException') == true ||
           e.error?.toString().contains('Network is unreachable') == true) {
-        message = 'No internet connection. Please check your network settings.';
+        message = l10n.errorConnection;
       } else {
-        message = 'An unexpected error occurred. Please try again.';
+        message = l10n.errorUnexpected;
       }
       break;
   }

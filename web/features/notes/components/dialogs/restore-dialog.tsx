@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslation } from "@/lib/i18n";
 
 interface RestoreDialogProps {
   open: boolean;
@@ -24,6 +25,7 @@ export function RestoreDialog({
   onConfirm,
   isPending = false,
 }: RestoreDialogProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -32,21 +34,21 @@ export function RestoreDialog({
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <RotateCcw className="h-5 w-5 text-primary" />
             </div>
-            Restore note?
+            {t("notes.dialogs.restoreTitle")}
           </DialogTitle>
           <DialogDescription className="pt-2">
-            This note will be restored to your notes.
+            {t("notes.dialogs.restoreDesc")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={onConfirm} disabled={isPending}>
             {isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              "Restore"
+              t("notes.dialogs.restore")
             )}
           </Button>
         </DialogFooter>

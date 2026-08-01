@@ -7,6 +7,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:anchor/core/network/connectivity_provider.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/image_shimmer.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
@@ -369,11 +370,12 @@ class _ImageTileState extends ConsumerState<_ImageTile> {
       context: context,
       icon: LucideIcons.trash2,
       iconColor: Theme.of(context).colorScheme.error,
-      title: 'Delete attachment?',
-      message:
-          'This will permanently delete "${widget.attachment.originalFilename}".',
-      cancelText: 'Cancel',
-      confirmText: 'Delete',
+      title: context.l10n.deleteAttachmentTitle,
+      message: context.l10n.deleteAttachmentMessage(
+        widget.attachment.originalFilename,
+      ),
+      cancelText: context.l10n.cancel,
+      confirmText: context.l10n.delete,
       confirmColor: Theme.of(context).colorScheme.error,
     );
     if (confirm == true) {
@@ -415,7 +417,7 @@ class _ImageTileState extends ConsumerState<_ImageTile> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Available when online',
+              context.l10n.availableWhenOnline,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -492,7 +494,7 @@ class _ImageTileState extends ConsumerState<_ImageTile> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        'Pending',
+                        context.l10n.pending,
                         style: theme.textTheme.labelSmall?.copyWith(
                           color: theme.colorScheme.onSurface,
                           fontWeight: FontWeight.w600,
@@ -693,10 +695,12 @@ class _ImageLightboxGalleryState extends ConsumerState<_ImageLightboxGallery> {
       context: context,
       icon: LucideIcons.trash2,
       iconColor: Theme.of(context).colorScheme.error,
-      title: 'Delete attachment?',
-      message: 'This will permanently delete "${attachment.originalFilename}".',
-      cancelText: 'Cancel',
-      confirmText: 'Delete',
+      title: context.l10n.deleteAttachmentTitle,
+      message: context.l10n.deleteAttachmentMessage(
+        attachment.originalFilename,
+      ),
+      cancelText: context.l10n.cancel,
+      confirmText: context.l10n.delete,
       confirmColor: Theme.of(context).colorScheme.error,
     );
 
@@ -722,7 +726,9 @@ class _ImageLightboxGalleryState extends ConsumerState<_ImageLightboxGallery> {
         child: _buildGalleryState(
           context,
           icon: isOnline ? LucideIcons.imageOff : LucideIcons.cloudOff,
-          label: isOnline ? 'Failed to load image' : 'Available when online',
+          label: isOnline
+              ? context.l10n.failedToLoadImage
+              : context.l10n.availableWhenOnline,
         ),
         childSize: MediaQuery.sizeOf(context),
         disableGestures: true,
@@ -747,7 +753,7 @@ class _ImageLightboxGalleryState extends ConsumerState<_ImageLightboxGallery> {
       errorBuilder: (context, error, stackTrace) => _buildGalleryState(
         context,
         icon: LucideIcons.imageOff,
-        label: 'Failed to render image',
+        label: context.l10n.failedToRenderImage,
       ),
     );
   }

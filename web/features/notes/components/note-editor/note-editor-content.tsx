@@ -3,6 +3,7 @@
 import type { RefObject } from "react";
 import { Input } from "@/components/ui/input";
 import { TagSelector } from "@/features/tags";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { AttachmentsCollapsible } from "../attachments";
 import { RichTextEditor, type RichTextEditorHandle } from "../editor";
@@ -44,6 +45,7 @@ export function NoteEditorContent({
   onContentChange,
   onTagsChange,
 }: NoteEditorContentProps) {
+  const { t } = useTranslation();
   const showTags = !isReadOnly || selectedTagIds.length > 0;
   const showAttachments = canUpload || (attachmentCount ?? 0) > 0;
 
@@ -55,7 +57,7 @@ export function NoteEditorContent({
           ref={titleInputRef}
           value={isReadOnly ? title || "Untitled" : title}
           onChange={(e) => !isReadOnly && onTitleChange(e.target.value)}
-          placeholder="Title"
+          placeholder={t("notes.editor.titlePlaceholder")}
           disabled={isTrashed}
           readOnly={isReadOnly}
           className={cn(
@@ -99,7 +101,7 @@ export function NoteEditorContent({
             ref={contentEditorRef}
             value={content}
             onChange={onContentChange}
-            placeholder="Start typing your thoughts..."
+            placeholder={t("notes.editor.contentPlaceholder")}
             readOnly={isReadOnly}
             className={cn("w-full", "min-h-[calc(100vh-380px)]")}
           />

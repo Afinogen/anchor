@@ -7,6 +7,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { Note } from "../types";
 import { ShareDialog } from "./share-dialog";
@@ -20,6 +21,7 @@ export function SharedByMeIndicator({
   note,
   className,
 }: SharedByMeIndicatorProps) {
+  const { t } = useTranslation();
   const [shareOpen, setShareOpen] = useState(false);
 
   // Only show for notes the current user owns and has shared with others
@@ -54,7 +56,7 @@ export function SharedByMeIndicator({
           </button>
         </TooltipTrigger>
         <TooltipContent side="top">
-          Shared with {count} {count === 1 ? "person" : "people"}
+          {t("notes.share.sharedByMeTooltip", { count })}
         </TooltipContent>
       </Tooltip>
       <ShareDialog

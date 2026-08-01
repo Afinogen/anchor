@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/extensions/build_context_l10n.dart';
 import '../../domain/tag.dart';
 import '../tags_controller.dart';
 import 'tag_chip.dart';
@@ -56,7 +57,7 @@ class _TagSelectorState extends ConsumerState<TagSelector> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'Tags',
+                  context.l10n.tags,
                   style: theme.textTheme.labelMedium?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -139,7 +140,7 @@ class _TagSelectorState extends ConsumerState<TagSelector> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            'Add tag',
+                            context.l10n.addTag,
                             style: theme.textTheme.labelMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -313,7 +314,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Select Tags',
+                          context.l10n.selectTags,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -321,7 +322,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                           ),
                         ),
                         Text(
-                          'Organize your note',
+                          context.l10n.organizeNote,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -342,7 +343,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text('Done'),
+                    child: Text(context.l10n.done),
                   ),
                 ],
               ),
@@ -359,7 +360,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                     textCapitalization: TextCapitalization.words,
                     style: theme.textTheme.bodyLarge,
                     decoration: InputDecoration(
-                      hintText: 'Create new tag...',
+                      hintText: context.l10n.createNewTagHint,
                       hintStyle: TextStyle(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.4,
@@ -473,7 +474,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     child: Text(
-                      'Available Tags',
+                      context.l10n.availableTags,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.5,
@@ -525,7 +526,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            'No tags yet',
+                            context.l10n.noTagsYet,
                             style: theme.textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                               color: theme.colorScheme.onSurface.withValues(
@@ -535,7 +536,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Create your first tag above',
+                            context.l10n.createFirstTagAbove,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.5,
@@ -665,7 +666,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                 error: (err, _) => Center(
                   child: Padding(
                     padding: const EdgeInsets.all(32),
-                    child: Text('Error: $err'),
+                    child: Text(context.l10n.errorWithMessage(err.toString())),
                   ),
                 ),
               ),

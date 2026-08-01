@@ -30,6 +30,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { type TranslationKey, useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useImport } from "../hooks/use-import";
 
@@ -39,6 +40,7 @@ interface ImportDialogProps {
 }
 
 export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
+  const { t } = useTranslation();
   const {
     step,
     parsed,
@@ -67,9 +69,9 @@ export function ImportDialog({ open, onOpenChange }: ImportDialogProps) {
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>Import notes</DialogTitle>
+          <DialogTitle>{t("importExport.dialog.title")}</DialogTitle>
           <DialogDescription>
-            Restore an Anchor backup or migrate from Google Keep (Takeout zip).
+            {t("importExport.dialog.description")}
           </DialogDescription>
         </DialogHeader>
 
@@ -109,6 +111,7 @@ function PickStep({
   error: string | null;
   onFile: (file: File) => void;
 }) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -149,8 +152,8 @@ function PickStep({
         )}
         <span className="text-center">
           {isDetecting
-            ? "Reading file..."
-            : "Drop a zip file here, or click to browse"}
+            ? t("importExport.pick.reading")
+            : t("importExport.pick.dropzone")}
         </span>
         <input
           ref={inputRef}
@@ -183,36 +186,36 @@ function PreviewStep({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-sm text-muted-foreground">
         <FileArchive className="h-4 w-4 shrink-0" />
-        <span>Detected format</span>
+        <span>{t("importExport.preview.detectedFormat")}</span>
         <Badge variant="secondary">{parsed.formatLabel}</Badge>
       </div>
       <div className="grid grid-cols-3 gap-2">
         <PreviewStat
           icon={FileText}
           value={parsed.notes.length}
-          singular="note"
-          plural="notes"
+          labelKey="importExport.preview.noteCount"
         />
         <PreviewStat
           icon={TagIcon}
           value={parsed.tags.length}
-          singular="tag"
-          plural="tags"
+          labelKey="importExport.preview.tagCount"
         />
         <PreviewStat
           icon={Paperclip}
           value={parsed.attachmentCount}
-          singular="attachment"
-          plural="attachments"
+          labelKey="importExport.preview.attachmentCount"
         />
       </div>
       {parsed.skipped.length > 0 && (
         <SkippedList
-          title={`${parsed.skipped.length} ${parsed.skipped.length === 1 ? "item" : "items"} will be skipped`}
+          title={t("importExport.preview.skippedTitle", {
+            count: parsed.skipped.length,
+          })}
           items={parsed.skipped}
         />
       )}
@@ -230,18 +233,19 @@ function PreviewStep({
             htmlFor="skip-existing-notes"
             className="text-sm font-normal leading-snug cursor-pointer"
           >
-            Skip notes that already exist
+            {t("importExport.preview.skipExisting")}
           </Label>
         </div>
       )}
       <DialogFooter>
         <Button variant="outline" onClick={onCancel}>
-          Cancel
+          {t("common.cancel")}
         </Button>
         <Button onClick={onConfirm}>
           <Upload className="h-4 w-4 mr-2" />
-          Import {parsed.notes.length}{" "}
-          {parsed.notes.length === 1 ? "note" : "notes"}
+          {t("importExport.preview.importButton", {
+            count: parsed.notes.length,
+          })}
         </Button>
       </DialogFooter>
     </div>
@@ -251,20 +255,19 @@ function PreviewStep({
 function PreviewStat({
   icon: Icon,
   value,
-  singular,
-  plural,
+  labelKey,
 }: {
   icon: LucideIcon;
   value: number;
-  singular: string;
-  plural: string;
+  labelKey: TranslationKey;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-col items-center gap-0.5 rounded-lg border border-border/60 bg-muted/30 p-3">
       <Icon className="h-4 w-4 text-muted-foreground" />
       <span className="text-xl font-semibold leading-tight">{value}</span>
-      <span className="text-xs text-muted-foreground">
-        {value === 1 ? singular : plural}
+      <span className="text-xs text-muted-foreground text-center">
+        {t(labelKey, { count: value })}
       </span>
     </div>
   );
@@ -283,14 +286,21 @@ function RunningStep({
   error: string | null;
   onRetry: () => void;
 }) {
+  const { t } = useTranslation();
   const percent =
     progress && progress.total > 0
       ? Math.round((progress.done / progress.total) * 100)
       : 0;
   const label =
     progress?.phase === "attachments"
-      ? `Uploading attachments ${progress.done}/${progress.total}`
-      : `Importing notes ${progress?.done ?? 0}/${progress?.total ?? 0}`;
+      ? t("importExport.running.uploadingAttachments", {
+          done: progress.done,
+          total: progress.total,
+        })
+      : t("importExport.running.importingNotes", {
+          done: progress?.done ?? 0,
+          total: progress?.total ?? 0,
+        });
 
   return (
     <div className="space-y-4">
@@ -316,13 +326,13 @@ function RunningStep({
             {error}
           </p>
           <DialogFooter>
-            <Button onClick={onRetry}>Retry</Button>
+            <Button onClick={onRetry}>{t("importExport.running.retry")}</Button>
           </DialogFooter>
         </div>
       )}
       {!error && (
         <p className="text-xs text-muted-foreground">
-          Keep this dialog open until the import finishes.
+          {t("importExport.running.keepOpen")}
         </p>
       )}
     </div>
@@ -336,15 +346,28 @@ function ReportStep({
   report: NonNullable<ReturnType<typeof useImport>["report"]>;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const summary: string[] = [];
-  if (report.created) summary.push(`${report.created} imported`);
-  if (report.remapped) summary.push(`${report.remapped} imported as copies`);
-  if (report.skipped) summary.push(`${report.skipped} already existed`);
-  if (report.failed) summary.push(`${report.failed} failed`);
+  if (report.created)
+    summary.push(t("importExport.report.created", { count: report.created }));
+  if (report.remapped)
+    summary.push(t("importExport.report.remapped", { count: report.remapped }));
+  if (report.skipped)
+    summary.push(t("importExport.report.skipped", { count: report.skipped }));
+  if (report.failed)
+    summary.push(t("importExport.report.failed", { count: report.failed }));
   if (report.attachmentsUploaded)
-    summary.push(`${report.attachmentsUploaded} attachments uploaded`);
+    summary.push(
+      t("importExport.report.attachmentsUploaded", {
+        count: report.attachmentsUploaded,
+      }),
+    );
   if (report.attachmentsFailed)
-    summary.push(`${report.attachmentsFailed} attachments failed`);
+    summary.push(
+      t("importExport.report.attachmentsFailed", {
+        count: report.attachmentsFailed,
+      }),
+    );
 
   return (
     <div className="space-y-4">
@@ -354,19 +377,21 @@ function ReportStep({
         ) : (
           <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-500 shrink-0" />
         )}
-        {summary.join(" · ") || "Nothing to import"}
+        {summary.join(" · ") || t("importExport.report.nothing")}
       </p>
       {report.issues.length > 0 && (
         <SkippedList
-          title={`${report.issues.length} ${report.issues.length === 1 ? "item needs" : "items need"} attention`}
+          title={t("importExport.report.issuesTitle", {
+            count: report.issues.length,
+          })}
           items={report.issues}
         />
       )}
       <p className="text-xs text-muted-foreground">
-        Restored trashed notes start a fresh 30-day trash window.
+        {t("importExport.report.trashNote")}
       </p>
       <DialogFooter>
-        <Button onClick={onClose}>Done</Button>
+        <Button onClick={onClose}>{t("importExport.report.done")}</Button>
       </DialogFooter>
     </div>
   );

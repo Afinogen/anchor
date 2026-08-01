@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/settings_card.dart';
 import 'auth_controller.dart';
@@ -48,7 +49,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         if (!state.hasError) {
           AppSnackbar.showSuccess(
             context,
-            message: 'Password changed successfully',
+            message: context.l10n.passwordChangedSuccess,
           );
           context.pop();
         }
@@ -113,7 +114,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                   bottom: 12,
                 ),
                 title: Text(
-                  'Change Password',
+                  context.l10n.changePassword,
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -140,7 +141,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Text(
-                                  'Update your password to keep your account secure',
+                                  context.l10n.changePasswordSubtitleLong,
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     color: theme.colorScheme.onSurface
                                         .withValues(alpha: 0.7),
@@ -153,7 +154,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                   autofillHints: const [AutofillHints.password],
                                   textInputAction: TextInputAction.next,
                                   decoration: InputDecoration(
-                                    labelText: 'Current Password',
+                                    labelText: context.l10n.currentPassword,
                                     prefixIcon: const Icon(LucideIcons.lock),
                                     suffixIcon:
                                         _currentPasswordController.text.isEmpty
@@ -186,7 +187,9 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                   obscureText: !_isCurrentPasswordVisible,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please enter your current password';
+                                      return context
+                                          .l10n
+                                          .pleaseEnterCurrentPassword;
                                     }
                                     return null;
                                   },
@@ -200,7 +203,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                   ],
                                   textInputAction: TextInputAction.next,
                                   decoration: InputDecoration(
-                                    labelText: 'New Password',
+                                    labelText: context.l10n.newPassword,
                                     prefixIcon: const Icon(LucideIcons.lock),
                                     suffixIcon:
                                         _newPasswordController.text.isEmpty
@@ -233,10 +236,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                   obscureText: !_isNewPasswordVisible,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please enter a new password';
+                                      return context.l10n.pleaseEnterNewPassword;
                                     }
                                     if (value.length < 8) {
-                                      return 'Password must be at least 8 characters';
+                                      return context.l10n.passwordMinLength;
                                     }
                                     return null;
                                   },
@@ -251,7 +254,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                   textInputAction: TextInputAction.done,
                                   onFieldSubmitted: (_) => _changePassword(),
                                   decoration: InputDecoration(
-                                    labelText: 'Confirm New Password',
+                                    labelText: context.l10n.confirmNewPassword,
                                     prefixIcon: const Icon(
                                       LucideIcons.keyRound,
                                     ),
@@ -286,10 +289,10 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                   obscureText: !_isConfirmPasswordVisible,
                                   validator: (value) {
                                     if (value == null || value.isEmpty) {
-                                      return 'Please confirm your new password';
+                                      return context.l10n.pleaseConfirmPassword;
                                     }
                                     if (value != _newPasswordController.text) {
-                                      return 'Passwords do not match';
+                                      return context.l10n.passwordsDoNotMatch;
                                     }
                                     return null;
                                   },
@@ -314,7 +317,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                             color: Colors.white,
                                           ),
                                         )
-                                      : const Text('Change Password'),
+                                      : Text(context.l10n.changePassword),
                                 ),
                               ],
                             ),

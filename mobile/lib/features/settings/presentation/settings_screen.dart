@@ -9,11 +9,13 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/editor/link_utils.dart';
+import '../../../core/extensions/build_context_l10n.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/network/server_config_provider.dart';
 import '../../auth/presentation/auth_controller.dart';
 import '../data/server_info_provider.dart';
 import 'controllers/editor_preferences_controller.dart';
+import 'controllers/locale_preferences_controller.dart';
 import 'controllers/theme_preferences_controller.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -44,11 +46,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       context: context,
       builder: (ctx) => ConfirmDialog(
         icon: LucideIcons.logOut,
-        title: 'Log Out',
-        message:
-            'Are you sure you want to log out? Your unsynced notes will stay safe on this device.',
-        cancelText: 'Stay',
-        confirmText: 'Log Out',
+        title: ctx.l10n.logoutDialogTitle,
+        message: ctx.l10n.logoutDialogMessage,
+        cancelText: ctx.l10n.stay,
+        confirmText: ctx.l10n.logOut,
         onConfirm: () async {
           await ref.read(authControllerProvider.notifier).logout();
           // Navigation is handled by the router redirect logic
@@ -62,6 +63,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final currentThemeMode = ref.watch(themeModeControllerProvider);
+    final currentLocale = ref.watch(localeControllerProvider);
     final editorPrefs = ref.watch(editorPreferencesControllerProvider);
     final serverUrl = ref.watch(serverUrlProvider);
     final serverInfoAsync = ref.watch(serverInfoProvider);
@@ -109,7 +111,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   bottom: 12,
                 ),
                 title: Text(
-                  'Settings',
+                  context.l10n.settingsTitle,
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -129,7 +131,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     // Appearance Section
                     _buildSectionHeader(
                       context,
-                      'Appearance',
+                      context.l10n.appearance,
                       LucideIcons.palette,
                     ),
                     const SizedBox(height: 12),
@@ -139,8 +141,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         children: [
                           _buildThemeOption(
                             context,
-                            title: 'System',
-                            subtitle: 'Follow device settings',
+                            title: context.l10n.themeSystem,
+                            subtitle: context.l10n.themeSystemSubtitle,
                             icon: LucideIcons.smartphone,
                             isSelected: currentThemeMode == ThemeMode.system,
                             onTap: () => ref
@@ -150,8 +152,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           _buildDivider(context),
                           _buildThemeOption(
                             context,
-                            title: 'Light',
-                            subtitle: 'Always use light theme',
+                            title: context.l10n.themeLight,
+                            subtitle: context.l10n.themeLightSubtitle,
                             icon: LucideIcons.sun,
                             isSelected: currentThemeMode == ThemeMode.light,
                             onTap: () => ref
@@ -161,8 +163,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           _buildDivider(context),
                           _buildThemeOption(
                             context,
-                            title: 'Dark',
-                            subtitle: 'Always use dark theme',
+                            title: context.l10n.themeDark,
+                            subtitle: context.l10n.themeDarkSubtitle,
                             icon: LucideIcons.moon,
                             isSelected: currentThemeMode == ThemeMode.dark,
                             onTap: () => ref
@@ -175,16 +177,57 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                     const SizedBox(height: 32),
 
+                    // Language Section
+                    _buildSectionHeader(
+                      context,
+                      context.l10n.language,
+                      LucideIcons.languages,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildSettingsCard(
+                      context,
+                      child: Column(
+                        children: [
+                          _buildThemeOption(
+                            context,
+                            title: 'English',
+                            subtitle: context.l10n.languageSystemSubtitle,
+                            icon: LucideIcons.languages,
+                            isSelected: currentLocale.languageCode == 'en',
+                            onTap: () => ref
+                                .read(localeControllerProvider.notifier)
+                                .setLocale(const Locale('en')),
+                          ),
+                          _buildDivider(context),
+                          _buildThemeOption(
+                            context,
+                            title: 'Русский',
+                            subtitle: context.l10n.languageSystemSubtitle,
+                            icon: LucideIcons.languages,
+                            isSelected: currentLocale.languageCode == 'ru',
+                            onTap: () => ref
+                                .read(localeControllerProvider.notifier)
+                                .setLocale(const Locale('ru')),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
                     // Editor Section
-                    _buildSectionHeader(context, 'Editor', LucideIcons.edit3),
+                    _buildSectionHeader(
+                      context,
+                      context.l10n.editor,
+                      LucideIcons.edit3,
+                    ),
                     const SizedBox(height: 12),
                     _buildSettingsCard(
                       context,
                       child: _buildSwitchItem(
                         context,
-                        title: 'Sort checklist items',
-                        subtitle:
-                            'Automatically move checked checklist items to the bottom',
+                        title: context.l10n.sortChecklistItems,
+                        subtitle: context.l10n.sortChecklistItemsSubtitle,
                         icon: LucideIcons.listChecks,
                         value: editorPrefs.sortChecklistItems,
                         onChanged: (value) => ref
@@ -196,7 +239,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 32),
 
                     // Account Section
-                    _buildSectionHeader(context, 'Account', LucideIcons.user),
+                    _buildSectionHeader(
+                      context,
+                      context.l10n.account,
+                      LucideIcons.user,
+                    ),
                     const SizedBox(height: 12),
                     _buildSettingsCard(
                       context,
@@ -204,8 +251,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                         children: [
                           _buildActionItem(
                             context,
-                            title: 'Edit Profile',
-                            subtitle: 'Update your name and profile image',
+                            title: context.l10n.editProfile,
+                            subtitle: context.l10n.editProfileSubtitle,
                             icon: LucideIcons.user,
                             onTap: () => context.push(
                               '/${AppRoutes.settings}/${AppRoutes.editProfile}',
@@ -214,8 +261,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           _buildDivider(context),
                           _buildActionItem(
                             context,
-                            title: 'Change Password',
-                            subtitle: 'Update your account password',
+                            title: context.l10n.changePassword,
+                            subtitle: context.l10n.changePasswordSubtitle,
                             icon: LucideIcons.lock,
                             onTap: () => context.push(
                               '/${AppRoutes.settings}/${AppRoutes.changePassword}',
@@ -224,9 +271,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           _buildDivider(context),
                           _buildActionItem(
                             context,
-                            title: 'View Logs',
-                            subtitle:
-                                'Diagnostic logs for support and debugging',
+                            title: context.l10n.viewLogs,
+                            subtitle: context.l10n.viewLogsSubtitle,
                             icon: LucideIcons.fileText,
                             onTap: () => context.push(
                               '/${AppRoutes.settings}/${AppRoutes.viewLogs}',
@@ -235,8 +281,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           _buildDivider(context),
                           _buildActionItem(
                             context,
-                            title: 'Log Out',
-                            subtitle: 'Sign out of your account',
+                            title: context.l10n.logOut,
+                            subtitle: context.l10n.logOutSubtitle,
                             icon: LucideIcons.logOut,
                             isDestructive: true,
                             onTap: _showLogoutDialog,
@@ -248,14 +294,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                     const SizedBox(height: 32),
 
                     // Support Section
-                    _buildSectionHeader(context, 'Support', LucideIcons.heart),
+                    _buildSectionHeader(
+                      context,
+                      context.l10n.support,
+                      LucideIcons.heart,
+                    ),
                     const SizedBox(height: 12),
                     _buildSettingsCard(
                       context,
                       child: _buildActionItem(
                         context,
-                        title: 'Buy me a coffee',
-                        subtitle: 'Support the development of Anchor',
+                        title: context.l10n.buyMeCoffee,
+                        subtitle: context.l10n.buyMeCoffeeSubtitle,
                         icon: LucideIcons.coffee,
                         onTap: () => launchExternal(
                           context,
@@ -284,7 +334,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'App v${_appVersion.isNotEmpty ? _appVersion : '...'}',
+                                context.l10n.appVersion(
+                                  _appVersion.isNotEmpty ? _appVersion : '...',
+                                ),
                                 style: theme.textTheme.labelSmall?.copyWith(
                                   color: theme.colorScheme.onSurface.withValues(
                                     alpha: 0.5,
@@ -300,7 +352,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               loading: () => _buildAboutInfoRow(
                                 context,
                                 LucideIcons.package,
-                                'Server v...',
+                                context.l10n.serverVersionLoading,
                               ),
                               error: (_, _) => _buildServerStatusRows(
                                 context,
@@ -388,7 +440,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       return _buildAboutInfoRow(
         context,
         LucideIcons.serverOff,
-        "Can't reach $serverUrl",
+        context.l10n.serverUnreachable(serverUrl),
       );
     }
     return Column(
@@ -396,13 +448,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         _buildAboutInfoRow(
           context,
           LucideIcons.package,
-          'Server v${serverInfo.version}',
+          context.l10n.serverVersion(serverInfo.version),
         ),
         const SizedBox(height: 6),
         _buildAboutInfoRow(
           context,
           LucideIcons.server,
-          'Connected to $serverUrl',
+          context.l10n.connectedTo(serverUrl),
         ),
       ],
     );

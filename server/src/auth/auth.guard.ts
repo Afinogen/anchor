@@ -8,6 +8,7 @@ import { ExtractJwt } from 'passport-jwt';
 import { UserStatus } from '../generated/prisma/enums';
 import { TokenResolverService } from './token-resolver.service';
 import { AuthenticatedRequest } from './authenticated-request';
+import { t } from '../i18n/i18n.util';
 
 const extractBearerToken = ExtractJwt.fromAuthHeaderAsBearerToken();
 
@@ -20,17 +21,17 @@ export class AuthGuard implements CanActivate {
     const token = extractBearerToken(request);
 
     if (!token) {
-      throw new UnauthorizedException('Missing authentication token');
+      throw new UnauthorizedException(t('auth.missingToken'));
     }
 
     const user = await this.tokenResolver.resolveUser(token);
 
     if (!user) {
-      throw new UnauthorizedException('Invalid authentication token');
+      throw new UnauthorizedException(t('auth.invalidToken'));
     }
 
     if (user.status !== UserStatus.active) {
-      throw new UnauthorizedException('Account pending approval');
+      throw new UnauthorizedException(t('auth.accountPendingApproval'));
     }
 
     request.user = user;

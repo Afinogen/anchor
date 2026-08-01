@@ -1,0 +1,19 @@
+{
+  "notEnabled": "OIDC is not enabled",
+  "initiateFailed": "Failed to initiate OIDC login",
+  "missingCode": "Missing or invalid code",
+  "missingAccessToken": "Missing or invalid access_token",
+  "missingCodeOrState": "Missing authorization code or state",
+  "invalidState": "Invalid or expired state",
+  "callbackFailedLong": "Failed to process OIDC callback. Please try again from the login page.",
+  "callbackFailed": "Failed to process OIDC callback",
+  "providerError": "OIDC provider error: {msg}",
+  "invalidLoginCode": "Invalid or expired login code. Please sign in again from the login page.",
+  "invalidToken": "Invalid or expired OIDC token. Please sign in again.",
+  "missingClaims": "OIDC provider did not return required claims (email, sub)",
+  "invalidEmailClaim": "OIDC provider returned an invalid email claim",
+  "invalidRedirectUrl": "Invalid redirect URL",
+  "notConfigured": "OIDC is not properly configured",
+  "initConfigFailed": "Failed to initialize OIDC configuration. Check your OIDC settings.",
+  "emailLinkedToDifferent": "This email is already linked to a different sign-in account."
+}

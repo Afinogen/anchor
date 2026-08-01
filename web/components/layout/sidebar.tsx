@@ -58,6 +58,7 @@ import {
   type Tag as TagType,
   updateTag,
 } from "@/features/tags";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface SidebarProps {
@@ -73,6 +74,7 @@ export function Sidebar({
   isCollapsed = false,
   onToggleCollapse,
 }: SidebarProps) {
+  const { t } = useTranslation();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -102,7 +104,7 @@ export function Sidebar({
       setRenameError(null);
     },
     onError: (error: Error) => {
-      setRenameError(error.message || "Failed to rename tag");
+      setRenameError(error.message || t("sidebar.renameTagFailed"));
     },
   });
 
@@ -165,17 +167,17 @@ export function Sidebar({
   const navItems = [
     {
       href: "/notes",
-      label: "All Notes",
+      label: t("sidebar.allNotes"),
       icon: FileText,
     },
     {
       href: "/archive",
-      label: "Archive",
+      label: t("sidebar.archive"),
       icon: Archive,
     },
     {
       href: "/trash",
-      label: "Trash",
+      label: t("sidebar.trash"),
       icon: Trash2,
     },
   ];
@@ -196,7 +198,11 @@ export function Sidebar({
 
   const ThemeIcon = theme === "dark" ? Moon : theme === "light" ? Sun : Monitor;
   const themeLabel =
-    theme === "dark" ? "Dark" : theme === "light" ? "Light" : "System";
+    theme === "dark"
+      ? t("theme.dark")
+      : theme === "light"
+        ? t("theme.light")
+        : t("theme.system");
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -240,7 +246,9 @@ export function Sidebar({
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">Collapse sidebar</TooltipContent>
+              <TooltipContent side="right">
+                {t("sidebar.collapseSidebar")}
+              </TooltipContent>
             </Tooltip>
           )}
         </div>
@@ -259,7 +267,9 @@ export function Sidebar({
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">Expand sidebar</TooltipContent>
+              <TooltipContent side="right">
+                {t("sidebar.expandSidebar")}
+              </TooltipContent>
             </Tooltip>
           </div>
         )}
@@ -292,7 +302,9 @@ export function Sidebar({
                   />
                 </Link>
               </TooltipTrigger>
-              <TooltipContent side="right">New Note</TooltipContent>
+              <TooltipContent side="right">
+                {t("sidebar.newNote")}
+              </TooltipContent>
             </Tooltip>
           ) : (
             <Link
@@ -316,7 +328,7 @@ export function Sidebar({
                 className="h-5 w-5 transition-transform duration-300 group-hover:rotate-180"
                 strokeWidth={2}
               />
-              <span>New Note</span>
+              <span>{t("sidebar.newNote")}</span>
             </Link>
           )}
         </div>
@@ -419,7 +431,7 @@ export function Sidebar({
                   <div className="space-y-1 px-3 py-2">
                     <div className="flex w-full items-center gap-2 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-sidebar-foreground/50">
                       <Tag className="h-3 w-3" />
-                      <span>Tags</span>
+                      <span>{t("sidebar.tags")}</span>
                     </div>
                     <div className="space-y-1">
                       {tags.map((tag) => {
@@ -479,7 +491,7 @@ export function Sidebar({
                                   }}
                                 >
                                   <Pencil className="h-4 w-4" />
-                                  <span>Rename tag</span>
+                                  <span>{t("sidebar.renameTag")}</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   variant="destructive"
@@ -490,7 +502,7 @@ export function Sidebar({
                                   }}
                                 >
                                   <Trash2 className="h-4 w-4" />
-                                  <span>Delete tag</span>
+                                  <span>{t("sidebar.deleteTag")}</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -524,7 +536,9 @@ export function Sidebar({
                   <ThemeIcon className="h-4 w-4 flex-shrink-0" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent side="right">{themeLabel} theme</TooltipContent>
+              <TooltipContent side="right">
+                {t("theme.tooltip", { label: themeLabel })}
+              </TooltipContent>
             </Tooltip>
           ) : (
             <Button
@@ -571,7 +585,9 @@ export function Sidebar({
                       </Button>
                     </DropdownMenuTrigger>
                   </TooltipTrigger>
-                  <TooltipContent side="right">Profile</TooltipContent>
+                  <TooltipContent side="right">
+                    {t("sidebar.profile")}
+                  </TooltipContent>
                 </Tooltip>
               ) : (
                 <DropdownMenuTrigger asChild>
@@ -621,7 +637,7 @@ export function Sidebar({
                       className="focus:bg-sidebar-accent/50 focus:text-sidebar-foreground"
                     >
                       <UserCog className="h-4 w-4" />
-                      <span>Admin</span>
+                      <span>{t("sidebar.admin")}</span>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                   </>
@@ -634,7 +650,7 @@ export function Sidebar({
                   className="focus:bg-sidebar-accent/50 focus:text-sidebar-foreground"
                 >
                   <Settings className="h-4 w-4" />
-                  <span>Settings</span>
+                  <span>{t("sidebar.settings")}</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -644,7 +660,7 @@ export function Sidebar({
                   className="text-destructive focus:text-destructive focus:bg-destructive/10"
                 >
                   <LogOut className="h-4 w-4" />
-                  <span>Sign Out</span>
+                  <span>{t("sidebar.signOut")}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -655,16 +671,16 @@ export function Sidebar({
         <Dialog open={renameDialogOpen} onOpenChange={setRenameDialogOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Rename Tag</DialogTitle>
+              <DialogTitle>{t("sidebar.renameTagTitle")}</DialogTitle>
               <DialogDescription>
-                Enter a new name for this tag.
+                {t("sidebar.renameTagDescription")}
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-2">
               <Input
                 value={renameValue}
                 onChange={handleRenameValueChange}
-                placeholder="Tag name"
+                placeholder={t("sidebar.tagNamePlaceholder")}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     handleRenameSubmit();
@@ -690,7 +706,7 @@ export function Sidebar({
                   setRenameError(null);
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={handleRenameSubmit}
@@ -701,7 +717,9 @@ export function Sidebar({
                   updateTagMutation.isPending
                 }
               >
-                {updateTagMutation.isPending ? "Renaming..." : "Rename"}
+                {updateTagMutation.isPending
+                  ? t("common.renaming")
+                  : t("common.rename")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -715,12 +733,12 @@ export function Sidebar({
                 <div className="p-2 rounded-full bg-destructive/10">
                   <AlertTriangle className="h-5 w-5 text-destructive" />
                 </div>
-                <DialogTitle>Delete Tag</DialogTitle>
+                <DialogTitle>{t("sidebar.deleteTagTitle")}</DialogTitle>
               </div>
               <DialogDescription>
-                Delete{" "}
-                <span className="font-semibold">{selectedTag?.name}</span>? This
-                will remove it from all notes. This action cannot be undone.
+                {t("sidebar.deleteTagConfirmBefore")}{" "}
+                <span className="font-semibold">{selectedTag?.name}</span>
+                {t("sidebar.deleteTagConfirmAfter")}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
@@ -731,14 +749,16 @@ export function Sidebar({
                   setSelectedTag(null);
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 variant="destructive"
                 onClick={handleDeleteSubmit}
                 disabled={deleteTagMutation.isPending}
               >
-                {deleteTagMutation.isPending ? "Deleting..." : "Delete"}
+                {deleteTagMutation.isPending
+                  ? t("common.deleting")
+                  : t("common.delete")}
               </Button>
             </DialogFooter>
           </DialogContent>

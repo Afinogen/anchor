@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AuthenticatedRequest } from '../auth/authenticated-request';
+import { t } from '../i18n/i18n.util';
 
 @Injectable()
 export class AdminGuard extends JwtAuthGuard implements CanActivate {
@@ -21,7 +22,7 @@ export class AdminGuard extends JwtAuthGuard implements CanActivate {
     const user = request.user;
 
     if (!user || !user.isAdmin) {
-      throw new ForbiddenException('Admin access required');
+      throw new ForbiddenException(t('admin.accessRequired'));
     }
 
     return true;

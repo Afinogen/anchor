@@ -21,6 +21,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import type { QuillInstance } from "@/features/notes";
 import { LIST_FORMATS } from "@/features/notes";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 function toggleInlineFormat(quill: QuillInstance, key: string) {
@@ -69,6 +70,7 @@ export function QuillToolbar({
   updateKey,
   onOpenLinkDialog,
 }: QuillToolbarProps) {
+  const { t } = useTranslation();
   const [format, setFormat] = useState<Record<string, unknown>>({});
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -132,7 +134,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(false)}
           disabled={!quill || !canUndo}
-          title="Undo"
+          title={t("notes.toolbar.undo")}
           onClick={() => quill?.history?.undo?.()}
         >
           <Undo2 className="h-4 w-4" />
@@ -142,7 +144,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(false)}
           disabled={!quill || !canRedo}
-          title="Redo"
+          title={t("notes.toolbar.redo")}
           onClick={() => quill?.history?.redo?.()}
         >
           <Redo2 className="h-4 w-4" />
@@ -157,7 +159,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(isBold)}
           disabled={!quill}
-          title="Bold"
+          title={t("notes.toolbar.bold")}
           onClick={() => quill && toggleInlineFormat(quill, "bold")}
         >
           <Bold className="h-4 w-4" />
@@ -167,7 +169,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(isItalic)}
           disabled={!quill}
-          title="Italic"
+          title={t("notes.toolbar.italic")}
           onClick={() => quill && toggleInlineFormat(quill, "italic")}
         >
           <Italic className="h-4 w-4" />
@@ -177,7 +179,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(isUnderline)}
           disabled={!quill}
-          title="Underline"
+          title={t("notes.toolbar.underline")}
           onClick={() => quill && toggleInlineFormat(quill, "underline")}
         >
           <Underline className="h-4 w-4" />
@@ -187,7 +189,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(isStrike)}
           disabled={!quill}
-          title="Strikethrough"
+          title={t("notes.toolbar.strikethrough")}
           onClick={() => quill && toggleInlineFormat(quill, "strike")}
         >
           <Strikethrough className="h-4 w-4" />
@@ -202,7 +204,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(headerLevel === 1)}
           disabled={!quill}
-          title="Heading 1"
+          title={t("notes.toolbar.heading1")}
           onClick={() => quill && toggleHeader(quill, 1)}
         >
           <Heading1 className="h-4 w-4" />
@@ -212,7 +214,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(headerLevel === 2)}
           disabled={!quill}
-          title="Heading 2"
+          title={t("notes.toolbar.heading2")}
           onClick={() => quill && toggleHeader(quill, 2)}
         >
           <Heading2 className="h-4 w-4" />
@@ -222,7 +224,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(headerLevel === 3)}
           disabled={!quill}
-          title="Heading 3"
+          title={t("notes.toolbar.heading3")}
           onClick={() => quill && toggleHeader(quill, 3)}
         >
           <Heading3 className="h-4 w-4" />
@@ -237,7 +239,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(isChecklist)}
           disabled={!quill}
-          title="Checklist"
+          title={t("notes.toolbar.checklist")}
           onClick={() => quill && toggleList(quill, "unchecked")}
         >
           <ListChecks className="h-4 w-4" />
@@ -247,7 +249,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(isOrdered)}
           disabled={!quill}
-          title="Numbered list"
+          title={t("notes.toolbar.numberedList")}
           onClick={() => quill && toggleList(quill, "ordered")}
         >
           <ListOrdered className="h-4 w-4" />
@@ -257,7 +259,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(isBullet)}
           disabled={!quill}
-          title="Bullet list"
+          title={t("notes.toolbar.bulletList")}
           onClick={() => quill && toggleList(quill, "bullet")}
         >
           <List className="h-4 w-4" />
@@ -272,7 +274,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(isQuote)}
           disabled={!quill}
-          title="Quote"
+          title={t("notes.toolbar.quote")}
           onClick={() => quill && toggleBlock(quill, "blockquote")}
         >
           <Quote className="h-4 w-4" />
@@ -282,7 +284,7 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(isCode)}
           disabled={!quill}
-          title="Code block"
+          title={t("notes.toolbar.codeBlock")}
           onClick={() => quill && toggleBlock(quill, "code-block")}
         >
           <Code className="h-4 w-4" />
@@ -292,7 +294,11 @@ export function QuillToolbar({
           variant="ghost"
           className={btnClass(Boolean(format.link))}
           disabled={!quill}
-          title={format.link ? "Edit link" : "Insert link"}
+          title={
+            format.link
+              ? t("notes.toolbar.editLink")
+              : t("notes.toolbar.insertLink")
+          }
           onClick={onOpenLinkDialog}
         >
           <LinkIcon className="h-4 w-4" />

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../extensions/build_context_l10n.dart';
+
 enum LinkAction { open, copy, edit, remove }
 
 class LinkActionsSheet extends StatelessWidget {
@@ -54,22 +56,22 @@ class LinkActionsSheet extends StatelessWidget {
           _Header(theme: theme, text: text, url: url),
           _Action(
             icon: LucideIcons.externalLink,
-            label: 'Open',
+            label: context.l10n.linkOpen,
             onTap: () => Navigator.pop(context, LinkAction.open),
           ),
           _Action(
             icon: LucideIcons.copy,
-            label: 'Copy link',
+            label: context.l10n.linkCopy,
             onTap: () => Navigator.pop(context, LinkAction.copy),
           ),
           _Action(
             icon: LucideIcons.pencil,
-            label: 'Edit',
+            label: context.l10n.linkEdit,
             onTap: () => Navigator.pop(context, LinkAction.edit),
           ),
           _Action(
             icon: LucideIcons.unlink,
-            label: 'Remove',
+            label: context.l10n.remove,
             destructive: true,
             onTap: () => Navigator.pop(context, LinkAction.remove),
           ),

@@ -17,6 +17,7 @@ import {
   attachmentFilePath,
 } from '../constants/notes.constants';
 import { toAttachmentResponse } from '../dto/attachment-response.dto';
+import { t } from '../../i18n/i18n.util';
 import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -41,18 +42,20 @@ export class NoteAttachmentsService {
     await this.noteAccessService.ensureNoteIsActive(noteId);
 
     if (!file) {
-      throw new BadRequestException('No file provided');
+      throw new BadRequestException(t('notes.noFileProvided'));
     }
 
     if (!ATTACHMENT_ALLOWED_MIME_TYPES.has(file.mimetype)) {
       throw new BadRequestException(
-        `File type ${file.mimetype} is not allowed`,
+        t('notes.fileTypeNotAllowed', { type: file.mimetype }),
       );
     }
 
     if (file.size > ATTACHMENT_MAX_FILE_SIZE) {
       throw new BadRequestException(
-        `File size exceeds ${ATTACHMENT_MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+        t('notes.fileTooLarge', {
+          size: ATTACHMENT_MAX_FILE_SIZE / 1024 / 1024,
+        }),
       );
     }
 
@@ -110,14 +113,14 @@ export class NoteAttachmentsService {
           );
         }
       }
-      throw new BadRequestException('Failed to upload attachment');
+      throw new BadRequestException(t('notes.uploadFailed'));
     }
   }
 
   async findAll(userId: string, noteId: string) {
     const access = await this.noteAccessService.hasNoteAccess(userId, noteId);
     if (!access.hasAccess) {
-      throw new NotFoundException('Note not found');
+      throw new NotFoundException(t('notes.noteNotFound'));
     }
 
     const attachments = await this.prisma.noteAttachment.findMany({
@@ -131,7 +134,7 @@ export class NoteAttachmentsService {
   async serveFile(userId: string, noteId: string, attachmentId: string) {
     const access = await this.noteAccessService.hasNoteAccess(userId, noteId);
     if (!access.hasAccess) {
-      throw new NotFoundException('Note not found');
+      throw new NotFoundException(t('notes.noteNotFound'));
     }
 
     const attachment = await this.prisma.noteAttachment.findFirst({
@@ -139,12 +142,12 @@ export class NoteAttachmentsService {
     });
 
     if (!attachment) {
-      throw new NotFoundException('Attachment not found');
+      throw new NotFoundException(t('notes.attachmentNotFound'));
     }
 
     const filePath = attachmentFilePath(noteId, attachment.storedFilename);
     if (!existsSync(filePath)) {
-      throw new NotFoundException('Attachment file not found');
+      throw new NotFoundException(t('notes.attachmentFileNotFound'));
     }
 
     const stream = createReadStream(filePath);
@@ -159,7 +162,7 @@ export class NoteAttachmentsService {
     });
 
     if (!attachment) {
-      throw new NotFoundException('Attachment not found');
+      throw new NotFoundException(t('notes.attachmentNotFound'));
     }
 
     // Owner can delete any attachment; editors can delete their own uploads
@@ -169,12 +172,10 @@ export class NoteAttachmentsService {
       NoteSharePermission.editor,
     );
     if (!access.hasAccess) {
-      throw new NotFoundException('Note not found');
+      throw new NotFoundException(t('notes.noteNotFound'));
     }
     if (!access.isOwner && attachment.uploadedByUserId !== userId) {
-      throw new BadRequestException(
-        'You can only delete attachments you uploaded',
-      );
+      throw new BadRequestException(t('notes.canOnlyDeleteOwnAttachments'));
     }
 
     await this.prisma.noteAttachment.delete({ where: { id: attachmentId } });
@@ -213,13 +214,11 @@ export class NoteAttachmentsService {
 
     const attachmentIds = new Set(attachments.map((a) => a.id));
     if (orderedIds.length !== attachments.length) {
-      throw new BadRequestException(
-        'Reorder must include exactly all attachment IDs for the note',
-      );
+      throw new BadRequestException(t('notes.reorderMustIncludeAll'));
     }
     for (const id of orderedIds) {
       if (!attachmentIds.has(id)) {
-        throw new BadRequestException(`Attachment ${id} not found in note`);
+        throw new BadRequestException(t('notes.attachmentNotInNote', { id }));
       }
     }
 

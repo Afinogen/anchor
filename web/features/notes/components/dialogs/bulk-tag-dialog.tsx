@@ -22,6 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { createTag, generateRandomTagColor, getTags } from "@/features/tags";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface BulkTagDialogProps {
@@ -39,6 +40,7 @@ export function BulkTagDialog({
   count,
   isPending = false,
 }: BulkTagDialogProps) {
+  const { t } = useTranslation();
   const [selectedTagIds, setSelectedTagIds] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,7 +70,7 @@ export function BulkTagDialog({
       inputRef.current?.focus();
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to create tag");
+      toast.error(error.message || t("tags.createFailed"));
     },
   });
 
@@ -130,11 +132,10 @@ export function BulkTagDialog({
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
               <TagIcon className="h-5 w-5 text-primary" />
             </div>
-            Add Tags
+            {t("notes.bulk.tagDialog.title")}
           </DialogTitle>
           <DialogDescription className="pt-2">
-            Add tags to {count} note{count > 1 ? "s" : ""}. Existing tags on
-            those notes are kept.
+            {t("notes.bulk.tagDialog.description", { count })}
           </DialogDescription>
         </DialogHeader>
 
@@ -145,7 +146,7 @@ export function BulkTagDialog({
             <input
               ref={inputRef}
               className="flex-1 bg-transparent border-none outline-none text-sm placeholder:text-muted-foreground/70"
-              placeholder="Search or create a tag..."
+              placeholder={t("notes.bulk.tagDialog.searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -171,7 +172,9 @@ export function BulkTagDialog({
                   type="button"
                   onClick={() => toggleTag(tag.id)}
                   className="rounded-full p-0.5 hover:bg-black/10 dark:hover:bg-white/15 transition-colors"
-                  aria-label={`Remove ${tag.name}`}
+                  aria-label={t("notes.bulk.tagDialog.removeTag", {
+                    name: tag.name,
+                  })}
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -185,7 +188,7 @@ export function BulkTagDialog({
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-12 gap-2 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="text-xs">Loading tags...</span>
+              <span className="text-xs">{t("tags.loadingTags")}</span>
             </div>
           ) : (
             <>
@@ -261,8 +264,7 @@ export function BulkTagDialog({
                     )}
                   </span>
                   <span className="truncate">
-                    Create{" "}
-                    <span className="font-medium">"{searchQuery.trim()}"</span>
+                    {t("tags.createNamed", { name: searchQuery.trim() })}
                   </span>
                 </button>
               )}
@@ -272,8 +274,8 @@ export function BulkTagDialog({
                   <TagIcon className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
                   <p className="text-xs text-muted-foreground">
                     {tags.length > 0
-                      ? "No matching tags"
-                      : "No tags yet — type to create one"}
+                      ? t("notes.bulk.tagDialog.noMatching")
+                      : t("notes.bulk.tagDialog.noTagsYet")}
                   </p>
                 </div>
               )}
@@ -283,15 +285,18 @@ export function BulkTagDialog({
 
         <DialogFooter className="px-6 py-4 border-t border-border/40 bg-muted/20">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             onClick={() => onConfirm(Array.from(selectedTagIds))}
             disabled={selectedTagIds.size === 0 || isPending}
           >
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-            Add {selectedTagIds.size > 0 ? selectedTagIds.size : ""} tag
-            {selectedTagIds.size === 1 ? "" : "s"}
+            {selectedTagIds.size === 0
+              ? t("notes.bulk.tagDialog.addButtonEmpty")
+              : t("notes.bulk.tagDialog.addButton", {
+                  count: selectedTagIds.size,
+                })}
           </Button>
         </DialogFooter>
       </DialogContent>

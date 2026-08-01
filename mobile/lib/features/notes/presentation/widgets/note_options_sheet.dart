@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/extensions/build_context_l10n.dart';
 
 class NoteOptionsSheet extends StatelessWidget {
   final bool isReadOnly;
@@ -84,14 +85,14 @@ class NoteOptionsSheet extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'More Options',
+                          context.l10n.moreOptions,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          'Customize and manage your note',
+                          context.l10n.moreOptionsSubtitle,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -118,7 +119,7 @@ class NoteOptionsSheet extends StatelessWidget {
                     if (!isReadOnly)
                       _GridOptionTile(
                         icon: LucideIcons.palette,
-                        title: 'Background',
+                        title: context.l10n.background,
                         onTap: () {
                           Navigator.pop(context);
                           onBackgroundTap();
@@ -128,7 +129,7 @@ class NoteOptionsSheet extends StatelessWidget {
                     if (!isReadOnly)
                       _GridOptionTile(
                         icon: LucideIcons.paperclip,
-                        title: 'Attachment',
+                        title: context.l10n.attachment,
                         onTap: () {
                           Navigator.pop(context);
                           onAttachmentTap();
@@ -140,7 +141,9 @@ class NoteOptionsSheet extends StatelessWidget {
                         icon: isArchived
                             ? LucideIcons.archiveRestore
                             : LucideIcons.archive,
-                        title: isArchived ? 'Unarchive' : 'Archive',
+                        title: isArchived
+                            ? context.l10n.unarchive
+                            : context.l10n.archive,
                         onTap: () {
                           Navigator.pop(context);
                           onArchiveTap();
@@ -148,7 +151,7 @@ class NoteOptionsSheet extends StatelessWidget {
                       ),
                       _GridOptionTile(
                         icon: LucideIcons.trash2,
-                        title: 'Delete',
+                        title: context.l10n.delete,
                         iconColor: theme.colorScheme.error,
                         textColor: theme.colorScheme.error,
                         backgroundColor: theme.colorScheme.error.withValues(

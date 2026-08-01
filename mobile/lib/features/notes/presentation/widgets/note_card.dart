@@ -8,6 +8,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/image_shimmer.dart';
 import 'package:anchor/core/widgets/quill_preview.dart';
 import 'package:anchor/core/network/connectivity_provider.dart';
@@ -178,7 +179,9 @@ class NoteCard extends ConsumerWidget {
                               children: [
                                 if (note.sharedBy != null) ...[
                                   Tooltip(
-                                    message: 'Shared by ${note.sharedBy!.name}',
+                                    message: context.l10n.sharedBy(
+                                      note.sharedBy!.name,
+                                    ),
                                     child: _SharedByAvatar(
                                       sharedBy: note.sharedBy!,
                                       serverUrl: serverUrl,
@@ -549,7 +552,7 @@ class _SharedByMeIndicator extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Tooltip(
-      message: 'Shared with $count ${count == 1 ? 'person' : 'people'}',
+      message: context.l10n.sharedWithCount(count),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),

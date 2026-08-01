@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslation } from "@/lib/i18n";
 
 interface ArchiveDialogProps {
   open: boolean;
@@ -26,6 +27,7 @@ export function ArchiveDialog({
   onConfirm,
   isPending = false,
 }: ArchiveDialogProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -38,25 +40,27 @@ export function ArchiveDialog({
                 <Archive className="h-5 w-5 text-primary" />
               )}
             </div>
-            {isArchived ? "Unarchive note?" : "Archive note?"}
+            {isArchived
+              ? t("notes.dialogs.unarchiveTitle")
+              : t("notes.dialogs.archiveTitle")}
           </DialogTitle>
           <DialogDescription className="pt-2">
             {isArchived
-              ? "This note will be moved back to your notes."
-              : "This note will be moved to archive."}
+              ? t("notes.dialogs.unarchiveDesc")
+              : t("notes.dialogs.archiveDesc")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={onConfirm} disabled={isPending}>
             {isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : isArchived ? (
-              "Unarchive"
+              t("notes.dialogs.unarchive")
             ) : (
-              "Archive"
+              t("notes.dialogs.archive")
             )}
           </Button>
         </DialogFooter>

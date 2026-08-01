@@ -13,6 +13,7 @@ import { NoteState } from 'src/generated/prisma/enums';
 import { UserStatus } from 'src/generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { t } from '../i18n/i18n.util';
 
 @Injectable()
 export class AdminService {
@@ -126,7 +127,7 @@ export class AdminService {
     });
 
     if (existingUser) {
-      throw new ConflictException('User already exists');
+      throw new ConflictException(t('admin.userAlreadyExists'));
     }
 
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
@@ -161,7 +162,7 @@ export class AdminService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(t('admin.userNotFound'));
     }
 
     // Check if email is being changed and if it's already taken
@@ -171,22 +172,20 @@ export class AdminService {
       });
 
       if (existingUser) {
-        throw new ConflictException('Email already in use');
+        throw new ConflictException(t('admin.emailInUse'));
       }
     }
 
     // Demotion safety: cannot remove admin status from current user or the last admin
     if (updateUserDto.isAdmin === false) {
       if (id === currentUserId) {
-        throw new BadRequestException('Cannot change your own admin status');
+        throw new BadRequestException(t('admin.cannotChangeOwnAdmin'));
       }
       const adminCount = await this.prisma.user.count({
         where: { isAdmin: true },
       });
       if (adminCount === 1) {
-        throw new BadRequestException(
-          'Cannot remove admin status from the last admin user',
-        );
+        throw new BadRequestException(t('admin.cannotRemoveLastAdmin'));
       }
     }
 
@@ -218,7 +217,7 @@ export class AdminService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(t('admin.userNotFound'));
     }
 
     if (user.isAdmin) {
@@ -228,7 +227,7 @@ export class AdminService {
       });
 
       if (adminCount === 1) {
-        throw new BadRequestException('Cannot delete the last admin user');
+        throw new BadRequestException(t('admin.cannotDeleteLastAdmin'));
       }
     }
 
@@ -246,7 +245,7 @@ export class AdminService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(t('admin.userNotFound'));
     }
 
     // Generate secure random password if not provided
@@ -280,11 +279,11 @@ export class AdminService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(t('admin.userNotFound'));
     }
 
     if (user.status !== UserStatus.pending) {
-      throw new BadRequestException('User is not pending approval');
+      throw new BadRequestException(t('admin.userNotPending'));
     }
 
     const updatedUser = await this.prisma.user.update({
@@ -310,11 +309,11 @@ export class AdminService {
     });
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(t('admin.userNotFound'));
     }
 
     if (user.status !== UserStatus.pending) {
-      throw new BadRequestException('User is not pending approval');
+      throw new BadRequestException(t('admin.userNotPending'));
     }
 
     // Delete the user

@@ -2,6 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Check,
+  ChevronDown,
   Copy,
   Eye,
   EyeOff,
@@ -27,6 +29,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -42,10 +50,12 @@ import {
 import { useAuthStore } from "@/features/auth/store";
 import { DataImportExportCard } from "@/features/import-export";
 import { usePreferencesStore } from "@/features/preferences";
+import { type Locale, localeNames, locales, useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import packageJson from "../../../package.json";
 
 export default function SettingsPage() {
+  const { t, locale, setLocale } = useTranslation();
   const { user, setUser } = useAuthStore();
   const { editor: editorPrefs, setEditorPreference } = usePreferencesStore();
   const queryClient = useQueryClient();
@@ -106,11 +116,10 @@ export default function SettingsPage() {
     onSuccess: async (updatedUser) => {
       setUser(updatedUser);
       await queryClient.invalidateQueries({ queryKey: ["user"] });
-      toast.success("Profile updated successfully");
+      toast.success(t("settings.profile.updated"));
     },
     onError: (error: Error) => {
-      const errorMessage =
-        error.message || "Failed to update profile. Please try again.";
+      const errorMessage = error.message || t("settings.profile.updateFailed");
       toast.error(errorMessage);
     },
   });
@@ -129,8 +138,7 @@ export default function SettingsPage() {
       setShouldRemoveImage(false);
     },
     onError: (error: Error) => {
-      const errorMessage =
-        error.message || "Failed to upload profile image. Please try again.";
+      const errorMessage = error.message || t("settings.profile.uploadFailed");
       toast.error(errorMessage);
     },
   });
@@ -150,8 +158,7 @@ export default function SettingsPage() {
       }
     },
     onError: (error: Error) => {
-      const errorMessage =
-        error.message || "Failed to remove profile image. Please try again.";
+      const errorMessage = error.message || t("settings.profile.removeFailed");
       toast.error(errorMessage);
     },
   });
@@ -161,12 +168,12 @@ export default function SettingsPage() {
     if (file) {
       // Validate file type
       if (!file.type.startsWith("image/")) {
-        toast.error("Please select an image file");
+        toast.error(t("settings.profile.selectImageFile"));
         return;
       }
       // Validate file size (5MB)
       if (file.size > 5 * 1024 * 1024) {
-        toast.error("Image size must be less than 5MB");
+        toast.error(t("settings.profile.imageTooLarge"));
         return;
       }
       setSelectedFile(file);
@@ -213,7 +220,7 @@ export default function SettingsPage() {
     // Only make API calls if there are changes
     if (promises.length > 0) {
       await Promise.all(promises);
-      toast.success("Profile updated successfully");
+      toast.success(t("settings.profile.updated"));
       // Reset flags after successful save
       setShouldRemoveImage(false);
       setSelectedFile(null);
@@ -223,7 +230,7 @@ export default function SettingsPage() {
   const changePasswordMutation = useMutation({
     mutationFn: changePassword,
     onSuccess: () => {
-      toast.success("Password changed successfully");
+      toast.success(t("settings.password.changed"));
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
@@ -232,13 +239,11 @@ export default function SettingsPage() {
       setConfirmPasswordError("");
     },
     onError: (error: Error) => {
-      const errorMessage = error.message || "Failed to change password";
+      const errorMessage = error.message || t("settings.password.changeFailed");
 
-      // Map API errors to appropriate fields
-      if (
-        errorMessage.toLowerCase().includes("current password") ||
-        errorMessage.toLowerCase().includes("incorrect")
-      ) {
+      // Map API errors to appropriate fields. The server localizes its message,
+      // so match against the translated "current password incorrect" string.
+      if (errorMessage === t("errors.currentPasswordIncorrect")) {
         setCurrentPasswordError(errorMessage);
         setNewPasswordError("");
         setConfirmPasswordError("");
@@ -261,13 +266,13 @@ export default function SettingsPage() {
 
     // Validate passwords match
     if (newPassword !== confirmPassword) {
-      setConfirmPasswordError("Passwords do not match");
+      setConfirmPasswordError(t("settings.password.doNotMatch"));
       return;
     }
 
     // Validate password length
     if (newPassword.length < 8) {
-      setNewPasswordError("Password must be at least 8 characters");
+      setNewPasswordError(t("settings.password.minLength"));
       return;
     }
 
@@ -298,7 +303,7 @@ export default function SettingsPage() {
 
   const handleNewPasswordBlur = () => {
     if (newPassword && newPassword.length < 8) {
-      setNewPasswordError("Password must be at least 8 characters");
+      setNewPasswordError(t("settings.password.minLength"));
     }
   };
 
@@ -313,13 +318,13 @@ export default function SettingsPage() {
 
   const handleConfirmPasswordBlur = () => {
     if (confirmPassword && confirmPassword.length < 8) {
-      setConfirmPasswordError("Password must be at least 8 characters");
+      setConfirmPasswordError(t("settings.password.minLength"));
     } else if (
       confirmPassword &&
       newPassword &&
       confirmPassword !== newPassword
     ) {
-      setConfirmPasswordError("Passwords do not match");
+      setConfirmPasswordError(t("settings.password.doNotMatch"));
     }
   };
 
@@ -329,10 +334,10 @@ export default function SettingsPage() {
       queryClient.setQueryData(["api-token"], response);
       setIsApiTokenVisible(true);
       setRegenerateDialogOpen(false);
-      toast.success("API token regenerated successfully");
+      toast.success(t("settings.apiToken.regenerated"));
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to regenerate API token");
+      toast.error(error.message || t("settings.apiToken.regenerateFailed"));
     },
   });
 
@@ -342,25 +347,25 @@ export default function SettingsPage() {
       queryClient.setQueryData(["api-token"], response);
       setIsApiTokenVisible(false);
       setRevokeDialogOpen(false);
-      toast.success("API token revoked successfully");
+      toast.success(t("settings.apiToken.revoked"));
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to revoke API token");
+      toast.error(error.message || t("settings.apiToken.revokeFailed"));
     },
   });
 
   const handleCopyApiToken = async () => {
     const apiToken = apiTokenResponse?.apiToken;
     if (!apiToken) {
-      toast.error("API token is not available");
+      toast.error(t("settings.apiToken.notAvailable"));
       return;
     }
 
     try {
       await navigator.clipboard.writeText(apiToken);
-      toast.success("API token copied to clipboard");
+      toast.success(t("settings.apiToken.copied"));
     } catch {
-      toast.error("Failed to copy API token");
+      toast.error(t("settings.apiToken.copyFailed"));
     }
   };
 
@@ -379,23 +384,25 @@ export default function SettingsPage() {
   return (
     <div className="container max-w-2xl mx-auto p-6">
       <div className="mb-6">
-        <h1 className="text-3xl font-serif font-bold mb-2">Settings</h1>
-        <p className="text-muted-foreground">Manage your account settings</p>
+        <h1 className="text-3xl font-serif font-bold mb-2">
+          {t("settings.title")}
+        </h1>
+        <p className="text-muted-foreground">{t("settings.subtitle")}</p>
       </div>
 
       {/* Profile Section */}
       <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">Profile</CardTitle>
-          <CardDescription>
-            Update your profile information and image
-          </CardDescription>
+          <CardTitle className="text-2xl">
+            {t("settings.profile.title")}
+          </CardTitle>
+          <CardDescription>{t("settings.profile.description")}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleProfileSubmit} className="space-y-6">
             {/* Profile Image */}
             <div className="space-y-2">
-              <Label>Profile Image</Label>
+              <Label>{t("settings.profile.imageLabel")}</Label>
               <div className="flex items-center gap-4">
                 <Avatar className="h-20 w-20">
                   <AvatarImage
@@ -423,7 +430,9 @@ export default function SettingsPage() {
                       className="flex items-center gap-2"
                     >
                       <Upload className="h-4 w-4" />
-                      {selectedFile ? "Change Image" : "Upload Image"}
+                      {selectedFile
+                        ? t("settings.profile.changeImage")
+                        : t("settings.profile.uploadImage")}
                     </Button>
                     {(profileImagePreview || shouldRemoveImage) && (
                       <Button
@@ -433,12 +442,12 @@ export default function SettingsPage() {
                         className="flex items-center gap-2"
                       >
                         <X className="h-4 w-4" />
-                        Remove
+                        {t("settings.profile.remove")}
                       </Button>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    JPEG, PNG, or WebP. Max 5MB.
+                    {t("settings.profile.imageHint")}
                   </p>
                 </div>
               </div>
@@ -446,13 +455,13 @@ export default function SettingsPage() {
 
             {/* Name Input */}
             <div className="space-y-2">
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor="name">{t("settings.profile.nameLabel")}</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="name"
                   type="text"
-                  placeholder="Enter your name"
+                  placeholder={t("settings.profile.namePlaceholder")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   className="pl-10 h-12 bg-background/50"
@@ -475,10 +484,10 @@ export default function SettingsPage() {
               removeImageMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
+                  {t("settings.profile.saving")}
                 </>
               ) : (
-                "Save Profile"
+                t("settings.profile.save")
               )}
             </Button>
           </form>
@@ -488,21 +497,20 @@ export default function SettingsPage() {
       {/* Editor Settings Section */}
       <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">Editor</CardTitle>
-          <CardDescription>
-            Customize how the note editor behaves
-          </CardDescription>
+          <CardTitle className="text-2xl">
+            {t("settings.editor.title")}
+          </CardTitle>
+          <CardDescription>{t("settings.editor.description")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Sort checklist items */}
           <div className="flex items-center justify-between">
             <div className="space-y-1">
               <Label htmlFor="move-checked" className="text-base font-medium">
-                Sort checklist items
+                {t("settings.editor.sortChecklist")}
               </Label>
               <p className="text-sm text-muted-foreground">
-                Automatically move checked checklist items to the bottom of the
-                list
+                {t("settings.editor.sortChecklistHint")}
               </p>
             </div>
             <Switch
@@ -516,30 +524,74 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
+      {/* Language Section */}
+      <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl">
+            {t("settings.language.title")}
+          </CardTitle>
+          <CardDescription>
+            {t("settings.language.description")}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between gap-4">
+            <Label htmlFor="language" className="text-base font-medium">
+              {t("settings.language.label")}
+            </Label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  id="language"
+                  type="button"
+                  variant="outline"
+                  className="min-w-40 justify-between"
+                >
+                  {localeNames[locale]}
+                  <ChevronDown className="h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="min-w-40">
+                {locales.map((code) => (
+                  <DropdownMenuItem
+                    key={code}
+                    onClick={() => setLocale(code as Locale)}
+                  >
+                    {localeNames[code]}
+                    {locale === code && <Check className="ml-auto h-4 w-4" />}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* API Token Section */}
       <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">API Token</CardTitle>
+          <CardTitle className="text-2xl">
+            {t("settings.apiToken.title")}
+          </CardTitle>
           <CardDescription>
-            Use this token to authenticate external clients such as Homarr
+            {t("settings.apiToken.description")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {apiTokenLoading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
-              Loading API token...
+              {t("settings.apiToken.loading")}
             </div>
           ) : apiTokenError ? (
             <p className="text-sm text-destructive">
-              Failed to load API token. Try refreshing the page.
+              {t("settings.apiToken.loadFailed")}
             </p>
           ) : apiTokenResponse?.apiToken === null ||
             apiTokenResponse?.apiToken === undefined ? (
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                No API token. Generate one to allow external services to access
-                your notes.
+                {t("settings.apiToken.none")}
               </p>
               <Button
                 type="button"
@@ -551,12 +603,12 @@ export default function SettingsPage() {
                 {regenerateApiTokenMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Generating...
+                    {t("settings.apiToken.generating")}
                   </>
                 ) : (
                   <>
                     <KeyRound className="h-4 w-4" />
-                    Generate API Token
+                    {t("settings.apiToken.generate")}
                   </>
                 )}
               </Button>
@@ -564,7 +616,7 @@ export default function SettingsPage() {
           ) : (
             <>
               <div className="space-y-2">
-                <Label htmlFor="apiToken">Token</Label>
+                <Label htmlFor="apiToken">{t("settings.apiToken.label")}</Label>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -581,7 +633,11 @@ export default function SettingsPage() {
                     type="button"
                     onClick={() => setIsApiTokenVisible((prev) => !prev)}
                     className="absolute right-10 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    title={isApiTokenVisible ? "Hide token" : "Show token"}
+                    title={
+                      isApiTokenVisible
+                        ? t("settings.apiToken.hideToken")
+                        : t("settings.apiToken.showToken")
+                    }
                   >
                     {isApiTokenVisible ? (
                       <EyeOff className="h-4 w-4 opacity-40" />
@@ -593,7 +649,7 @@ export default function SettingsPage() {
                     type="button"
                     onClick={handleCopyApiToken}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                    title="Copy token"
+                    title={t("settings.apiToken.copyToken")}
                   >
                     <Copy className="h-4 w-4 opacity-40" />
                   </button>
@@ -601,8 +657,7 @@ export default function SettingsPage() {
               </div>
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <p className="text-xs text-muted-foreground">
-                  Regenerating will invalidate your current token immediately.
-                  Revoking disables external access.
+                  {t("settings.apiToken.warning")}
                 </p>
                 <div className="flex items-center gap-2">
                   <Button
@@ -616,7 +671,7 @@ export default function SettingsPage() {
                     className="flex items-center gap-2"
                   >
                     <RotateCw className="h-4 w-4" />
-                    Regenerate
+                    {t("settings.apiToken.regenerate")}
                   </Button>
                   <Button
                     type="button"
@@ -629,7 +684,7 @@ export default function SettingsPage() {
                     className="flex items-center gap-2 text-destructive hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4" />
-                    Revoke
+                    {t("settings.apiToken.revoke")}
                   </Button>
                 </div>
               </div>
@@ -643,9 +698,9 @@ export default function SettingsPage() {
         open={regenerateDialogOpen}
         onOpenChange={setRegenerateDialogOpen}
         onConfirm={() => regenerateApiTokenMutation.mutate()}
-        title="Regenerate API Token?"
-        description="This will invalidate your current token immediately. External services using it will stop working until you configure them with the new token."
-        confirmLabel="Regenerate"
+        title={t("settings.apiToken.regenerateDialogTitle")}
+        description={t("settings.apiToken.regenerateDialogDesc")}
+        confirmLabel={t("settings.apiToken.regenerate")}
         variant="default"
         isPending={regenerateApiTokenMutation.isPending}
       />
@@ -655,9 +710,9 @@ export default function SettingsPage() {
         open={revokeDialogOpen}
         onOpenChange={setRevokeDialogOpen}
         onConfirm={() => revokeApiTokenMutation.mutate()}
-        title="Revoke API Token?"
-        description="This will disable external access to your notes. You can generate a new token anytime if you need to re-enable it."
-        confirmLabel="Revoke"
+        title={t("settings.apiToken.revokeDialogTitle")}
+        description={t("settings.apiToken.revokeDialogDesc")}
+        confirmLabel={t("settings.apiToken.revoke")}
         variant="destructive"
         isPending={revokeApiTokenMutation.isPending}
       />
@@ -668,21 +723,25 @@ export default function SettingsPage() {
       {/* Change Password Section */}
       <Card className="border-0 shadow-xl bg-card/80 backdrop-blur-sm mb-6">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl">Change Password</CardTitle>
+          <CardTitle className="text-2xl">
+            {t("settings.password.title")}
+          </CardTitle>
           <CardDescription>
-            Update your password to keep your account secure
+            {t("settings.password.description")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
+              <Label htmlFor="currentPassword">
+                {t("settings.password.current")}
+              </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="currentPassword"
                   type={isCurrentPasswordVisible ? "text" : "password"}
-                  placeholder="Enter your current password"
+                  placeholder={t("settings.password.currentPlaceholder")}
                   value={currentPassword}
                   onChange={handleCurrentPasswordChange}
                   className={cn(
@@ -716,13 +775,13 @@ export default function SettingsPage() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
+              <Label htmlFor="newPassword">{t("settings.password.new")}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="newPassword"
                   type={isNewPasswordVisible ? "text" : "password"}
-                  placeholder="Enter your new password"
+                  placeholder={t("settings.password.newPlaceholder")}
                   value={newPassword}
                   onChange={handleNewPasswordChange}
                   onBlur={handleNewPasswordBlur}
@@ -756,18 +815,20 @@ export default function SettingsPage() {
                 </p>
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  Password must be at least 8 characters long
+                  {t("settings.password.minLengthHint")}
                 </p>
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Label htmlFor="confirmPassword">
+                {t("settings.password.confirm")}
+              </Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   id="confirmPassword"
                   type={isConfirmPasswordVisible ? "text" : "password"}
-                  placeholder="Confirm your new password"
+                  placeholder={t("settings.password.confirmPlaceholder")}
                   value={confirmPassword}
                   onChange={handleConfirmPasswordChange}
                   onBlur={handleConfirmPasswordBlur}
@@ -809,10 +870,10 @@ export default function SettingsPage() {
               {changePasswordMutation.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Changing password...
+                  {t("settings.password.changing")}
                 </>
               ) : (
-                "Change Password"
+                t("settings.password.changeButton")
               )}
             </Button>
           </form>
@@ -824,7 +885,9 @@ export default function SettingsPage() {
         <div className="flex flex-col items-center gap-1.5 text-xs text-muted-foreground">
           <div className="flex items-center gap-2">
             <Info className="h-3.5 w-3.5" />
-            <span>Version {packageJson.version}</span>
+            <span>
+              {t("settings.about.version", { version: packageJson.version })}
+            </span>
           </div>
         </div>
       </div>

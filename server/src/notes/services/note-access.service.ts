@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NoteSharePermission, NoteState } from 'src/generated/prisma/enums';
+import { t } from '../../i18n/i18n.util';
 
 export interface NoteAccessResult {
   hasAccess: boolean;
@@ -83,11 +84,11 @@ export class NoteAccessService {
     });
 
     if (!note) {
-      throw new NotFoundException('Note not found');
+      throw new NotFoundException(t('notes.noteNotFound'));
     }
 
     if (note.userId !== userId) {
-      throw new ForbiddenException('Only note owner can perform this action');
+      throw new ForbiddenException(t('notes.onlyOwnerCanPerform'));
     }
   }
 
@@ -106,9 +107,9 @@ export class NoteAccessService {
         access.permission === NoteSharePermission.viewer &&
         requiredPermission === NoteSharePermission.editor
       ) {
-        throw new ForbiddenException('Viewers cannot edit notes');
+        throw new ForbiddenException(t('notes.viewersCannotEdit'));
       }
-      throw new NotFoundException('Note not found');
+      throw new NotFoundException(t('notes.noteNotFound'));
     }
 
     return access;
@@ -123,9 +124,7 @@ export class NoteAccessService {
       select: { state: true },
     });
     if (!note || note.state !== NoteState.active) {
-      throw new BadRequestException(
-        'Cannot modify this note. Only active notes can be edited.',
-      );
+      throw new BadRequestException(t('notes.cannotModifyInactive'));
     }
   }
 }

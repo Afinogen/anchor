@@ -76,8 +76,10 @@ import {
   updateUser,
 } from "@/features/admin";
 import { useAuth } from "@/features/auth";
+import { useTranslation } from "@/lib/i18n";
 
 export default function AdminPage() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
   const [userDialogOpen, setUserDialogOpen] = useState(false);
@@ -149,10 +151,10 @@ export default function AdminPage() {
       queryClient.invalidateQueries({
         queryKey: ["admin", "users", "pending"],
       });
-      toast.success("Registration mode updated successfully");
+      toast.success(t("admin.registrationModeUpdated"));
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to update registration mode");
+      toast.error(error.message || t("admin.registrationModeFailed"));
     },
   });
 
@@ -164,10 +166,10 @@ export default function AdminPage() {
         queryKey: ["admin", "settings", "oidc"],
       });
       queryClient.invalidateQueries({ queryKey: ["oidc-config"] });
-      toast.success("OIDC settings updated successfully");
+      toast.success(t("admin.oidcUpdated"));
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to update OIDC settings");
+      toast.error(error.message || t("admin.oidcFailed"));
     },
   });
 
@@ -190,9 +192,7 @@ export default function AdminPage() {
     // Validate required fields when enabling
     if (oidcFormData.enabled) {
       if (!oidcFormData.issuerUrl?.trim() || !oidcFormData.clientId?.trim()) {
-        toast.error(
-          "Issuer URL and Client ID are required when OIDC is enabled",
-        );
+        toast.error(t("admin.oidcRequiredFields"));
         return;
       }
     }
@@ -221,10 +221,10 @@ export default function AdminPage() {
         queryKey: ["admin", "users", "pending"],
       });
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
-      toast.success("User approved successfully");
+      toast.success(t("admin.userApproved"));
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to approve user");
+      toast.error(error.message || t("admin.userApproveFailed"));
     },
   });
 
@@ -238,10 +238,10 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       setRejectUserDialogOpen(false);
       setSelectedUser(null);
-      toast.success("User rejected successfully");
+      toast.success(t("admin.userRejected"));
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to reject user");
+      toast.error(error.message || t("admin.userRejectFailed"));
     },
   });
 
@@ -253,10 +253,10 @@ export default function AdminPage() {
       setUserDialogOpen(false);
       setFormData({ email: "", password: "", name: "" });
       setIsEditing(false);
-      toast.success("User created successfully");
+      toast.success(t("admin.userCreated"));
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to create user");
+      toast.error(error.message || t("admin.userCreateFailed"));
     },
   });
 
@@ -269,10 +269,10 @@ export default function AdminPage() {
       setSelectedUser(null);
       setFormData({ email: "", password: "", name: "" });
       setIsEditing(false);
-      toast.success("User updated successfully");
+      toast.success(t("admin.userUpdated"));
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to update user");
+      toast.error(error.message || t("admin.userUpdateFailed"));
     },
   });
 
@@ -283,10 +283,10 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["admin", "stats"] });
       setDeleteUserDialogOpen(false);
       setSelectedUser(null);
-      toast.success("User deleted successfully");
+      toast.success(t("admin.userDeleted"));
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to delete user");
+      toast.error(error.message || t("admin.userDeleteFailed"));
     },
   });
 
@@ -295,10 +295,10 @@ export default function AdminPage() {
     onSuccess: (data) => {
       setResetPasswordResult(data.newPassword || null);
       queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
-      toast.success("Password reset successfully");
+      toast.success(t("admin.passwordResetSuccess"));
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to reset password");
+      toast.error(error.message || t("admin.passwordResetFailed"));
     },
   });
 
@@ -361,7 +361,7 @@ export default function AdminPage() {
       });
     } else {
       if (!formData.password) {
-        toast.error("Password is required");
+        toast.error(t("admin.passwordRequired"));
         return;
       }
       createUserMutation.mutate(formData);
@@ -377,7 +377,7 @@ export default function AdminPage() {
   const copyPassword = () => {
     if (resetPasswordResult) {
       navigator.clipboard.writeText(resetPasswordResult);
-      toast.success("Password copied to clipboard");
+      toast.success(t("admin.passwordCopied"));
     }
   };
 
@@ -386,10 +386,10 @@ export default function AdminPage() {
       <div className="container mx-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-serif font-bold">Admin Settings</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage users and view statistics
-            </p>
+            <h1 className="text-3xl font-serif font-bold">
+              {t("admin.title")}
+            </h1>
+            <p className="text-muted-foreground mt-1">{t("admin.subtitle")}</p>
           </div>
         </div>
 
@@ -397,7 +397,9 @@ export default function AdminPage() {
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {t("admin.totalUsers")}
+              </CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -409,7 +411,9 @@ export default function AdminPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Notes</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {t("admin.totalNotes")}
+              </CardTitle>
               <FileText className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -421,7 +425,9 @@ export default function AdminPage() {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Tags</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {t("admin.totalTags")}
+              </CardTitle>
               <Tag className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -440,10 +446,9 @@ export default function AdminPage() {
                 <UserPlus className="h-5 w-5 text-muted-foreground" />
               </div>
               <div>
-                <CardTitle>Registration Settings</CardTitle>
+                <CardTitle>{t("admin.registrationSettings")}</CardTitle>
                 <CardDescription className="mt-1">
-                  Control who can create accounts and whether approval is
-                  required.
+                  {t("admin.registrationSettingsDesc")}
                 </CardDescription>
               </div>
             </div>
@@ -459,17 +464,15 @@ export default function AdminPage() {
                   <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/50">
                     <Lock className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                     <p className="text-sm text-muted-foreground">
-                      Controlled by{" "}
-                      <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">
-                        USER_SIGNUP
-                      </code>{" "}
-                      env variable. Remove it to manage from UI.
+                      {t("admin.registrationLockedNote")}
                     </p>
                   </div>
                 )}
                 <div className="space-y-3">
                   <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
-                    <Label className="w-36 shrink-0">Registration Mode</Label>
+                    <Label className="w-36 shrink-0">
+                      {t("admin.registrationMode")}
+                    </Label>
                     <ToggleGroup
                       type="single"
                       value={registrationSettings.mode}
@@ -486,27 +489,33 @@ export default function AdminPage() {
                       }
                       className="justify-start rounded-md border"
                     >
-                      <ToggleGroupItem value="enabled" aria-label="Enabled">
-                        Enabled
+                      <ToggleGroupItem
+                        value="enabled"
+                        aria-label={t("admin.enabled")}
+                      >
+                        {t("admin.enabled")}
                       </ToggleGroupItem>
                       <ToggleGroupItem
                         value="review"
-                        aria-label="Require Review"
+                        aria-label={t("admin.requireReview")}
                       >
-                        Require Review
+                        {t("admin.requireReview")}
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="disabled" aria-label="Disabled">
-                        Disabled
+                      <ToggleGroupItem
+                        value="disabled"
+                        aria-label={t("admin.disabled")}
+                      >
+                        {t("admin.disabled")}
                       </ToggleGroupItem>
                     </ToggleGroup>
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {registrationSettings.mode === "disabled" &&
-                      "Registration is disabled. Only admins can create users."}
+                      t("admin.modeDisabledDesc")}
                     {registrationSettings.mode === "enabled" &&
-                      "Users can register immediately without approval."}
+                      t("admin.modeEnabledDesc")}
                     {registrationSettings.mode === "review" &&
-                      "Users can register but require admin approval before they can log in."}
+                      t("admin.modeReviewDesc")}
                   </p>
                 </div>
               </>
@@ -523,9 +532,9 @@ export default function AdminPage() {
                   <KeyRound className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <CardTitle>OIDC Authentication</CardTitle>
+                  <CardTitle>{t("admin.oidcTitle")}</CardTitle>
                   <CardDescription className="mt-1">
-                    Allow users to sign in with your OIDC provider.
+                    {t("admin.oidcDesc")}
                   </CardDescription>
                 </div>
               </div>
@@ -557,19 +566,7 @@ export default function AdminPage() {
                   <div className="flex items-start gap-2 p-3 border rounded-lg bg-muted/50">
                     <Lock className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
                     <p className="text-sm text-muted-foreground">
-                      Controlled by{" "}
-                      <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">
-                        OIDC_ENABLED
-                      </code>
-                      ,{" "}
-                      <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">
-                        OIDC_ISSUER_URL
-                      </code>{" "}
-                      and{" "}
-                      <code className="px-1 py-0.5 bg-background rounded text-xs font-mono">
-                        OIDC_CLIENT_ID
-                      </code>{" "}
-                      env variables. Remove them to manage from UI.
+                      {t("admin.oidcLockedNote")}
                     </p>
                   </div>
                 )}
@@ -579,7 +576,7 @@ export default function AdminPage() {
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-2 sm:col-span-2">
                         <Label htmlFor="oidc-provider-name">
-                          Provider name
+                          {t("admin.providerName")}
                         </Label>
                         <Input
                           id="oidc-provider-name"
@@ -596,16 +593,18 @@ export default function AdminPage() {
                             oidcSettings.isLocked ||
                             updateOidcSettingsMutation.isPending
                           }
-                          placeholder="e.g. Pocket ID, Authelia"
+                          placeholder={t("admin.providerNamePlaceholder")}
                         />
                         <p className="text-xs text-muted-foreground">
-                          Shown on the login button: &quot;Login with{" "}
-                          {oidcFormData?.providerName || "Provider"}&quot;
+                          {t("admin.providerNameHint", {
+                            provider: oidcFormData?.providerName || "Provider",
+                          })}
                         </p>
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="oidc-issuer-url">
-                          Issuer URL <span className="text-destructive">*</span>
+                          {t("admin.issuerUrl")}{" "}
+                          <span className="text-destructive">*</span>
                         </Label>
                         <Input
                           id="oidc-issuer-url"
@@ -622,12 +621,13 @@ export default function AdminPage() {
                             oidcSettings.isLocked ||
                             updateOidcSettingsMutation.isPending
                           }
-                          placeholder="https://auth.example.com"
+                          placeholder={t("admin.issuerUrlPlaceholder")}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="oidc-client-id">
-                          Client ID <span className="text-destructive">*</span>
+                          {t("admin.clientId")}{" "}
+                          <span className="text-destructive">*</span>
                         </Label>
                         <Input
                           id="oidc-client-id"
@@ -644,12 +644,12 @@ export default function AdminPage() {
                             oidcSettings.isLocked ||
                             updateOidcSettingsMutation.isPending
                           }
-                          placeholder="your-client-id"
+                          placeholder={t("admin.clientIdPlaceholder")}
                         />
                       </div>
                       <div className="space-y-2 sm:col-span-2">
                         <Label htmlFor="oidc-client-secret">
-                          Client secret (optional)
+                          {t("admin.clientSecret")}
                         </Label>
                         <div className="flex gap-2">
                           <Input
@@ -678,7 +678,7 @@ export default function AdminPage() {
                               oidcSettings?.hasClientSecret &&
                               !oidcClearSecretRequested
                                 ? "••••••••••••"
-                                : "Leave empty for public client (PKCE)"
+                                : t("admin.clientSecretPlaceholder")
                             }
                             className="flex-1"
                           />
@@ -696,15 +696,12 @@ export default function AdminPage() {
                                   oidcClearSecretRequested
                                 }
                               >
-                                Clear secret
+                                {t("admin.clearSecret")}
                               </Button>
                             )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          The Anchor mobile app requires a public client (no
-                          client secret). If users sign in from the app using
-                          OIDC, leave this empty and set Anchor as a public
-                          client in your OIDC provider.
+                          {t("admin.clientSecretHint")}
                         </p>
                       </div>
                     </div>
@@ -715,10 +712,10 @@ export default function AdminPage() {
                           htmlFor="oidc-disable-internal-auth"
                           className="text-sm font-medium"
                         >
-                          OIDC-only mode
+                          {t("admin.oidcOnlyMode")}
                         </Label>
                         <p className="text-sm text-muted-foreground">
-                          Hide local username/password login
+                          {t("admin.oidcOnlyModeDesc")}
                         </p>
                       </div>
                       <Switch
@@ -740,17 +737,14 @@ export default function AdminPage() {
                     </div>
 
                     <div className="rounded-lg border bg-muted/30 p-4">
-                      <p className="text-sm font-medium mb-1">Callback URL</p>
+                      <p className="text-sm font-medium mb-1">
+                        {t("admin.callbackUrl")}
+                      </p>
                       <code className="text-xs break-all rounded bg-background px-2 py-1 block">
                         {oidcSettings.callbackUrl}
                       </code>
                       <p className="text-xs text-muted-foreground mt-2">
-                        Add this URL in your OIDC provider as the
-                        redirect/callback URL. It comes from the{" "}
-                        <code className="px-1 py-0.5 bg-background rounded text-[0.7rem] font-mono">
-                          APP_URL
-                        </code>{" "}
-                        env variable.
+                        {t("admin.callbackUrlHint")}
                       </p>
                     </div>
                   </>
@@ -771,10 +765,10 @@ export default function AdminPage() {
                       {updateOidcSettingsMutation.isPending ? (
                         <>
                           <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                          Saving…
+                          {t("admin.saving")}
                         </>
                       ) : (
-                        "Save OIDC settings"
+                        t("admin.saveOidc")
                       )}
                     </Button>
                   </div>
@@ -794,14 +788,16 @@ export default function AdminPage() {
                     <Clock className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div>
-                    <CardTitle>Pending User Approvals</CardTitle>
+                    <CardTitle>{t("admin.pendingApprovals")}</CardTitle>
                     <CardDescription className="mt-1">
-                      Users awaiting approval to access the system
+                      {t("admin.pendingApprovalsDesc")}
                     </CardDescription>
                   </div>
                 </div>
                 <Badge variant="outline" className="shrink-0 text-sm">
-                  {pendingUsersLoading ? "..." : pendingUsers.length} pending
+                  {pendingUsersLoading
+                    ? "..."
+                    : t("admin.pendingCount", { count: pendingUsers.length })}
                 </Badge>
               </div>
             </CardHeader>
@@ -814,11 +810,15 @@ export default function AdminPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead className="text-center">Auth</TableHead>
-                      <TableHead>Registered</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead>{t("admin.name")}</TableHead>
+                      <TableHead>{t("admin.email")}</TableHead>
+                      <TableHead className="text-center">
+                        {t("admin.auth")}
+                      </TableHead>
+                      <TableHead>{t("admin.registered")}</TableHead>
+                      <TableHead className="text-right">
+                        {t("admin.actions")}
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -839,7 +839,9 @@ export default function AdminPage() {
                             }
                             className="font-normal"
                           >
-                            {user.authMethod === "oidc" ? "OIDC" : "Local"}
+                            {user.authMethod === "oidc"
+                              ? t("admin.oidcBadge")
+                              : t("admin.localBadge")}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -856,7 +858,7 @@ export default function AdminPage() {
                               disabled={approveUserMutation.isPending}
                             >
                               <CheckCircle className="h-4 w-4 mr-1" />
-                              Approve
+                              {t("admin.approve")}
                             </Button>
                             <Button
                               size="sm"
@@ -865,7 +867,7 @@ export default function AdminPage() {
                               disabled={rejectUserMutation.isPending}
                             >
                               <XCircle className="h-4 w-4 mr-1" />
-                              Reject
+                              {t("admin.reject")}
                             </Button>
                           </div>
                         </TableCell>
@@ -887,15 +889,15 @@ export default function AdminPage() {
                   <Users className="h-5 w-5 text-muted-foreground" />
                 </div>
                 <div>
-                  <CardTitle>Users</CardTitle>
+                  <CardTitle>{t("admin.users")}</CardTitle>
                   <CardDescription className="mt-1">
-                    Manage all users in the system
+                    {t("admin.usersDesc")}
                   </CardDescription>
                 </div>
               </div>
               <Button onClick={handleCreateUser} size="sm">
                 <Plus className="h-4 w-4" />
-                Create User
+                {t("admin.createUser")}
               </Button>
             </div>
           </CardHeader>
@@ -910,12 +912,22 @@ export default function AdminPage() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead className="text-center">Role</TableHead>
-                    <TableHead className="text-center">Auth</TableHead>
-                    <TableHead className="text-center">Status</TableHead>
-                    <TableHead className="text-center">Notes</TableHead>
-                    <TableHead className="text-center">Tags</TableHead>
-                    <TableHead>Created</TableHead>
+                    <TableHead className="text-center">
+                      {t("admin.role")}
+                    </TableHead>
+                    <TableHead className="text-center">
+                      {t("admin.auth")}
+                    </TableHead>
+                    <TableHead className="text-center">
+                      {t("admin.status")}
+                    </TableHead>
+                    <TableHead className="text-center">
+                      {t("admin.notes")}
+                    </TableHead>
+                    <TableHead className="text-center">
+                      {t("admin.tags")}
+                    </TableHead>
+                    <TableHead>{t("admin.created")}</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -923,16 +935,20 @@ export default function AdminPage() {
                   {usersData?.users.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">
-                        {user.name || "-"}
+                        {user.name || "—"}
                       </TableCell>
                       <TableCell className="font-medium">
                         {user.email}
                       </TableCell>
                       <TableCell className="text-center">
                         {user.isAdmin ? (
-                          <Badge variant="default">Admin</Badge>
+                          <Badge variant="default">
+                            {t("admin.adminBadge")}
+                          </Badge>
                         ) : (
-                          <Badge variant="outline">User</Badge>
+                          <Badge variant="outline">
+                            {t("admin.userBadge")}
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-center">
@@ -942,14 +958,18 @@ export default function AdminPage() {
                           }
                           className="font-normal"
                         >
-                          {user.authMethod === "oidc" ? "OIDC" : "Local"}
+                          {user.authMethod === "oidc"
+                            ? t("admin.oidcBadge")
+                            : t("admin.localBadge")}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-center">
                         {user.status === "pending" ? (
-                          <Badge variant="secondary">Pending</Badge>
+                          <Badge variant="secondary">
+                            {t("admin.pending")}
+                          </Badge>
                         ) : (
-                          <Badge variant="outline">Active</Badge>
+                          <Badge variant="outline">{t("admin.active")}</Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-center">
@@ -972,18 +992,18 @@ export default function AdminPage() {
                             <DropdownMenuItem
                               onClick={() => handleEditUser(user)}
                             >
-                              Edit
+                              {t("admin.edit")}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleResetPassword(user)}
                             >
-                              Reset Password
+                              {t("admin.resetPassword")}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={() => handleDeleteUser(user)}
                               className="text-destructive"
                             >
-                              Delete
+                              {t("admin.delete")}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>
@@ -1001,17 +1021,17 @@ export default function AdminPage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {isEditing ? "Edit User" : "Create User"}
+                {isEditing ? t("admin.editUser") : t("admin.createUser")}
               </DialogTitle>
               <DialogDescription>
                 {isEditing
-                  ? "Update user information"
-                  : "Create a new user account"}
+                  ? t("admin.editUserDesc")
+                  : t("admin.createUserDesc")}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Name</Label>
+                <Label htmlFor="name">{t("admin.name")}</Label>
                 <Input
                   id="name"
                   type="text"
@@ -1019,13 +1039,13 @@ export default function AdminPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, name: e.target.value })
                   }
-                  placeholder="User name"
+                  placeholder={t("admin.userNamePlaceholder")}
                   maxLength={100}
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("admin.email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -1033,12 +1053,12 @@ export default function AdminPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, email: e.target.value })
                   }
-                  placeholder="user@example.com"
+                  placeholder={t("admin.emailPlaceholder")}
                 />
               </div>
               {!isEditing && (
                 <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">{t("auth.password")}</Label>
                   <Input
                     id="password"
                     type="password"
@@ -1046,7 +1066,7 @@ export default function AdminPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, password: e.target.value })
                     }
-                    placeholder="Minimum 8 characters"
+                    placeholder={t("admin.passwordMinPlaceholder")}
                     minLength={8}
                   />
                 </div>
@@ -1054,11 +1074,11 @@ export default function AdminPage() {
               {isEditing && (
                 <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
                   <div className="space-y-0.5">
-                    <Label htmlFor="admin-role">Admin</Label>
+                    <Label htmlFor="admin-role">{t("admin.adminLabel")}</Label>
                     <p className="text-sm text-muted-foreground">
                       {selectedUser?.id === currentUser?.id
-                        ? "You cannot change your own admin status."
-                        : "Admin users can manage other users and settings."}
+                        ? t("admin.adminSelfDesc")
+                        : t("admin.adminOtherDesc")}
                     </p>
                   </div>
                   <Switch
@@ -1082,7 +1102,7 @@ export default function AdminPage() {
                   setSelectedUser(null);
                 }}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 onClick={handleSubmitUser}
@@ -1094,7 +1114,7 @@ export default function AdminPage() {
                   (!isEditing && !formData.password)
                 }
               >
-                {isEditing ? "Update" : "Create"}
+                {isEditing ? t("admin.update") : t("admin.create")}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1107,29 +1127,30 @@ export default function AdminPage() {
         >
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Reset Password</DialogTitle>
+              <DialogTitle>{t("admin.resetPasswordTitle")}</DialogTitle>
               <DialogDescription>
-                Reset password for {selectedUser?.email}
+                {t("admin.resetPasswordDesc", {
+                  email: selectedUser?.email ?? "",
+                })}
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 py-4">
               {resetPasswordResult ? (
                 <div className="space-y-2">
-                  <Label>New Password</Label>
+                  <Label>{t("admin.newPassword")}</Label>
                   <div className="flex gap-2">
                     <Input value={resetPasswordResult} readOnly />
                     <Button onClick={copyPassword} variant="outline">
-                      Copy
+                      {t("admin.copy")}
                     </Button>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Please copy this password and share it securely with the
-                    user.
+                    {t("admin.resetPasswordShareHint")}
                   </p>
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  A new random password will be generated for this user.
+                  {t("admin.resetPasswordGenerateHint")}
                 </p>
               )}
             </div>
@@ -1142,7 +1163,7 @@ export default function AdminPage() {
                   setSelectedUser(null);
                 }}
               >
-                {resetPasswordResult ? "Close" : "Cancel"}
+                {resetPasswordResult ? t("common.close") : t("common.cancel")}
               </Button>
               {!resetPasswordResult && (
                 <Button
@@ -1150,8 +1171,8 @@ export default function AdminPage() {
                   disabled={resetPasswordMutation.isPending}
                 >
                   {resetPasswordMutation.isPending
-                    ? "Resetting..."
-                    : "Reset Password"}
+                    ? t("admin.resetting")
+                    : t("admin.resetPassword")}
                 </Button>
               )}
             </DialogFooter>
@@ -1169,35 +1190,37 @@ export default function AdminPage() {
                 <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
                   <AlertTriangle className="h-5 w-5 text-destructive" />
                 </div>
-                Delete User?
+                {t("admin.deleteUserTitle")}
               </DialogTitle>
               <DialogDescription className="pt-2">
-                Are you sure you want to delete user{" "}
+                {t("admin.deleteUserConfirmBefore")}{" "}
                 <span className="font-semibold text-foreground">
                   {selectedUser?.email}
                 </span>
-                ? This action cannot be undone.
+                {t("admin.deleteUserConfirmAfter")}
               </DialogDescription>
             </DialogHeader>
             {selectedUser && (
               <div className="py-4 space-y-2">
                 <div className="text-sm text-muted-foreground">
-                  This will permanently delete:
+                  {t("admin.willPermanentlyDelete")}
                 </div>
                 <ul className="text-sm space-y-1 list-disc list-inside text-muted-foreground">
-                  <li>The user account</li>
+                  <li>{t("admin.userAccount")}</li>
                   <li>
-                    {selectedUser._count?.notes || 0} note
-                    {(selectedUser._count?.notes || 0) !== 1 ? "s" : ""}
+                    {t("admin.notesCount", {
+                      count: selectedUser._count?.notes || 0,
+                    })}
                   </li>
                   <li>
-                    {selectedUser._count?.tags || 0} tag
-                    {(selectedUser._count?.tags || 0) !== 1 ? "s" : ""}
+                    {t("admin.tagsCount", {
+                      count: selectedUser._count?.tags || 0,
+                    })}
                   </li>
                 </ul>
                 {selectedUser.isAdmin && (
                   <div className="pt-2 text-sm text-amber-600 dark:text-amber-500 font-medium">
-                    Warning: This is an admin user.
+                    {t("admin.adminWarning")}
                   </div>
                 )}
               </div>
@@ -1211,7 +1234,7 @@ export default function AdminPage() {
                 }}
                 disabled={deleteUserMutation.isPending}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 variant="destructive"
@@ -1221,10 +1244,10 @@ export default function AdminPage() {
                 {deleteUserMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Deleting...
+                    {t("admin.deleting")}
                   </>
                 ) : (
-                  "Delete User"
+                  t("admin.deleteUser")
                 )}
               </Button>
             </DialogFooter>
@@ -1242,15 +1265,14 @@ export default function AdminPage() {
                 <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
                   <XCircle className="h-5 w-5 text-destructive" />
                 </div>
-                Reject User?
+                {t("admin.rejectUserTitle")}
               </DialogTitle>
               <DialogDescription className="pt-2">
-                Are you sure you want to reject the registration request for{" "}
+                {t("admin.rejectConfirmBefore")}{" "}
                 <span className="font-semibold text-foreground">
                   {selectedUser?.email}
                 </span>
-                ? This will permanently delete their account and they will need
-                to register again.
+                {t("admin.rejectConfirmAfter")}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="gap-2">
@@ -1262,7 +1284,7 @@ export default function AdminPage() {
                 }}
                 disabled={rejectUserMutation.isPending}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button
                 variant="destructive"
@@ -1272,10 +1294,10 @@ export default function AdminPage() {
                 {rejectUserMutation.isPending ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Rejecting...
+                    {t("admin.rejecting")}
                   </>
                 ) : (
-                  "Reject User"
+                  t("admin.rejectUser")
                 )}
               </Button>
             </DialogFooter>

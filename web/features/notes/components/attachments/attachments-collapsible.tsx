@@ -10,6 +10,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import {
   deleteAttachment,
@@ -38,6 +39,7 @@ export function AttachmentsCollapsible({
   currentUserId = null,
   onEnsureNoteId,
 }: AttachmentsCollapsibleProps) {
+  const { t } = useTranslation();
   const getCanDelete = useCallback(
     (attachment: NoteAttachment) =>
       canUpload &&
@@ -63,11 +65,11 @@ export function AttachmentsCollapsible({
       queryClient.invalidateQueries({ queryKey: ["attachments", noteId] });
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       setDeleteTarget(null);
-      toast.success("Attachment deleted");
+      toast.success(t("notes.attachments.deleted"));
     },
     onError: () => {
       setDeleteTarget(null);
-      toast.error("Failed to delete attachment");
+      toast.error(t("notes.attachments.deleteFailed"));
     },
   });
 
@@ -102,7 +104,7 @@ export function AttachmentsCollapsible({
           context.previousAttachments,
         );
       }
-      toast.error("Failed to reorder attachments");
+      toast.error(t("notes.attachments.reorderFailed"));
     },
     onSettled: () => {
       // Sync with server state after mutation settles
@@ -134,21 +136,21 @@ export function AttachmentsCollapsible({
       const oversized = files.filter((f) => f.size > MAX_SIZE);
       if (oversized.length > 0) {
         const names = oversized.map((f) => f.name).join(", ");
-        toast.error(`File too large (max 50 MB): ${names}`);
+        toast.error(t("notes.attachments.tooLarge", { names }));
         return;
       }
 
       const count = files.length;
       const loadingMessage =
         count === 1
-          ? `Uploading ${files[0].name}...`
-          : `Uploading ${count} files...`;
+          ? t("notes.attachments.uploadingOne", { name: files[0].name })
+          : t("notes.attachments.uploadingMany", { count });
 
       toast.promise(
         (async () => {
           const activeNoteId = noteId ?? (await onEnsureNoteId?.());
           if (!activeNoteId) {
-            throw new Error("Failed to create note for attachment upload");
+            throw new Error(t("notes.attachments.failedCreateNote"));
           }
 
           const invalidate = () => {
@@ -175,25 +177,31 @@ export function AttachmentsCollapsible({
                 ? firstError?.status === "rejected"
                   ? firstError.reason instanceof Error
                     ? firstError.reason.message
-                    : "Upload failed"
-                  : "Upload failed"
-                : `${succeeded} of ${count} uploaded (${failed} failed)`;
+                    : t("notes.attachments.uploadFailed")
+                  : t("notes.attachments.uploadFailed")
+                : t("notes.attachments.partialUpload", {
+                    succeeded,
+                    count,
+                    failed,
+                  });
             throw new Error(message);
           }
 
           return count === 1
-            ? `${files[0].name} uploaded`
-            : `${count} files uploaded`;
+            ? t("notes.attachments.uploadedOne", { name: files[0].name })
+            : t("notes.attachments.uploadedMany", { count });
         })(),
         {
           loading: loadingMessage,
           success: (msg) => msg,
           error: (err) =>
-            err instanceof Error ? err.message : "Upload failed",
+            err instanceof Error
+              ? err.message
+              : t("notes.attachments.uploadFailed"),
         },
       );
     },
-    [noteId, onEnsureNoteId, queryClient],
+    [noteId, onEnsureNoteId, queryClient, t],
   );
 
   const imageAttachments = attachments.filter((a) => a.type === "image");
@@ -236,12 +244,15 @@ export function AttachmentsCollapsible({
 
                 {/* Count text */}
                 <span className="text-sm text-muted-foreground/80">
-                  {attachments.length}{" "}
-                  {attachments.length === 1 ? "attachment" : "attachments"}
+                  {t("notes.attachments.count", {
+                    count: attachments.length,
+                  })}
                   {remainingCount > 0 && previewImages.length > 0 && (
                     <span className="text-muted-foreground/50">
                       {" "}
-                      (+{remainingCount} more)
+                      {t("notes.attachments.moreCount", {
+                        count: remainingCount,
+                      })}
                     </span>
                   )}
                 </span>
@@ -257,7 +268,7 @@ export function AttachmentsCollapsible({
               <>
                 <Plus className="h-4 w-4 text-muted-foreground/70" />
                 <span className="text-sm text-muted-foreground/70">
-                  Add attachments
+                  {t("notes.attachments.add")}
                 </span>
               </>
             )}
@@ -302,17 +313,17 @@ export function AttachmentsCollapsible({
         open={deleteTarget !== null}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
         onConfirm={handleDeleteConfirm}
-        title="Delete attachment?"
+        title={t("notes.attachments.deleteTitle")}
         description={
           <>
-            This will permanently delete{" "}
+            {t("notes.attachments.deleteConfirmBefore")}{" "}
             <span className="font-medium">
               {deleteTarget?.originalFilename}
             </span>
-            . This action cannot be undone.
+            {t("notes.attachments.deleteConfirmAfter")}
           </>
         }
-        confirmLabel="Delete"
+        confirmLabel={t("common.delete")}
         variant="destructive"
         isPending={deleteMutation.isPending}
       />

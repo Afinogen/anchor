@@ -13,6 +13,7 @@ import type { Request, Response } from 'express';
 import { OidcService } from './oidc.service';
 import { OidcConfigService } from './oidc-config.service';
 import { getErrorMessage } from './oidc.utils';
+import { t } from '../../i18n/i18n.util';
 
 @Controller('api/auth/oidc')
 export class OidcController {
@@ -40,7 +41,7 @@ export class OidcController {
     try {
       const isEnabled = await this.oidcConfigService.isEnabled();
       if (!isEnabled) {
-        throw new BadRequestException('OIDC is not enabled');
+        throw new BadRequestException(t('oidc.notEnabled'));
       }
 
       const authUrl = await this.oidcService.getAuthorizationUrl(redirectUrl);
@@ -49,7 +50,7 @@ export class OidcController {
       if (error instanceof BadRequestException) {
         throw error;
       }
-      throw new InternalServerErrorException('Failed to initiate OIDC login');
+      throw new InternalServerErrorException(t('oidc.initiateFailed'));
     }
   }
 
@@ -76,7 +77,7 @@ export class OidcController {
 
     if (!code || !state) {
       return res.redirect(
-        `${frontendUrl}/login?error=${encodeURIComponent('Missing authorization code or state')}`,
+        `${frontendUrl}/login?error=${encodeURIComponent(t('oidc.missingCodeOrState'))}`,
       );
     }
 
@@ -90,10 +91,7 @@ export class OidcController {
         `${frontendUrl}/login?code=${encodeURIComponent(exchangeCode)}&redirect=${encodeURIComponent(redirectUrl)}`,
       );
     } catch (error) {
-      const errorMsg = getErrorMessage(
-        error,
-        'Failed to process OIDC callback',
-      );
+      const errorMsg = getErrorMessage(error, t('oidc.callbackFailed'));
       return res.redirect(
         `${frontendUrl}/login?error=${encodeURIComponent(errorMsg)}`,
       );
@@ -106,7 +104,7 @@ export class OidcController {
   @Post('exchange')
   exchange(@Body('code') code: string | undefined) {
     if (!code || typeof code !== 'string') {
-      throw new BadRequestException('Missing or invalid code');
+      throw new BadRequestException(t('oidc.missingCode'));
     }
     return this.oidcService.exchangeCode(code);
   }
@@ -117,7 +115,7 @@ export class OidcController {
   @Post('exchange/mobile')
   async exchangeMobile(@Body('access_token') accessToken: string | undefined) {
     if (!accessToken || typeof accessToken !== 'string') {
-      throw new BadRequestException('Missing or invalid access_token');
+      throw new BadRequestException(t('oidc.missingAccessToken'));
     }
     return this.oidcService.exchangeMobileToken(accessToken);
   }

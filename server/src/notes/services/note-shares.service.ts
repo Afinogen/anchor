@@ -7,10 +7,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ShareNoteDto } from '../dto/share-note.dto';
 import { UpdateNoteSharePermissionDto } from '../dto/update-share-permission.dto';
 import { NoteAccessService } from './note-access.service';
-import {
-  SHARED_WITH_USER_SELECT,
-  ERROR_MESSAGES,
-} from '../constants/notes.constants';
+import { SHARED_WITH_USER_SELECT } from '../constants/notes.constants';
+import { t } from '../../i18n/i18n.util';
 
 @Injectable()
 export class NoteSharesService {
@@ -25,7 +23,7 @@ export class NoteSharesService {
     await this.noteAccessService.verifyNoteOwnership(ownerId, noteId);
 
     if (sharedWithUserId === ownerId) {
-      throw new BadRequestException(ERROR_MESSAGES.CANNOT_SHARE_WITH_SELF);
+      throw new BadRequestException(t('notes.cannotShareWithSelf'));
     }
 
     const user = await this.prisma.user.findUnique({
@@ -33,7 +31,7 @@ export class NoteSharesService {
     });
 
     if (!user) {
-      throw new NotFoundException(ERROR_MESSAGES.USER_NOT_FOUND);
+      throw new NotFoundException(t('notes.userNotFound'));
     }
 
     const existingShare = await this.prisma.noteShare.findUnique({
@@ -130,11 +128,11 @@ export class NoteSharesService {
     });
 
     if (!share || share.isDeleted) {
-      throw new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND);
+      throw new NotFoundException(t('notes.shareNotFound'));
     }
 
     if (share.noteId !== noteId) {
-      throw new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND);
+      throw new NotFoundException(t('notes.shareNotFound'));
     }
 
     const updated = await this.prisma.noteShare.update({
@@ -164,11 +162,11 @@ export class NoteSharesService {
     });
 
     if (!share || share.isDeleted) {
-      throw new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND);
+      throw new NotFoundException(t('notes.shareNotFound'));
     }
 
     if (share.noteId !== noteId) {
-      throw new NotFoundException(ERROR_MESSAGES.SHARE_NOT_FOUND);
+      throw new NotFoundException(t('notes.shareNotFound'));
     }
 
     await this.prisma.noteShare.update({

@@ -4,7 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
+import 'package:anchor/core/widgets/language_toggle_button.dart';
 import 'package:anchor/features/auth/presentation/providers/oidc_config_provider.dart';
 import 'package:anchor/features/auth/presentation/providers/registration_mode_provider.dart';
 import 'auth_controller.dart';
@@ -64,10 +66,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         registrationModeAsync.value == 'disabled';
 
     return Scaffold(
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: AutofillGroup(
+      body: Stack(
+        children: [
+          SafeArea(
+            child: Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: const LanguageToggleButton(),
+              ),
+            ),
+          ),
+          Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: AutofillGroup(
             child: Form(
               key: _formKey,
               child: Column(
@@ -83,7 +96,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                   Text(
-                    'Welcome Back',
+                    context.l10n.welcomeBack,
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
@@ -91,7 +104,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sign in to continue',
+                    context.l10n.signInToContinue,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Theme.of(context).hintColor,
                     ),
@@ -114,7 +127,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     FilledButton.icon(
                       onPressed: isLoading ? null : _loginWithOidc,
                       icon: const Icon(LucideIcons.logIn, size: 20),
-                      label: Text('Login with ${oidcConfig!.providerName}'),
+                      label: Text(
+                        context.l10n.loginWithProvider(oidcConfig!.providerName),
+                      ),
                       style: FilledButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -135,7 +150,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       textInputAction: TextInputAction.next,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
-                        labelText: 'Email',
+                        labelText: context.l10n.email,
                         prefixIcon: const Icon(LucideIcons.mail),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
@@ -143,7 +158,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter email';
+                          return context.l10n.pleaseEnterEmail;
                         }
                         return null;
                       },
@@ -156,7 +171,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       textInputAction: TextInputAction.done,
                       onFieldSubmitted: (_) => _login(),
                       decoration: InputDecoration(
-                        labelText: 'Password',
+                        labelText: context.l10n.password,
                         prefixIcon: const Icon(LucideIcons.lock),
                         suffixIcon: _passwordController.text.isEmpty
                             ? null
@@ -181,7 +196,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       obscureText: !_isPasswordVisible,
                       validator: (value) {
                         if (value == null || value.isEmpty) {
-                          return 'Please enter password';
+                          return context.l10n.pleaseEnterPassword;
                         }
                         return null;
                       },
@@ -204,13 +219,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 color: Colors.white,
                               ),
                             )
-                          : const Text('Sign In'),
+                          : Text(context.l10n.signIn),
                     ),
                     if (!signupDisabled) ...[
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () => context.push(AppRoutes.register),
-                        child: const Text('Create an account'),
+                        child: Text(context.l10n.createAnAccount),
                       ),
                     ],
                   ],
@@ -219,6 +234,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
           ),
         ),
+          ),
+        ],
       ),
     );
   }
@@ -235,7 +252,7 @@ class _OrDivider extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'Or continue with',
+            context.l10n.orContinueWith,
             style: Theme.of(
               context,
             ).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),

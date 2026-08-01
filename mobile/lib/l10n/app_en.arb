@@ -1,0 +1,458 @@
+{
+  "@@locale": "en",
+
+  "settingsTitle": "Settings",
+  "appearance": "Appearance",
+  "themeSystem": "System",
+  "themeSystemSubtitle": "Follow device settings",
+  "themeLight": "Light",
+  "themeLightSubtitle": "Always use light theme",
+  "themeDark": "Dark",
+  "themeDarkSubtitle": "Always use dark theme",
+
+  "language": "Language",
+  "languageSystemSubtitle": "Choose the interface language",
+
+  "editor": "Editor",
+  "sortChecklistItems": "Sort checklist items",
+  "sortChecklistItemsSubtitle": "Automatically move checked checklist items to the bottom",
+
+  "account": "Account",
+  "editProfile": "Edit Profile",
+  "editProfileSubtitle": "Update your name and profile image",
+  "changePassword": "Change Password",
+  "changePasswordSubtitle": "Update your account password",
+  "viewLogs": "View Logs",
+  "viewLogsSubtitle": "Diagnostic logs for support and debugging",
+  "logOut": "Log Out",
+  "logOutSubtitle": "Sign out of your account",
+
+  "appVersion": "App v{version}",
+  "@appVersion": {
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "serverVersion": "Server v{version}",
+  "@serverVersion": {
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "serverVersionLoading": "Server v...",
+  "serverVersionUnknown": "Server v—",
+  "connectedTo": "Connected to {url}",
+  "@connectedTo": {
+    "placeholders": { "url": { "type": "String" } }
+  },
+  "serverUnreachable": "Can't reach {url}",
+  "@serverUnreachable": {
+    "placeholders": { "url": { "type": "String" } }
+  },
+
+  "logoutDialogTitle": "Log Out",
+  "logoutDialogMessage": "Are you sure you want to log out? Your unsynced notes will stay safe on this device.",
+  "stay": "Stay",
+
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "confirm": "Confirm",
+  "retry": "Retry",
+
+  "errorConnectionTimeout": "Connection timeout. Please check your internet connection and try again.",
+  "errorSendTimeout": "Request timeout. Please try again.",
+  "errorReceiveTimeout": "Response timeout. Please try again.",
+  "errorConnection": "No internet connection. Please check your network settings.",
+  "errorCertificate": "Certificate error. If using a self-signed certificate, enable \"Allow self-signed certificates\" in server settings.",
+  "errorBadRequest": "Invalid request. Please check your input.",
+  "errorUnauthorized": "Authentication required. Please log in again.",
+  "errorForbidden": "Permission denied.",
+  "errorNotFound": "Resource not found.",
+  "errorServer": "Server error. Please try again later.",
+  "errorServerUnavailable": "Server unavailable. Please try again later.",
+  "errorRequestFailed": "Request failed. Please try again.",
+  "errorCancelled": "Request cancelled.",
+  "errorUnexpected": "An unexpected error occurred. Please try again.",
+
+  "languageEnglish": "English",
+  "languageRussian": "Русский",
+
+  "welcomeBack": "Welcome Back",
+  "signInToContinue": "Sign in to continue",
+  "loginWithProvider": "Login with {provider}",
+  "@loginWithProvider": {
+    "placeholders": { "provider": { "type": "String" } }
+  },
+  "orContinueWith": "Or continue with",
+  "email": "Email",
+  "pleaseEnterEmail": "Please enter email",
+  "password": "Password",
+  "pleaseEnterPassword": "Please enter password",
+  "signIn": "Sign In",
+  "createAnAccount": "Create an account",
+
+  "createAccount": "Create Account",
+  "startCapturingIdeas": "Start capturing your ideas",
+  "name": "Name",
+  "pleaseEnterName": "Please enter your name",
+  "nameTooLong": "Name must be less than 100 characters",
+  "confirmPassword": "Confirm Password",
+  "passwordMinLength": "Password must be at least 8 characters",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "registrationSuccessful": "Registration successful!",
+  "registrationPendingApproval": "Registration successful! Your account is pending approval.",
+
+  "connectToServer": "Connect to Server",
+  "enterServerUrl": "Enter your Anchor server URL to get started",
+  "serverUrl": "Server URL",
+  "serverUrlHint": "https://your-server.com",
+  "serverUrlHelper": "Example: https://anchor.example.com",
+  "allowSelfSigned": "Allow self-signed certificates",
+  "selfSignedWarning": "Warning: Connection security is reduced",
+  "selfSignedSnackbar": "Self-signed certificates are now accepted. This reduces connection security.",
+  "test": "Test",
+  "connect": "Connect",
+  "selfHostedInfo": "Anchor is self-hosted. You need to run your own server to use this app.",
+  "pleaseEnterServerUrl": "Please enter the server URL",
+  "urlMustStartWith": "URL must start with http:// or https://",
+  "pleaseEnterValidUrl": "Please enter a valid URL",
+  "connectionTimedOut": "Connection timed out. Check the URL and try again.",
+  "couldNotConnect": "Could not connect to server. Check the URL.",
+  "certificateErrorTryToggle": "Certificate error. Try enabling \"Allow self-signed certificates\" below.",
+  "failedToConnect": "Failed to connect to server",
+  "serverRunningVersion": "Server is running! Version: {version}",
+  "@serverRunningVersion": {
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "invalidServerResponse": "Invalid server response. Is this an Anchor server?",
+
+  "create": "Create",
+  "rename": "Rename",
+
+  "captureIdeasHere": "Capture your ideas here",
+  "noMatchingNotes": "No matching notes found",
+
+  "allNotes": "All Notes",
+  "archive": "Archive",
+  "trash": "Trash",
+  "settings": "Settings",
+  "appTagline": "Your thoughts, secured",
+  "tagsSectionLabel": "TAGS",
+  "newTagTooltip": "New tag",
+  "createTagsHint": "Create tags to organize your notes",
+  "renameTag": "Rename tag",
+  "deleteTag": "Delete tag",
+  "renameTagTitle": "Rename Tag",
+  "tagNameHint": "Tag name",
+  "deleteTagTitle": "Delete Tag",
+  "deleteTagConfirm": "Delete \"{name}\"? This will remove it from all notes.",
+  "@deleteTagConfirm": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "newTagTitle": "New Tag",
+  "createTagSubtitle": "Create a tag to organize your notes",
+  "tagNotesCount": "{count, plural, one{{count} note} other{{count} notes}}",
+  "@tagNotesCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "menu": "Menu",
+  "newNote": "New Note",
+  "searchHint": "Search your thoughts...",
+  "filteringBy": "Filtering by",
+  "viewOptions": "View options",
+  "selectNotes": "Select notes",
+  "notesCount": "{count, plural, one{{count} note} other{{count} notes}}",
+  "@notesCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "errorWithMessage": "Error: {message}",
+  "@errorWithMessage": {
+    "placeholders": { "message": { "type": "String" } }
+  },
+
+  "viewOptionsTitle": "View Options",
+  "customizeDisplay": "Customize display",
+  "done": "Done",
+  "layout": "Layout",
+  "grid": "Grid",
+  "list": "List",
+  "sortBy": "Sort by",
+  "sortDateModified": "Date Modified",
+  "sortTitle": "Title",
+  "order": "Order",
+  "oldestFirst": "Oldest first",
+  "aToZ": "A to Z",
+  "newestFirst": "Newest first",
+  "zToA": "Z to A",
+
+  "archiveNotesTitle": "Archive Notes",
+  "archiveNotesConfirm": "{count, plural, one{Archive {count} note?} other{Archive {count} notes?}}",
+  "@archiveNotesConfirm": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "notesArchived": "{count, plural, one{{count} note archived} other{{count} notes archived}}",
+  "@notesArchived": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "failedToArchiveNotes": "Failed to archive notes",
+  "deleteNotesTitle": "Delete Notes",
+  "deleteNotesConfirm": "{count, plural, one{Delete {count} note? This action cannot be undone.} other{Delete {count} notes? This action cannot be undone.}}",
+  "@deleteNotesConfirm": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "notesDeleted": "{count, plural, one{{count} note deleted} other{{count} notes deleted}}",
+  "@notesDeleted": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "failedToDeleteNotes": "Failed to delete notes",
+  "deselectAll": "Deselect all",
+  "selectAll": "Select all",
+
+  "moreOptions": "More Options",
+  "moreOptionsSubtitle": "Customize and manage your note",
+  "background": "Background",
+  "attachment": "Attachment",
+  "unarchive": "Unarchive",
+
+  "unarchiveNoteTitle": "Unarchive Note",
+  "noteMovedBack": "This note will be moved back to your notes.",
+  "noteUnarchived": "Note unarchived",
+  "failedToUnarchive": "Failed to unarchive note",
+  "archiveEmpty": "Archive is empty",
+  "archivedPrefix": "Archived",
+
+  "restoreNoteTitle": "Restore Note",
+  "restore": "Restore",
+  "noteRestored": "Note restored",
+  "failedToRestore": "Failed to restore note",
+  "deleteForever": "Delete Forever",
+  "deleteForeverMessage": "This note will be permanently deleted and cannot be recovered.",
+  "notePermanentlyDeleted": "Note permanently deleted",
+  "failedToDeleteNote": "Failed to delete note",
+  "trashEmpty": "Trash is empty",
+  "movedToTrashPrefix": "Moved to trash",
+
+  "archiveNoteTitle": "Archive Note",
+  "noteWillBeArchived": "This note will be moved to archive.",
+  "noteArchived": "Note archived",
+  "failedToArchive": "Failed to archive note",
+  "attachmentAdded": "Attachment added",
+  "failedToAddAttachment": "Failed to add attachment",
+  "deleteNoteTitle": "Delete Note",
+  "deleteNoteMessage": "This note will be gone forever. Are you sure you want to let it go?",
+  "keep": "Keep",
+  "noteMovedToTrash": "Note moved to trash",
+  "noteWillBeRestored": "This note will be restored to your notes.",
+  "deleteForeverMessageLong": "This action cannot be undone. This note will be permanently deleted and cannot be recovered.",
+  "sharedBy": "Shared by {name}",
+  "@sharedBy": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "pinNote": "Pin Note",
+  "unpinNote": "Unpin Note",
+  "shareNote": "Share Note",
+  "readOnlyTrashed": "This note is in trash and cannot be edited. Restore it to make changes.",
+  "readOnlyViewer": "You have viewer access. Only the owner can edit this note.",
+  "titleHint": "Title",
+  "untitledNote": "Untitled",
+  "moreOptionsTooltip": "More options",
+  "startTyping": "Start typing...",
+
+  "tags": "Tags",
+  "addTag": "Add tag",
+  "selectTags": "Select Tags",
+  "organizeNote": "Organize your note",
+  "createNewTagHint": "Create new tag...",
+  "availableTags": "Available Tags",
+  "noTagsYet": "No tags yet",
+  "createFirstTagAbove": "Create your first tag above",
+
+  "failedToLoadShares": "Failed to load shares",
+  "sharedWithUser": "Shared with {name}",
+  "@sharedWithUser": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "failedToShare": "Failed to share",
+  "failedToUpdate": "Failed to update",
+  "removedUser": "Removed {name}",
+  "@removedUser": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "failedToRemove": "Failed to remove",
+  "collaborateWithOthers": "Collaborate with others",
+  "searchByEmail": "Search by name or email...",
+  "results": "Results",
+  "notSharedYet": "Not shared yet",
+  "searchToInvite": "Search by name or email to invite collaborators",
+  "collaborators": "Collaborators",
+  "shareWithName": "Share with {name}",
+  "@shareWithName": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "changePermission": "Change permission",
+  "viewer": "Viewer",
+  "viewerDesc": "Can view but not edit",
+  "editor": "Editor",
+  "editorDesc": "Can view and edit",
+
+  "passwordChangedSuccess": "Password changed successfully",
+  "changePasswordSubtitleLong": "Update your password to keep your account secure",
+  "currentPassword": "Current Password",
+  "pleaseEnterCurrentPassword": "Please enter your current password",
+  "newPassword": "New Password",
+  "pleaseEnterNewPassword": "Please enter a new password",
+  "confirmNewPassword": "Confirm New Password",
+  "pleaseConfirmPassword": "Please confirm your new password",
+
+  "userNotFound": "User not found",
+  "failedToPickImage": "Failed to pick image: {error}",
+  "@failedToPickImage": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "profileUpdated": "Profile updated successfully",
+  "editProfile": "Edit Profile",
+  "changePhoto": "Change Photo",
+  "remove": "Remove",
+  "updateProfileInfo": "Update your profile information",
+  "enterYourName": "Enter your name",
+  "saveProfile": "Save Profile",
+
+  "save": "Save",
+  "color": "Color",
+  "customizeNote": "Customize your note",
+
+  "fmtUndo": "Undo",
+  "fmtRedo": "Redo",
+  "fmtBold": "Bold",
+  "fmtItalic": "Italic",
+  "fmtUnderline": "Underline",
+  "fmtStrikethrough": "Strikethrough",
+  "fmtHeading1": "Heading 1",
+  "fmtHeading2": "Heading 2",
+  "fmtHeading3": "Heading 3",
+  "fmtChecklist": "Checklist",
+  "fmtNumberedList": "Numbered List",
+  "fmtBulletList": "Bullet List",
+  "fmtQuote": "Quote",
+  "fmtCodeBlock": "Code Block",
+  "fmtLink": "Link",
+  "fmtEditLink": "Edit link",
+
+  "linkTextLabel": "Text",
+  "linkTextHint": "Link text",
+  "urlLabel": "URL",
+  "urlHint": "https://...",
+  "insertLinkTitle": "Insert Link",
+  "editLinkTitle": "Edit Link",
+  "insert": "Insert",
+  "linkOpen": "Open",
+  "linkCopy": "Copy link",
+  "linkEdit": "Edit",
+
+  "splashTagline": "Secure your thoughts",
+
+  "deleteAttachmentTitle": "Delete attachment?",
+  "deleteAttachmentMessage": "This will permanently delete \"{filename}\".",
+  "@deleteAttachmentMessage": {
+    "placeholders": { "filename": { "type": "String" } }
+  },
+  "availableWhenOnline": "Available when online",
+  "pending": "Pending",
+  "failedToLoadImage": "Failed to load image",
+  "failedToRenderImage": "Failed to render image",
+  "playbackError": "Playback error: {error}",
+  "@playbackError": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotPlayAudio": "Could not play audio: {error}",
+  "@couldNotPlayAudio": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "failedToLoadAudio": "Failed to load audio",
+  "deleteAudioTitle": "Delete audio?",
+  "tapToReplay": "Tap to replay",
+  "tapToPlay": "Tap to play",
+  "deleteAudioTooltip": "Delete audio",
+
+  "microphonePermissionRequired": "Microphone permission required",
+  "unsupportedAudioFormat": "Unsupported audio format. Allowed: mp3, wav, m4a, ogg, aac",
+  "addAttachment": "Add Attachment",
+  "recordingInProgress": "Recording in progress",
+  "reviewYourRecording": "Review your recording",
+  "imagesOrAudio": "Images or audio",
+  "takePhoto": "Take Photo",
+  "chooseImage": "Choose Image",
+  "recordAudio": "Record Audio",
+  "chooseAudioFile": "Choose Audio File",
+  "stopRecording": "Stop Recording",
+  "recordingPreview": "Recording preview",
+  "discard": "Discard",
+  "reRecord": "Re-record",
+
+  "logsCopied": "Logs copied to clipboard",
+  "saveLogs": "Save logs",
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "savedFile": "Saved {filename}",
+  "@savedFile": {
+    "placeholders": { "filename": { "type": "String" } }
+  },
+  "clearLogsTitle": "Clear Logs",
+  "clearLogsMessage": "This will delete all stored logs from this device. Continue?",
+  "clear": "Clear",
+  "noLogEntries": "No log entries yet",
+  "cancelSelection": "Cancel selection",
+  "copyCount": "Copy ({count})",
+  "@copyCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "clearLogsTooltip": "Clear logs",
+  "exportToFile": "Export to file",
+  "copyAll": "Copy all",
+  "logs": "Logs",
+  "hideSearch": "Hide search",
+  "search": "Search",
+  "searchMessagesAndTags": "Search messages and tags",
+  "clearSearch": "Clear search",
+  "filterAll": "All",
+
+  "invalidLink": "Invalid link",
+  "linkCopied": "Link copied",
+  "copy": "Copy",
+
+  "notesPinned": "{count, plural, one{{count} note pinned} other{{count} notes pinned}}",
+  "@notesPinned": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "notesUnpinned": "{count, plural, one{{count} note unpinned} other{{count} notes unpinned}}",
+  "@notesUnpinned": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "notesTagged": "{count, plural, one{Tagged {count} note} other{Tagged {count} notes}}",
+  "@notesTagged": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "sharedWithCount": "{count, plural, one{Shared with {count} person} other{Shared with {count} people}}",
+  "@sharedWithCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "logEntriesCopied": "{count, plural, one{{count} entry copied} other{{count} entries copied}}",
+  "@logEntriesCopied": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "failedToUpdatePins": "Failed to update pins",
+  "failedToAddTags": "Failed to add tags",
+  "addTags": "Add tags",
+  "pin": "Pin",
+  "unpin": "Unpin",
+  "support": "Support",
+  "buyMeCoffee": "Buy me a coffee",
+  "buyMeCoffeeSubtitle": "Support the development of Anchor",
+  "recentlySharedWith": "Recently shared with",
+  "couldNotOpenLink": "Couldn't open link",
+  "logViewerSessionInfo": "This list shows logs from the current session only. Export and Copy all include the full saved history.",
+  "logLevelDebug": "Debug",
+  "logLevelInfo": "Info",
+  "logLevelWarn": "Warn",
+  "logLevelError": "Error"
+}

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/features/notes/domain/note.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
@@ -17,21 +18,27 @@ class TrashScreen extends ConsumerWidget {
       builder: (ctx) => ConfirmDialog(
         icon: LucideIcons.rotateCcw,
         iconColor: Theme.of(context).colorScheme.primary,
-        title: 'Restore Note',
-        message: 'This note will be moved back to your notes.',
-        cancelText: 'Cancel',
-        confirmText: 'Restore',
+        title: context.l10n.restoreNoteTitle,
+        message: context.l10n.noteMovedBack,
+        cancelText: context.l10n.cancel,
+        confirmText: context.l10n.restore,
         onConfirm: () async {
           try {
             await ref
                 .read(trashControllerProvider.notifier)
                 .restoreNote(note.id);
             if (context.mounted) {
-              AppSnackbar.showSuccess(context, message: 'Note restored');
+              AppSnackbar.showSuccess(
+                context,
+                message: context.l10n.noteRestored,
+              );
             }
           } catch (_) {
             if (context.mounted) {
-              AppSnackbar.showError(context, message: 'Failed to restore note');
+              AppSnackbar.showError(
+                context,
+                message: context.l10n.failedToRestore,
+              );
             }
           }
         },
@@ -49,11 +56,10 @@ class TrashScreen extends ConsumerWidget {
       builder: (ctx) => ConfirmDialog(
         icon: LucideIcons.trash2,
         iconColor: Theme.of(context).colorScheme.error,
-        title: 'Delete Forever',
-        message:
-            'This note will be permanently deleted and cannot be recovered.',
-        cancelText: 'Cancel',
-        confirmText: 'Delete Forever',
+        title: context.l10n.deleteForever,
+        message: context.l10n.deleteForeverMessage,
+        cancelText: context.l10n.cancel,
+        confirmText: context.l10n.deleteForever,
         confirmColor: Theme.of(context).colorScheme.error,
         onConfirm: () async {
           try {
@@ -63,12 +69,15 @@ class TrashScreen extends ConsumerWidget {
             if (context.mounted) {
               AppSnackbar.showSuccess(
                 context,
-                message: 'Note permanently deleted',
+                message: context.l10n.notePermanentlyDeleted,
               );
             }
           } catch (_) {
             if (context.mounted) {
-              AppSnackbar.showError(context, message: 'Failed to delete note');
+              AppSnackbar.showError(
+                context,
+                message: context.l10n.failedToDeleteNote,
+              );
             }
           }
         },
@@ -89,7 +98,7 @@ class TrashScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'Trash',
+          context.l10n.trash,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -116,7 +125,7 @@ class TrashScreen extends ConsumerWidget {
                     Icon(LucideIcons.trash2, size: 64, color: theme.hintColor),
                     const SizedBox(height: 16),
                     Text(
-                      'Trash is empty',
+                      context.l10n.trashEmpty,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: theme.hintColor,
                       ),
@@ -134,13 +143,13 @@ class TrashScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: NoteCard(
                     note: note,
-                    datePrefix: 'Moved to trash',
+                    datePrefix: context.l10n.movedToTrashPrefix,
                     onTap: () => context.push('/note/${note.id}', extra: note),
                     trailingActions: [
                       IconButton(
                         icon: const Icon(LucideIcons.rotateCcw),
                         onPressed: () => _showRestoreDialog(context, ref, note),
-                        tooltip: 'Restore',
+                        tooltip: context.l10n.restore,
                         visualDensity: VisualDensity.compact,
                       ),
                       IconButton(
@@ -150,7 +159,7 @@ class TrashScreen extends ConsumerWidget {
                         ),
                         onPressed: () =>
                             _showPermanentDeleteDialog(context, ref, note),
-                        tooltip: 'Delete Forever',
+                        tooltip: context.l10n.deleteForever,
                         visualDensity: VisualDensity.compact,
                       ),
                     ],
@@ -160,7 +169,8 @@ class TrashScreen extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('Error: $err')),
+          error: (err, stack) =>
+              Center(child: Text(context.l10n.errorWithMessage(err.toString()))),
         ),
       ),
     );

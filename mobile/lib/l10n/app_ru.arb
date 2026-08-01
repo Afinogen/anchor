@@ -1,0 +1,458 @@
+{
+  "@@locale": "ru",
+
+  "settingsTitle": "Настройки",
+  "appearance": "Внешний вид",
+  "themeSystem": "Системная",
+  "themeSystemSubtitle": "Следовать настройкам устройства",
+  "themeLight": "Светлая",
+  "themeLightSubtitle": "Всегда использовать светлую тему",
+  "themeDark": "Тёмная",
+  "themeDarkSubtitle": "Всегда использовать тёмную тему",
+
+  "language": "Язык",
+  "languageSystemSubtitle": "Выберите язык интерфейса",
+
+  "editor": "Редактор",
+  "sortChecklistItems": "Сортировать пункты списка",
+  "sortChecklistItemsSubtitle": "Автоматически перемещать отмеченные пункты вниз",
+
+  "account": "Аккаунт",
+  "editProfile": "Изменить профиль",
+  "editProfileSubtitle": "Обновите имя и изображение профиля",
+  "changePassword": "Сменить пароль",
+  "changePasswordSubtitle": "Обновите пароль аккаунта",
+  "viewLogs": "Просмотр логов",
+  "viewLogsSubtitle": "Диагностические логи для поддержки и отладки",
+  "logOut": "Выйти",
+  "logOutSubtitle": "Выйти из аккаунта",
+
+  "appVersion": "Приложение v{version}",
+  "@appVersion": {
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "serverVersion": "Сервер v{version}",
+  "@serverVersion": {
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "serverVersionLoading": "Сервер v...",
+  "serverVersionUnknown": "Сервер v—",
+  "connectedTo": "Подключено к {url}",
+  "@connectedTo": {
+    "placeholders": { "url": { "type": "String" } }
+  },
+  "serverUnreachable": "Нет связи с {url}",
+  "@serverUnreachable": {
+    "placeholders": { "url": { "type": "String" } }
+  },
+
+  "logoutDialogTitle": "Выйти",
+  "logoutDialogMessage": "Вы уверены, что хотите выйти? Несинхронизированные заметки останутся в безопасности на этом устройстве.",
+  "stay": "Остаться",
+
+  "cancel": "Отмена",
+  "save": "Сохранить",
+  "delete": "Удалить",
+  "confirm": "Подтвердить",
+  "retry": "Повторить",
+
+  "errorConnectionTimeout": "Превышено время ожидания подключения. Проверьте интернет-соединение и попробуйте снова.",
+  "errorSendTimeout": "Превышено время ожидания запроса. Попробуйте снова.",
+  "errorReceiveTimeout": "Превышено время ожидания ответа. Попробуйте снова.",
+  "errorConnection": "Нет подключения к интернету. Проверьте настройки сети.",
+  "errorCertificate": "Ошибка сертификата. Если используется самоподписанный сертификат, включите «Разрешить самоподписанные сертификаты» в настройках сервера.",
+  "errorBadRequest": "Неверный запрос. Проверьте введённые данные.",
+  "errorUnauthorized": "Требуется аутентификация. Войдите снова.",
+  "errorForbidden": "Доступ запрещён.",
+  "errorNotFound": "Ресурс не найден.",
+  "errorServer": "Ошибка сервера. Попробуйте позже.",
+  "errorServerUnavailable": "Сервер недоступен. Попробуйте позже.",
+  "errorRequestFailed": "Не удалось выполнить запрос. Попробуйте снова.",
+  "errorCancelled": "Запрос отменён.",
+  "errorUnexpected": "Произошла непредвиденная ошибка. Попробуйте снова.",
+
+  "languageEnglish": "English",
+  "languageRussian": "Русский",
+
+  "welcomeBack": "С возвращением",
+  "signInToContinue": "Войдите, чтобы продолжить",
+  "loginWithProvider": "Войти через {provider}",
+  "@loginWithProvider": {
+    "placeholders": { "provider": { "type": "String" } }
+  },
+  "orContinueWith": "Или продолжите с",
+  "email": "Эл. почта",
+  "pleaseEnterEmail": "Введите эл. почту",
+  "password": "Пароль",
+  "pleaseEnterPassword": "Введите пароль",
+  "signIn": "Войти",
+  "createAnAccount": "Создать аккаунт",
+
+  "createAccount": "Создать аккаунт",
+  "startCapturingIdeas": "Начните записывать свои идеи",
+  "name": "Имя",
+  "pleaseEnterName": "Введите ваше имя",
+  "nameTooLong": "Имя должно быть короче 100 символов",
+  "confirmPassword": "Подтвердите пароль",
+  "passwordMinLength": "Пароль должен содержать не менее 8 символов",
+  "passwordsDoNotMatch": "Пароли не совпадают",
+  "registrationSuccessful": "Регистрация успешна!",
+  "registrationPendingApproval": "Регистрация успешна! Ваш аккаунт ожидает одобрения.",
+
+  "connectToServer": "Подключение к серверу",
+  "enterServerUrl": "Введите URL вашего сервера Anchor, чтобы начать",
+  "serverUrl": "URL сервера",
+  "serverUrlHint": "https://your-server.com",
+  "serverUrlHelper": "Пример: https://anchor.example.com",
+  "allowSelfSigned": "Разрешить самоподписанные сертификаты",
+  "selfSignedWarning": "Внимание: безопасность соединения снижена",
+  "selfSignedSnackbar": "Самоподписанные сертификаты теперь принимаются. Это снижает безопасность соединения.",
+  "test": "Проверить",
+  "connect": "Подключиться",
+  "selfHostedInfo": "Anchor — самостоятельно размещаемое приложение. Для работы нужен ваш собственный сервер.",
+  "pleaseEnterServerUrl": "Введите URL сервера",
+  "urlMustStartWith": "URL должен начинаться с http:// или https://",
+  "pleaseEnterValidUrl": "Введите корректный URL",
+  "connectionTimedOut": "Истекло время ожидания. Проверьте URL и попробуйте снова.",
+  "couldNotConnect": "Не удалось подключиться к серверу. Проверьте URL.",
+  "certificateErrorTryToggle": "Ошибка сертификата. Попробуйте включить «Разрешить самоподписанные сертификаты» ниже.",
+  "failedToConnect": "Не удалось подключиться к серверу",
+  "serverRunningVersion": "Сервер работает! Версия: {version}",
+  "@serverRunningVersion": {
+    "placeholders": { "version": { "type": "String" } }
+  },
+  "invalidServerResponse": "Неверный ответ сервера. Это сервер Anchor?",
+
+  "create": "Создать",
+  "rename": "Переименовать",
+
+  "captureIdeasHere": "Записывайте свои идеи здесь",
+  "noMatchingNotes": "Заметки не найдены",
+
+  "allNotes": "Все заметки",
+  "archive": "Архив",
+  "trash": "Корзина",
+  "settings": "Настройки",
+  "appTagline": "Ваши мысли под защитой",
+  "tagsSectionLabel": "ТЕГИ",
+  "newTagTooltip": "Новый тег",
+  "createTagsHint": "Создавайте теги, чтобы упорядочить заметки",
+  "renameTag": "Переименовать тег",
+  "deleteTag": "Удалить тег",
+  "renameTagTitle": "Переименовать тег",
+  "tagNameHint": "Имя тега",
+  "deleteTagTitle": "Удалить тег",
+  "deleteTagConfirm": "Удалить «{name}»? Он будет удалён из всех заметок.",
+  "@deleteTagConfirm": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "newTagTitle": "Новый тег",
+  "createTagSubtitle": "Создайте тег, чтобы упорядочить заметки",
+  "tagNotesCount": "{count, plural, one{{count} заметка} few{{count} заметки} many{{count} заметок} other{{count} заметки}}",
+  "@tagNotesCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "menu": "Меню",
+  "newNote": "Новая заметка",
+  "searchHint": "Поиск по заметкам...",
+  "filteringBy": "Фильтр по",
+  "viewOptions": "Параметры вида",
+  "selectNotes": "Выберите заметки",
+  "notesCount": "{count, plural, one{{count} заметка} few{{count} заметки} many{{count} заметок} other{{count} заметки}}",
+  "@notesCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "errorWithMessage": "Ошибка: {message}",
+  "@errorWithMessage": {
+    "placeholders": { "message": { "type": "String" } }
+  },
+
+  "viewOptionsTitle": "Параметры вида",
+  "customizeDisplay": "Настройте отображение",
+  "done": "Готово",
+  "layout": "Раскладка",
+  "grid": "Сетка",
+  "list": "Список",
+  "sortBy": "Сортировка",
+  "sortDateModified": "По изменению",
+  "sortTitle": "По названию",
+  "order": "Порядок",
+  "oldestFirst": "Сначала старые",
+  "aToZ": "От А до Я",
+  "newestFirst": "Сначала новые",
+  "zToA": "От Я до А",
+
+  "archiveNotesTitle": "Архивировать заметки",
+  "archiveNotesConfirm": "{count, plural, one{Архивировать {count} заметку?} few{Архивировать {count} заметки?} many{Архивировать {count} заметок?} other{Архивировать {count} заметки?}}",
+  "@archiveNotesConfirm": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "notesArchived": "{count, plural, one{{count} заметка архивирована} few{{count} заметки архивированы} many{{count} заметок архивировано} other{{count} заметки архивировано}}",
+  "@notesArchived": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "failedToArchiveNotes": "Не удалось архивировать заметки",
+  "deleteNotesTitle": "Удалить заметки",
+  "deleteNotesConfirm": "{count, plural, one{Удалить {count} заметку? Это действие необратимо.} few{Удалить {count} заметки? Это действие необратимо.} many{Удалить {count} заметок? Это действие необратимо.} other{Удалить {count} заметки? Это действие необратимо.}}",
+  "@deleteNotesConfirm": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "notesDeleted": "{count, plural, one{{count} заметка удалена} few{{count} заметки удалены} many{{count} заметок удалено} other{{count} заметки удалено}}",
+  "@notesDeleted": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "failedToDeleteNotes": "Не удалось удалить заметки",
+  "deselectAll": "Снять выделение",
+  "selectAll": "Выбрать все",
+
+  "moreOptions": "Дополнительно",
+  "moreOptionsSubtitle": "Настройте заметку и управляйте ею",
+  "background": "Фон",
+  "attachment": "Вложение",
+  "unarchive": "Из архива",
+
+  "unarchiveNoteTitle": "Извлечь заметку из архива",
+  "noteMovedBack": "Заметка вернётся в список заметок.",
+  "noteUnarchived": "Заметка извлечена из архива",
+  "failedToUnarchive": "Не удалось извлечь заметку из архива",
+  "archiveEmpty": "Архив пуст",
+  "archivedPrefix": "Архивировано",
+
+  "restoreNoteTitle": "Восстановить заметку",
+  "restore": "Восстановить",
+  "noteRestored": "Заметка восстановлена",
+  "failedToRestore": "Не удалось восстановить заметку",
+  "deleteForever": "Удалить навсегда",
+  "deleteForeverMessage": "Заметка будет удалена навсегда без возможности восстановления.",
+  "notePermanentlyDeleted": "Заметка удалена навсегда",
+  "failedToDeleteNote": "Не удалось удалить заметку",
+  "trashEmpty": "Корзина пуста",
+  "movedToTrashPrefix": "Перемещено в корзину",
+
+  "archiveNoteTitle": "Архивировать заметку",
+  "noteWillBeArchived": "Заметка будет перемещена в архив.",
+  "noteArchived": "Заметка архивирована",
+  "failedToArchive": "Не удалось архивировать заметку",
+  "attachmentAdded": "Вложение добавлено",
+  "failedToAddAttachment": "Не удалось добавить вложение",
+  "deleteNoteTitle": "Удалить заметку",
+  "deleteNoteMessage": "Заметка исчезнет навсегда. Вы уверены, что хотите её удалить?",
+  "keep": "Оставить",
+  "noteMovedToTrash": "Заметка перемещена в корзину",
+  "noteWillBeRestored": "Заметка будет восстановлена в список заметок.",
+  "deleteForeverMessageLong": "Это действие необратимо. Заметка будет удалена навсегда без возможности восстановления.",
+  "sharedBy": "Поделился(ась) {name}",
+  "@sharedBy": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "pinNote": "Закрепить заметку",
+  "unpinNote": "Открепить заметку",
+  "shareNote": "Поделиться заметкой",
+  "readOnlyTrashed": "Заметка в корзине, её нельзя редактировать. Восстановите, чтобы вносить изменения.",
+  "readOnlyViewer": "У вас доступ только для чтения. Редактировать может только владелец.",
+  "titleHint": "Заголовок",
+  "untitledNote": "Без названия",
+  "moreOptionsTooltip": "Ещё",
+  "startTyping": "Начните печатать...",
+
+  "tags": "Теги",
+  "addTag": "Добавить тег",
+  "selectTags": "Выберите теги",
+  "organizeNote": "Упорядочьте заметку",
+  "createNewTagHint": "Создать новый тег...",
+  "availableTags": "Доступные теги",
+  "noTagsYet": "Тегов пока нет",
+  "createFirstTagAbove": "Создайте первый тег выше",
+
+  "failedToLoadShares": "Не удалось загрузить доступы",
+  "sharedWithUser": "Доступ открыт для {name}",
+  "@sharedWithUser": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "failedToShare": "Не удалось поделиться",
+  "failedToUpdate": "Не удалось обновить",
+  "removedUser": "Удалён: {name}",
+  "@removedUser": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "failedToRemove": "Не удалось удалить",
+  "collaborateWithOthers": "Совместная работа с другими",
+  "searchByEmail": "Поиск по имени или эл. почте...",
+  "results": "Результаты",
+  "notSharedYet": "Доступ ещё не открыт",
+  "searchToInvite": "Найдите по имени или эл. почте, чтобы пригласить",
+  "collaborators": "Участники",
+  "shareWithName": "Поделиться с {name}",
+  "@shareWithName": {
+    "placeholders": { "name": { "type": "String" } }
+  },
+  "changePermission": "Изменить права",
+  "viewer": "Читатель",
+  "viewerDesc": "Может просматривать, но не редактировать",
+  "editor": "Редактор",
+  "editorDesc": "Может просматривать и редактировать",
+
+  "passwordChangedSuccess": "Пароль успешно изменён",
+  "changePasswordSubtitleLong": "Обновите пароль, чтобы защитить аккаунт",
+  "currentPassword": "Текущий пароль",
+  "pleaseEnterCurrentPassword": "Введите текущий пароль",
+  "newPassword": "Новый пароль",
+  "pleaseEnterNewPassword": "Введите новый пароль",
+  "confirmNewPassword": "Подтвердите новый пароль",
+  "pleaseConfirmPassword": "Подтвердите новый пароль",
+
+  "userNotFound": "Пользователь не найден",
+  "failedToPickImage": "Не удалось выбрать изображение: {error}",
+  "@failedToPickImage": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "profileUpdated": "Профиль успешно обновлён",
+  "editProfile": "Изменить профиль",
+  "changePhoto": "Изменить фото",
+  "remove": "Удалить",
+  "updateProfileInfo": "Обновите информацию профиля",
+  "enterYourName": "Введите ваше имя",
+  "saveProfile": "Сохранить профиль",
+
+  "save": "Сохранить",
+  "color": "Цвет",
+  "customizeNote": "Настройте свою заметку",
+
+  "fmtUndo": "Отменить",
+  "fmtRedo": "Повторить",
+  "fmtBold": "Жирный",
+  "fmtItalic": "Курсив",
+  "fmtUnderline": "Подчёркнутый",
+  "fmtStrikethrough": "Зачёркнутый",
+  "fmtHeading1": "Заголовок 1",
+  "fmtHeading2": "Заголовок 2",
+  "fmtHeading3": "Заголовок 3",
+  "fmtChecklist": "Чек-лист",
+  "fmtNumberedList": "Нумерованный список",
+  "fmtBulletList": "Маркированный список",
+  "fmtQuote": "Цитата",
+  "fmtCodeBlock": "Блок кода",
+  "fmtLink": "Ссылка",
+  "fmtEditLink": "Изменить ссылку",
+
+  "linkTextLabel": "Текст",
+  "linkTextHint": "Текст ссылки",
+  "urlLabel": "URL",
+  "urlHint": "https://...",
+  "insertLinkTitle": "Вставить ссылку",
+  "editLinkTitle": "Изменить ссылку",
+  "insert": "Вставить",
+  "linkOpen": "Открыть",
+  "linkCopy": "Копировать ссылку",
+  "linkEdit": "Изменить",
+
+  "splashTagline": "Защитите свои мысли",
+
+  "deleteAttachmentTitle": "Удалить вложение?",
+  "deleteAttachmentMessage": "Это безвозвратно удалит «{filename}».",
+  "@deleteAttachmentMessage": {
+    "placeholders": { "filename": { "type": "String" } }
+  },
+  "availableWhenOnline": "Доступно при подключении к сети",
+  "pending": "Ожидает",
+  "failedToLoadImage": "Не удалось загрузить изображение",
+  "failedToRenderImage": "Не удалось отрисовать изображение",
+  "playbackError": "Ошибка воспроизведения: {error}",
+  "@playbackError": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "couldNotPlayAudio": "Не удалось воспроизвести аудио: {error}",
+  "@couldNotPlayAudio": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "failedToLoadAudio": "Не удалось загрузить аудио",
+  "deleteAudioTitle": "Удалить аудио?",
+  "tapToReplay": "Нажмите, чтобы воспроизвести снова",
+  "tapToPlay": "Нажмите, чтобы воспроизвести",
+  "deleteAudioTooltip": "Удалить аудио",
+
+  "microphonePermissionRequired": "Требуется доступ к микрофону",
+  "unsupportedAudioFormat": "Неподдерживаемый аудиоформат. Разрешено: mp3, wav, m4a, ogg, aac",
+  "addAttachment": "Добавить вложение",
+  "recordingInProgress": "Идёт запись",
+  "reviewYourRecording": "Прослушайте запись",
+  "imagesOrAudio": "Изображения или аудио",
+  "takePhoto": "Сделать фото",
+  "chooseImage": "Выбрать изображение",
+  "recordAudio": "Записать аудио",
+  "chooseAudioFile": "Выбрать аудиофайл",
+  "stopRecording": "Остановить запись",
+  "recordingPreview": "Предпросмотр записи",
+  "discard": "Отменить",
+  "reRecord": "Перезаписать",
+
+  "logsCopied": "Логи скопированы в буфер обмена",
+  "saveLogs": "Сохранить логи",
+  "exportFailed": "Не удалось экспортировать: {error}",
+  "@exportFailed": {
+    "placeholders": { "error": { "type": "String" } }
+  },
+  "savedFile": "Сохранено: {filename}",
+  "@savedFile": {
+    "placeholders": { "filename": { "type": "String" } }
+  },
+  "clearLogsTitle": "Очистить логи",
+  "clearLogsMessage": "Все сохранённые логи будут удалены с этого устройства. Продолжить?",
+  "clear": "Очистить",
+  "noLogEntries": "Записей логов пока нет",
+  "cancelSelection": "Отменить выбор",
+  "copyCount": "Копировать ({count})",
+  "@copyCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "clearLogsTooltip": "Очистить логи",
+  "exportToFile": "Экспортировать в файл",
+  "copyAll": "Копировать всё",
+  "logs": "Логи",
+  "hideSearch": "Скрыть поиск",
+  "search": "Поиск",
+  "searchMessagesAndTags": "Поиск по сообщениям и тегам",
+  "clearSearch": "Очистить поиск",
+  "filterAll": "Все",
+
+  "invalidLink": "Неверная ссылка",
+  "linkCopied": "Ссылка скопирована",
+  "copy": "Копировать",
+
+  "notesPinned": "{count, plural, one{{count} заметка закреплена} few{{count} заметки закреплены} many{{count} заметок закреплено} other{{count} заметки закреплено}}",
+  "@notesPinned": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "notesUnpinned": "{count, plural, one{{count} заметка откреплена} few{{count} заметки откреплены} many{{count} заметок откреплено} other{{count} заметки откреплено}}",
+  "@notesUnpinned": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "notesTagged": "{count, plural, one{Теги добавлены к {count} заметке} few{Теги добавлены к {count} заметкам} many{Теги добавлены к {count} заметкам} other{Теги добавлены к {count} заметкам}}",
+  "@notesTagged": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "sharedWithCount": "{count, plural, one{Доступ у {count} человека} few{Доступ у {count} человек} many{Доступ у {count} человек} other{Доступ у {count} человек}}",
+  "@sharedWithCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "logEntriesCopied": "{count, plural, one{Скопирована {count} запись} few{Скопировано {count} записи} many{Скопировано {count} записей} other{Скопировано {count} записи}}",
+  "@logEntriesCopied": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "failedToUpdatePins": "Не удалось обновить закрепление",
+  "failedToAddTags": "Не удалось добавить теги",
+  "addTags": "Добавить теги",
+  "pin": "Закрепить",
+  "unpin": "Открепить",
+  "support": "Поддержка",
+  "buyMeCoffee": "Купить мне кофе",
+  "buyMeCoffeeSubtitle": "Поддержите разработку Anchor",
+  "recentlySharedWith": "Недавние контакты",
+  "couldNotOpenLink": "Не удалось открыть ссылку",
+  "logViewerSessionInfo": "Здесь показаны логи только текущей сессии. Экспорт и «Копировать всё» включают всю сохранённую историю.",
+  "logLevelDebug": "Отладка",
+  "logLevelInfo": "Инфо",
+  "logLevelWarn": "Предупр.",
+  "logLevelError": "Ошибка"
+}

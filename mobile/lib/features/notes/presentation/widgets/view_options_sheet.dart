@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/extensions/build_context_l10n.dart';
 import '../notes_view_options.dart';
 
 class ViewOptionsSheet extends ConsumerWidget {
@@ -78,7 +79,7 @@ class ViewOptionsSheet extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'View Options',
+                          context.l10n.viewOptionsTitle,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -86,7 +87,7 @@ class ViewOptionsSheet extends ConsumerWidget {
                           ),
                         ),
                         Text(
-                          'Customize display',
+                          context.l10n.customizeDisplay,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -107,14 +108,14 @@ class ViewOptionsSheet extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text('Done'),
+                    child: Text(context.l10n.done),
                   ),
                 ],
               ),
             ),
 
             // Layout Section
-            _SectionHeader(title: 'Layout'),
+            _SectionHeader(title: context.l10n.layout),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
@@ -122,7 +123,7 @@ class ViewOptionsSheet extends ConsumerWidget {
                   Expanded(
                     child: _ViewOptionCard(
                       icon: LucideIcons.layoutGrid,
-                      label: 'Grid',
+                      label: context.l10n.grid,
                       isSelected: settings.viewType == ViewType.grid,
                       onTap: () => notifier.setViewType(ViewType.grid),
                     ),
@@ -131,7 +132,7 @@ class ViewOptionsSheet extends ConsumerWidget {
                   Expanded(
                     child: _ViewOptionCard(
                       icon: LucideIcons.list,
-                      label: 'List',
+                      label: context.l10n.list,
                       isSelected: settings.viewType == ViewType.list,
                       onTap: () => notifier.setViewType(ViewType.list),
                     ),
@@ -143,20 +144,20 @@ class ViewOptionsSheet extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Sort Section
-            _SectionHeader(title: 'Sort by'),
+            _SectionHeader(title: context.l10n.sortBy),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
                   _SortOptionTile(
-                    title: 'Date Modified',
+                    title: context.l10n.sortDateModified,
                     isSelected: settings.sortOption == SortOption.dateModified,
                     onTap: () =>
                         notifier.setSortOption(SortOption.dateModified),
                   ),
                   const SizedBox(height: 8),
                   _SortOptionTile(
-                    title: 'Title',
+                    title: context.l10n.sortTitle,
                     isSelected: settings.sortOption == SortOption.title,
                     onTap: () => notifier.setSortOption(SortOption.title),
                   ),
@@ -167,7 +168,7 @@ class ViewOptionsSheet extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // Order Section
-            _SectionHeader(title: 'Order'),
+            _SectionHeader(title: context.l10n.order),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
@@ -177,7 +178,7 @@ class ViewOptionsSheet extends ConsumerWidget {
                       icon: isDateSort
                           ? LucideIcons.arrowUp
                           : LucideIcons.arrowDownAZ,
-                      label: isDateSort ? 'Oldest first' : 'A to Z',
+                      label: isDateSort ? context.l10n.oldestFirst : context.l10n.aToZ,
                       isSelected: settings.isAscending,
                       onTap: () => notifier.setSortDirection(true),
                     ),
@@ -188,7 +189,7 @@ class ViewOptionsSheet extends ConsumerWidget {
                       icon: isDateSort
                           ? LucideIcons.arrowDown
                           : LucideIcons.arrowUpAZ,
-                      label: isDateSort ? 'Newest first' : 'Z to A',
+                      label: isDateSort ? context.l10n.newestFirst : context.l10n.zToA,
                       isSelected: !settings.isAscending,
                       onTap: () => notifier.setSortDirection(false),
                     ),

@@ -1,0 +1,6 @@
+{
+  "attachmentFailed": "Failed to import attachment",
+  "noteFailed": "Failed to create note",
+  "warningInvalidContent": "Content was not valid note data and was dropped",
+  "warningUnknownBackground": "Unknown background \"{background}\" was ignored"
+}

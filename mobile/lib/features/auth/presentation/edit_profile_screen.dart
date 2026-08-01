@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/settings_card.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
@@ -63,7 +64,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppSnackbar.showError(context, message: 'Failed to pick image: $e');
+        AppSnackbar.showError(
+          context,
+          message: context.l10n.failedToPickImage(e.toString()),
+        );
       }
     }
   }
@@ -81,7 +85,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       final currentUser = userAsync.value;
 
       if (currentUser == null) {
-        throw Exception('User not found');
+        throw Exception(context.l10n.userNotFound);
       }
 
       final name = _nameController.text.trim();
@@ -110,7 +114,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
         AppSnackbar.showSuccess(
           context,
-          message: 'Profile updated successfully',
+          message: context.l10n.profileUpdated,
         );
         context.pop();
       }
@@ -251,7 +255,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                   bottom: 12,
                 ),
                 title: Text(
-                  'Edit Profile',
+                  context.l10n.editProfile,
                   style: GoogleFonts.playfairDisplay(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -308,7 +312,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                 _buildImageActionButton(
                                   context,
                                   icon: LucideIcons.upload,
-                                  label: 'Change Photo',
+                                  label: context.l10n.changePhoto,
                                   onPressed: _pickImage,
                                   isPrimary: true,
                                 ),
@@ -318,7 +322,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                   _buildImageActionButton(
                                     context,
                                     icon: LucideIcons.trash2,
-                                    label: 'Remove',
+                                    label: context.l10n.remove,
                                     onPressed: _removeImage,
                                     isDestructive: true,
                                   ),
@@ -342,7 +346,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
                         // Name Input Section
                         Text(
-                          'Update your profile information',
+                          context.l10n.updateProfileInfo,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.7,
@@ -355,8 +359,8 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           textInputAction: TextInputAction.done,
                           onSubmitted: (_) => _saveProfile(),
                           decoration: InputDecoration(
-                            labelText: 'Name',
-                            hintText: 'Enter your name',
+                            labelText: context.l10n.name,
+                            hintText: context.l10n.enterYourName,
                             prefixIcon: const Icon(LucideIcons.user),
                             filled: true,
                             fillColor: isDark
@@ -387,7 +391,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Save Profile'),
+                              : Text(context.l10n.saveProfile),
                         ),
                       ],
                     ),
