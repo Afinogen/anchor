@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import type { SortBy, SortOrder, ViewMode } from "@/features/preferences";
+import { type TranslationKey, useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface ViewSettingsProps {
@@ -33,22 +34,34 @@ interface ViewSettingsProps {
 
 const viewModes: {
   value: ViewMode;
-  label: string;
+  labelKey: TranslationKey;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { value: "masonry", label: "Masonry", icon: LayoutGrid },
-  { value: "grid", label: "Grid", icon: Grid3x3 },
-  { value: "list", label: "List", icon: List },
+  {
+    value: "masonry",
+    labelKey: "notes.viewSettings.masonry",
+    icon: LayoutGrid,
+  },
+  { value: "grid", labelKey: "notes.viewSettings.grid", icon: Grid3x3 },
+  { value: "list", labelKey: "notes.viewSettings.list", icon: List },
 ];
 
 const sortOptions: {
   value: SortBy;
-  label: string;
+  labelKey: TranslationKey;
   icon: React.ComponentType<{ className?: string }>;
 }[] = [
-  { value: "updatedAt", label: "Last Modified", icon: Calendar },
-  { value: "createdAt", label: "Date Created", icon: Calendar },
-  { value: "title", label: "Title", icon: FileText },
+  {
+    value: "updatedAt",
+    labelKey: "notes.viewSettings.lastModified",
+    icon: Calendar,
+  },
+  {
+    value: "createdAt",
+    labelKey: "notes.viewSettings.dateCreated",
+    icon: Calendar,
+  },
+  { value: "title", labelKey: "notes.viewSettings.title", icon: FileText },
 ];
 
 export function ViewSettings({
@@ -59,6 +72,7 @@ export function ViewSettings({
   sortOrder,
   onSortOrderChange,
 }: ViewSettingsProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   const SortIcon = sortOrder === "asc" ? ArrowUp : ArrowDown;
@@ -72,7 +86,9 @@ export function ViewSettings({
           className="h-8 px-3 gap-2 border-border/60 hover:border-primary/50 hover:bg-primary/5 hover:text-primary transition-all shadow-none rounded-full"
         >
           <Settings2 className="h-4 w-4" />
-          <span className="text-xs font-medium">View</span>
+          <span className="text-xs font-medium">
+            {t("notes.viewSettings.view")}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-56 p-2" align="end">
@@ -81,7 +97,7 @@ export function ViewSettings({
           <div className="space-y-0.5">
             <div className="px-2 py-1.5">
               <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">
-                Sort
+                {t("notes.viewSettings.sort")}
               </span>
             </div>
             <div className="space-y-0.5">
@@ -109,7 +125,9 @@ export function ViewSettings({
                             : "text-muted-foreground/60",
                         )}
                       />
-                      <span className="flex-1 text-left">{option.label}</span>
+                      <span className="flex-1 text-left">
+                        {t(option.labelKey)}
+                      </span>
                       {isSelected && <Check className="h-3 w-3 text-primary" />}
                     </button>
                     {isSelected && (
@@ -127,7 +145,11 @@ export function ViewSettings({
                           "hover:bg-primary/15",
                           "border border-primary/20",
                         )}
-                        title={`Sort ${sortOrder === "asc" ? "descending" : "ascending"}`}
+                        title={
+                          sortOrder === "asc"
+                            ? t("notes.viewSettings.sortDescending")
+                            : t("notes.viewSettings.sortAscending")
+                        }
                       >
                         <SortIcon className="h-4 w-3.5" />
                       </button>
@@ -144,7 +166,7 @@ export function ViewSettings({
           <div className="space-y-0.5">
             <div className="px-2 py-1.5">
               <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">
-                View
+                {t("notes.viewSettings.view")}
               </span>
             </div>
             <div className="grid grid-cols-3 gap-1">
@@ -175,7 +197,7 @@ export function ViewSettings({
                           : "text-muted-foreground/60",
                       )}
                     />
-                    <span>{mode.label}</span>
+                    <span>{t(mode.labelKey)}</span>
                   </button>
                 );
               })}

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/features/notes/domain/note.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/quill_preview.dart'
     show extractPlainTextFromQuillContent;
@@ -30,10 +31,10 @@ class SelectionAppBarActions extends ConsumerWidget {
       builder: (ctx) => ConfirmDialog(
         icon: LucideIcons.archive,
         iconColor: theme.colorScheme.primary,
-        title: 'Archive Notes',
-        message: 'Archive ${ids.length} ${ids.length == 1 ? 'note' : 'notes'}?',
-        cancelText: 'Cancel',
-        confirmText: 'Archive',
+        title: context.l10n.archiveNotesTitle,
+        message: context.l10n.archiveNotesConfirm(ids.length),
+        cancelText: context.l10n.cancel,
+        confirmText: context.l10n.archive,
         onConfirm: () {},
       ),
     );
@@ -44,13 +45,15 @@ class SelectionAppBarActions extends ConsumerWidget {
         if (context.mounted) {
           AppSnackbar.showSuccess(
             context,
-            message:
-                '${ids.length} ${ids.length == 1 ? 'note' : 'notes'} archived',
+            message: context.l10n.notesArchived(ids.length),
           );
         }
       } catch (e) {
         if (context.mounted) {
-          AppSnackbar.showError(context, message: 'Failed to archive notes');
+          AppSnackbar.showError(
+            context,
+            message: context.l10n.failedToArchiveNotes,
+          );
         }
       }
     }
@@ -67,11 +70,10 @@ class SelectionAppBarActions extends ConsumerWidget {
       builder: (ctx) => ConfirmDialog(
         icon: LucideIcons.trash2,
         iconColor: theme.colorScheme.error,
-        title: 'Delete Notes',
-        message:
-            'Delete ${ids.length} ${ids.length == 1 ? 'note' : 'notes'}? This action cannot be undone.',
-        cancelText: 'Cancel',
-        confirmText: 'Delete',
+        title: context.l10n.deleteNotesTitle,
+        message: context.l10n.deleteNotesConfirm(ids.length),
+        cancelText: context.l10n.cancel,
+        confirmText: context.l10n.delete,
         onConfirm: () {},
       ),
     );
@@ -82,13 +84,15 @@ class SelectionAppBarActions extends ConsumerWidget {
         if (context.mounted) {
           AppSnackbar.showSuccess(
             context,
-            message:
-                '${ids.length} ${ids.length == 1 ? 'note' : 'notes'} deleted',
+            message: context.l10n.notesDeleted(ids.length),
           );
         }
       } catch (e) {
         if (context.mounted) {
-          AppSnackbar.showError(context, message: 'Failed to delete notes');
+          AppSnackbar.showError(
+            context,
+            message: context.l10n.failedToDeleteNotes,
+          );
         }
       }
     }
@@ -108,14 +112,17 @@ class SelectionAppBarActions extends ConsumerWidget {
       if (context.mounted) {
         AppSnackbar.showSuccess(
           context,
-          message:
-              '${ids.length} ${ids.length == 1 ? 'note' : 'notes'} '
-              '${isPinned ? 'pinned' : 'unpinned'}',
+          message: isPinned
+              ? context.l10n.notesPinned(ids.length)
+              : context.l10n.notesUnpinned(ids.length),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        AppSnackbar.showError(context, message: 'Failed to update pins');
+        AppSnackbar.showError(
+          context,
+          message: context.l10n.failedToUpdatePins,
+        );
       }
     }
   }
@@ -152,12 +159,12 @@ class SelectionAppBarActions extends ConsumerWidget {
       if (context.mounted) {
         AppSnackbar.showSuccess(
           context,
-          message: 'Tagged ${ids.length} ${ids.length == 1 ? 'note' : 'notes'}',
+          message: context.l10n.notesTagged(ids.length),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        AppSnackbar.showError(context, message: 'Failed to add tags');
+        AppSnackbar.showError(context, message: context.l10n.failedToAddTags);
       }
     }
   }
@@ -202,7 +209,7 @@ class SelectionAppBarActions extends ConsumerWidget {
           IconButton(
             icon: const Icon(LucideIcons.tag),
             onPressed: () => _handleTags(context, ref, selectedNoteIds.toList()),
-            tooltip: 'Add tags',
+            tooltip: context.l10n.addTags,
           ),
         // Pin / unpin toggle
         if (selectedNoteIds.isNotEmpty)
@@ -216,7 +223,7 @@ class SelectionAppBarActions extends ConsumerWidget {
               selectedNoteIds.toList(),
               !allSelectedPinned,
             ),
-            tooltip: allSelectedPinned ? 'Unpin' : 'Pin',
+            tooltip: allSelectedPinned ? context.l10n.unpin : context.l10n.pin,
           ),
         // Archive button
         if (selectedNoteIds.isNotEmpty)
@@ -224,7 +231,7 @@ class SelectionAppBarActions extends ConsumerWidget {
             icon: const Icon(LucideIcons.archive),
             onPressed: () =>
                 _handleArchive(context, ref, selectedNoteIds.toList()),
-            tooltip: 'Archive',
+            tooltip: context.l10n.archive,
           ),
         // Delete button
         if (selectedNoteIds.isNotEmpty)
@@ -232,7 +239,7 @@ class SelectionAppBarActions extends ConsumerWidget {
             icon: const Icon(LucideIcons.trash2),
             onPressed: () =>
                 _handleDelete(context, ref, selectedNoteIds.toList()),
-            tooltip: 'Delete',
+            tooltip: context.l10n.delete,
             color: theme.colorScheme.error,
           ),
         // Select all button
@@ -249,7 +256,7 @@ class SelectionAppBarActions extends ConsumerWidget {
                   .selectAll(filteredNotes.map((n) => n.id).toList());
             }
           },
-          tooltip: allSelected ? 'Deselect all' : 'Select all',
+          tooltip: allSelected ? context.l10n.deselectAll : context.l10n.selectAll,
         ),
       ],
     );

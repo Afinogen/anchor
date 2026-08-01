@@ -14,11 +14,34 @@ import 'router/app_routes.dart';
 const _themeModeKey = 'theme_mode';
 const _serverUrlKey = 'server_url';
 const _accessTokenKey = 'access_token';
+const _localeKey = 'app_locale';
 const _storage = FlutterSecureStorage();
+
+/// Locales the app ships translations for.
+const List<Locale> supportedAppLocales = [Locale('en'), Locale('ru')];
 
 /// Holds the initial theme mode loaded before the app starts
 /// This is set by [initializeApp] and read by the theme provider
 ThemeMode initialThemeMode = ThemeMode.system;
+
+/// Holds the initial locale loaded before the app starts (read by the locale
+/// controller). First run auto-detects the device language and falls back to
+/// English.
+Locale initialLocale = const Locale('en');
+
+/// Mirror of the active locale for use outside the widget tree (e.g. the Dio
+/// interceptor that localizes network error messages). Kept in sync by the
+/// locale controller.
+Locale currentAppLocale = const Locale('en');
+
+/// Resolve a device language tag to a supported locale, defaulting to English.
+Locale resolveSupportedLocale(String languageCode) {
+  final code = languageCode.toLowerCase();
+  for (final locale in supportedAppLocales) {
+    if (code == locale.languageCode) return locale;
+  }
+  return const Locale('en');
+}
 
 /// Holds the initial user ID loaded before the app starts
 /// This is set by [initializeApp] and read by [ActiveUserId] provider
@@ -62,6 +85,17 @@ Future<void> initializeApp() async {
       orElse: () => ThemeMode.system,
     );
   }
+
+  // Load saved locale preference, or auto-detect from the device on first run.
+  final savedLocale = await _storage.read(key: _localeKey);
+  if (savedLocale != null && savedLocale.isNotEmpty) {
+    initialLocale = resolveSupportedLocale(savedLocale);
+  } else {
+    initialLocale = resolveSupportedLocale(
+      PlatformDispatcher.instance.locale.languageCode,
+    );
+  }
+  currentAppLocale = initialLocale;
 
   // User id for per-user database selection, read from the persisted user json.
   final userData = await _storage.read(key: 'user_data');

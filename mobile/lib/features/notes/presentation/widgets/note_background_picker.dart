@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
 
 class NoteBackgroundPicker extends StatefulWidget {
@@ -116,7 +117,7 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Background',
+                            context.l10n.background,
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -124,7 +125,7 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                             ),
                           ),
                           Text(
-                            'Customize your note',
+                            context.l10n.customizeNote,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.6,
@@ -145,7 +146,7 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                       ),
-                      child: const Text('Done'),
+                      child: Text(context.l10n.done),
                     ),
                   ],
                 ),
@@ -164,7 +165,7 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                           vertical: 8,
                         ),
                         child: Text(
-                          'Color',
+                          context.l10n.color,
                           style: theme.textTheme.labelMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.bold,
@@ -231,7 +232,7 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                           vertical: 8,
                         ),
                         child: Text(
-                          'Background',
+                          context.l10n.background,
                           style: theme.textTheme.labelMedium?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                             fontWeight: FontWeight.bold,

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { PATTERNS, SOLID_COLORS } from "@/features/notes/backgrounds";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { NoteBackground } from "./background";
 
@@ -25,6 +26,7 @@ export function NoteBackgroundPicker({
   onBackgroundChange,
   disabled = false,
 }: NoteBackgroundPickerProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const { theme, systemTheme } = useTheme();
   const resolvedTheme = theme === "system" ? systemTheme : theme;
@@ -45,7 +47,7 @@ export function NoteBackgroundPicker({
           variant="ghost"
           size="icon"
           className="h-9 w-9 rounded-xl"
-          title="Change background"
+          title={t("notes.backgrounds.changeBackground")}
           disabled={disabled}
         >
           <Palette className="h-4 w-4" />
@@ -64,10 +66,10 @@ export function NoteBackgroundPicker({
               </div>
               <div>
                 <h3 className="text-sm font-medium text-foreground">
-                  Background
+                  {t("notes.backgrounds.background")}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Customize your note
+                  {t("notes.backgrounds.customizeNote")}
                 </p>
               </div>
             </div>
@@ -78,7 +80,7 @@ export function NoteBackgroundPicker({
               {/* Colors Section */}
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                  Color
+                  {t("notes.backgrounds.color")}
                 </h4>
                 <div className="flex items-center gap-3 flex-wrap">
                   {/* None / Default option */}
@@ -96,7 +98,7 @@ export function NoteBackgroundPicker({
                     style={{
                       backgroundColor: "var(--card)",
                     }}
-                    title="Default"
+                    title={t("notes.backgrounds.default")}
                   >
                     {selectedBackground === null && (
                       <Check className="h-4 w-4 text-accent" />
@@ -147,7 +149,7 @@ export function NoteBackgroundPicker({
               {/* Patterns Section */}
               <div>
                 <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-                  Pattern
+                  {t("notes.backgrounds.pattern")}
                 </h4>
                 <div className="flex items-center gap-3 flex-wrap">
                   {PATTERNS.map((style) => {

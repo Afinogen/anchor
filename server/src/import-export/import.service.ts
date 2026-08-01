@@ -15,6 +15,7 @@ import {
   ImportNotesDto,
   ImportNotesResponse,
 } from './dto/import-notes.dto';
+import { t } from '../i18n/i18n.util';
 import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
@@ -164,7 +165,7 @@ export class ImportService {
       return {
         ref: item.ref,
         status: 'failed',
-        error: 'Failed to create note',
+        error: t('import.noteFailed'),
       };
     }
   }
@@ -181,7 +182,7 @@ export class ImportService {
       if (this.isValidDeltaContent(item.content)) {
         content = item.content;
       } else {
-        warnings.push('Content was not valid note data and was dropped');
+        warnings.push(t('import.warningInvalidContent'));
       }
     }
 
@@ -190,7 +191,9 @@ export class ImportService {
       if (IMPORT_ALLOWED_BACKGROUNDS.has(item.background)) {
         background = item.background;
       } else {
-        warnings.push(`Unknown background "${item.background}" was ignored`);
+        warnings.push(
+          t('import.warningUnknownBackground', { background: item.background }),
+        );
       }
     }
 
@@ -279,16 +282,18 @@ export class ImportService {
     await this.noteAccessService.verifyNoteOwnership(userId, noteId);
 
     if (!file) {
-      throw new BadRequestException('No file provided');
+      throw new BadRequestException(t('notes.noFileProvided'));
     }
     if (!ATTACHMENT_ALLOWED_MIME_TYPES.has(file.mimetype)) {
       throw new BadRequestException(
-        `File type ${file.mimetype} is not allowed`,
+        t('notes.fileTypeNotAllowed', { type: file.mimetype }),
       );
     }
     if (file.size > ATTACHMENT_MAX_FILE_SIZE) {
       throw new BadRequestException(
-        `File size exceeds ${ATTACHMENT_MAX_FILE_SIZE / 1024 / 1024}MB limit`,
+        t('notes.fileTooLarge', {
+          size: ATTACHMENT_MAX_FILE_SIZE / 1024 / 1024,
+        }),
       );
     }
 
@@ -332,7 +337,7 @@ export class ImportService {
           );
         }
       }
-      throw new BadRequestException('Failed to import attachment');
+      throw new BadRequestException(t('import.attachmentFailed'));
     }
   }
 }

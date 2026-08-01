@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:record/record.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
@@ -61,7 +62,7 @@ class _NoteAttachmentSheetState extends State<NoteAttachmentSheet> {
       if (mounted) {
         AppSnackbar.showError(
           context,
-          message: 'Microphone permission required',
+          message: context.l10n.microphonePermissionRequired,
         );
       }
       return;
@@ -238,7 +239,7 @@ class _NoteAttachmentSheetState extends State<NoteAttachmentSheet> {
     if (mime == null) {
       AppSnackbar.showError(
         context,
-        message: 'Unsupported audio format. Allowed: mp3, wav, m4a, ogg, aac',
+        message: context.l10n.unsupportedAudioFormat,
       );
       return;
     }
@@ -313,7 +314,7 @@ class _NoteAttachmentSheetState extends State<NoteAttachmentSheet> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Add Attachment',
+                            context.l10n.addAttachment,
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
@@ -322,10 +323,10 @@ class _NoteAttachmentSheetState extends State<NoteAttachmentSheet> {
                           ),
                           Text(
                             _sheetState == _SheetState.recording
-                                ? 'Recording in progress'
+                                ? context.l10n.recordingInProgress
                                 : _sheetState == _SheetState.preview
-                                ? 'Review your recording'
-                                : 'Images or audio',
+                                ? context.l10n.reviewYourRecording
+                                : context.l10n.imagesOrAudio,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.6,
@@ -361,25 +362,25 @@ class _NoteAttachmentSheetState extends State<NoteAttachmentSheet> {
                   children: [
                     _OptionTile(
                       icon: LucideIcons.camera,
-                      label: 'Take Photo',
+                      label: context.l10n.takePhoto,
                       onTap: () => _pickImage(ImageSource.camera),
                     ),
                     const SizedBox(height: 8),
                     _OptionTile(
                       icon: LucideIcons.image,
-                      label: 'Choose Image',
+                      label: context.l10n.chooseImage,
                       onTap: () => _pickImage(ImageSource.gallery),
                     ),
                     const SizedBox(height: 8),
                     _OptionTile(
                       icon: LucideIcons.mic,
-                      label: 'Record Audio',
+                      label: context.l10n.recordAudio,
                       onTap: _startRecording,
                     ),
                     const SizedBox(height: 8),
                     _OptionTile(
                       icon: LucideIcons.music,
-                      label: 'Choose Audio File',
+                      label: context.l10n.chooseAudioFile,
                       onTap: _pickAudioFile,
                     ),
                   ],
@@ -431,7 +432,7 @@ class _RecordingWidget extends StatelessWidget {
           FilledButton.icon(
             onPressed: onStop,
             icon: const Icon(LucideIcons.square, size: 16),
-            label: const Text('Stop Recording'),
+            label: Text(context.l10n.stopRecording),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.error,
               foregroundColor: theme.colorScheme.onError,
@@ -517,7 +518,7 @@ class _PreviewWidget extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Recording preview',
+                          context.l10n.recordingPreview,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),
@@ -559,7 +560,7 @@ class _PreviewWidget extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onDiscard,
                 icon: const Icon(LucideIcons.trash2, size: 16),
-                label: const Text('Discard'),
+                label: Text(context.l10n.discard),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.colorScheme.error,
                   side: BorderSide(
@@ -575,7 +576,7 @@ class _PreviewWidget extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: onRestart,
                 icon: const Icon(LucideIcons.rotateCcw, size: 16),
-                label: const Text('Re-record'),
+                label: Text(context.l10n.reRecord),
                 style: OutlinedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
@@ -587,7 +588,7 @@ class _PreviewWidget extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: onSave,
                 icon: const Icon(LucideIcons.check, size: 16),
-                label: const Text('Save'),
+                label: Text(context.l10n.save),
                 style: FilledButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),

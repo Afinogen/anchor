@@ -10,6 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { useTranslation } from "@/lib/i18n";
 
 interface DeleteDialogProps {
   open: boolean;
@@ -24,6 +25,7 @@ export function DeleteDialog({
   onConfirm,
   isPending = false,
 }: DeleteDialogProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -32,15 +34,15 @@ export function DeleteDialog({
             <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center">
               <AlertTriangle className="h-5 w-5 text-destructive" />
             </div>
-            Delete note?
+            {t("notes.dialogs.deleteTitle")}
           </DialogTitle>
           <DialogDescription className="pt-2">
-            This note will be moved to trash. You can restore it within 30 days.
+            {t("notes.dialogs.deleteDesc")}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             variant="destructive"
@@ -50,7 +52,7 @@ export function DeleteDialog({
             {isPending ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              "Move to Trash"
+              t("notes.dialogs.moveToTrash")
             )}
           </Button>
         </DialogFooter>

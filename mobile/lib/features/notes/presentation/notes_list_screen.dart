@@ -6,6 +6,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/core/network/connectivity_provider.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/quill_preview.dart';
 import 'package:anchor/core/widgets/app_drawer.dart';
 import 'package:anchor/features/tags/presentation/tags_controller.dart';
@@ -143,13 +144,13 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                       ? IconButton(
                           icon: const Icon(LucideIcons.x),
                           onPressed: _exitSelectionMode,
-                          tooltip: 'Cancel',
+                          tooltip: context.l10n.cancel,
                         )
                       : Builder(
                           builder: (context) => IconButton(
                             icon: const Icon(LucideIcons.menu),
                             onPressed: () => Scaffold.of(context).openDrawer(),
-                            tooltip: 'Menu',
+                            tooltip: context.l10n.menu,
                           ),
                         ),
                   flexibleSpace: isSelectionMode
@@ -173,8 +174,8 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                   title: isSelectionMode
                       ? Text(
                           selectedNoteIds.isEmpty
-                              ? 'Select notes'
-                              : '${selectedNoteIds.length} ${selectedNoteIds.length == 1 ? 'note' : 'notes'}',
+                              ? context.l10n.selectNotes
+                              : context.l10n.notesCount(selectedNoteIds.length),
                           style: theme.textTheme.titleMedium?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.w600,
@@ -201,7 +202,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                                 ? LucideIcons.layoutGrid
                                 : LucideIcons.list,
                           ),
-                          tooltip: 'View options',
+                          tooltip: context.l10n.viewOptions,
                           onPressed: () {
                             showModalBottomSheet(
                               context: context,
@@ -232,7 +233,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                                 .surfaceContainerHighest
                                 .withValues(alpha: 0.5),
                           ),
-                          hintText: 'Search your thoughts...',
+                          hintText: context.l10n.searchHint,
                           leading: const Icon(LucideIcons.search),
                           trailing: [
                             if (searchQuery.isNotEmpty)
@@ -354,7 +355,9 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                     child: Center(child: CircularProgressIndicator()),
                   ),
                   error: (err, stack) => SliverFillRemaining(
-                    child: Center(child: Text('Error: $err')),
+                    child: Center(
+                      child: Text(context.l10n.errorWithMessage(err.toString())),
+                    ),
                   ),
                 ),
               ],
@@ -366,7 +369,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
             : FloatingActionButton.extended(
                 onPressed: () => context.go('/note/new'),
                 icon: const Icon(LucideIcons.plus),
-                label: const Text('New Note'),
+                label: Text(context.l10n.newNote),
               ),
       ),
     );
@@ -405,7 +408,7 @@ class _TagFilterChip extends StatelessWidget {
                 Icon(LucideIcons.filter, size: 14, color: tagColor),
                 const SizedBox(width: 6),
                 Text(
-                  'Filtering by',
+                  context.l10n.filteringBy,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),

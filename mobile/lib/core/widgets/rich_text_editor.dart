@@ -6,6 +6,7 @@ import 'package:flutter_quill/flutter_quill.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../extensions/build_context_l10n.dart';
 import 'app_snackbar.dart';
 import 'editor/checklist_reorder_mixin.dart';
 import 'editor/editor_styles.dart';
@@ -345,7 +346,7 @@ class RichTextEditorState extends State<RichTextEditor>
   Future<void> _copyLink(String url) async {
     await Clipboard.setData(ClipboardData(text: url));
     if (!mounted) return;
-    AppSnackbar.showSuccess(context, message: 'Link copied');
+    AppSnackbar.showSuccess(context, message: context.l10n.linkCopied);
   }
 
   // Public API
@@ -487,18 +488,22 @@ class _LinkActionBubble extends StatelessWidget {
           ),
           _BubbleAction(
             icon: LucideIcons.externalLink,
-            tooltip: 'Open',
+            tooltip: context.l10n.linkOpen,
             onTap: onOpen,
           ),
-          _BubbleAction(icon: LucideIcons.copy, tooltip: 'Copy', onTap: onCopy),
+          _BubbleAction(
+            icon: LucideIcons.copy,
+            tooltip: context.l10n.copy,
+            onTap: onCopy,
+          ),
           _BubbleAction(
             icon: LucideIcons.pencil,
-            tooltip: 'Edit',
+            tooltip: context.l10n.linkEdit,
             onTap: onEdit,
           ),
           _BubbleAction(
             icon: LucideIcons.unlink,
-            tooltip: 'Remove',
+            tooltip: context.l10n.remove,
             onTap: onRemove,
             color: theme.colorScheme.error,
           ),

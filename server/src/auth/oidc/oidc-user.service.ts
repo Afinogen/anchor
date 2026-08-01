@@ -11,6 +11,7 @@ import {
   OIDC_USER_SELECT,
   CONTENT_TYPE_EXT_MAP,
 } from './oidc.constants';
+import { t } from '../../i18n/i18n.util';
 
 @Injectable()
 export class OidcUserService {
@@ -61,9 +62,7 @@ export class OidcUserService {
               existingByEmail.oidcSubject != null &&
               existingByEmail.oidcSubject !== claims.subject
             ) {
-              throw new ConflictException(
-                'This email is already linked to a different sign-in account.',
-              );
+              throw new ConflictException(t('oidc.emailLinkedToDifferent'));
             }
             const updateData: {
               oidcSubject?: string;

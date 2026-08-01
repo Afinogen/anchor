@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/features/notes/domain/note.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
@@ -17,23 +18,26 @@ class ArchiveScreen extends ConsumerWidget {
       builder: (ctx) => ConfirmDialog(
         icon: LucideIcons.archiveRestore,
         iconColor: Theme.of(context).colorScheme.primary,
-        title: 'Unarchive Note',
-        message: 'This note will be moved back to your notes.',
-        cancelText: 'Cancel',
-        confirmText: 'Unarchive',
+        title: context.l10n.unarchiveNoteTitle,
+        message: context.l10n.noteMovedBack,
+        cancelText: context.l10n.cancel,
+        confirmText: context.l10n.unarchive,
         onConfirm: () async {
           try {
             await ref
                 .read(archiveControllerProvider.notifier)
                 .unarchiveNote(note.id);
             if (context.mounted) {
-              AppSnackbar.showSuccess(context, message: 'Note unarchived');
+              AppSnackbar.showSuccess(
+                context,
+                message: context.l10n.noteUnarchived,
+              );
             }
           } catch (e) {
             if (context.mounted) {
               AppSnackbar.showError(
                 context,
-                message: 'Failed to unarchive note',
+                message: context.l10n.failedToUnarchive,
               );
             }
           }
@@ -55,7 +59,7 @@ class ArchiveScreen extends ConsumerWidget {
           onPressed: () => context.pop(),
         ),
         title: Text(
-          'Archive',
+          context.l10n.archive,
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -82,7 +86,7 @@ class ArchiveScreen extends ConsumerWidget {
                     Icon(LucideIcons.archive, size: 64, color: theme.hintColor),
                     const SizedBox(height: 16),
                     Text(
-                      'Archive is empty',
+                      context.l10n.archiveEmpty,
                       style: theme.textTheme.bodyLarge?.copyWith(
                         color: theme.hintColor,
                       ),
@@ -100,14 +104,14 @@ class ArchiveScreen extends ConsumerWidget {
                   padding: const EdgeInsets.only(bottom: 12),
                   child: NoteCard(
                     note: note,
-                    datePrefix: 'Archived',
+                    datePrefix: context.l10n.archivedPrefix,
                     onTap: () => context.push('/note/${note.id}', extra: note),
                     trailingActions: [
                       IconButton(
                         icon: const Icon(LucideIcons.archiveRestore),
                         onPressed: () =>
                             _showUnarchiveDialog(context, ref, note),
-                        tooltip: 'Unarchive',
+                        tooltip: context.l10n.unarchive,
                         visualDensity: VisualDensity.compact,
                       ),
                     ],
@@ -117,7 +121,8 @@ class ArchiveScreen extends ConsumerWidget {
             );
           },
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('Error: $err')),
+          error: (err, stack) =>
+              Center(child: Text(context.l10n.errorWithMessage(err.toString()))),
         ),
       ),
     );

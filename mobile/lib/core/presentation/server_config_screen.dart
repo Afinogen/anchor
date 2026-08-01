@@ -7,10 +7,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../extensions/build_context_l10n.dart';
 import '../network/dio_provider.dart';
 import '../network/server_config_provider.dart';
 import '../widgets/app_snackbar.dart';
 import '../widgets/anchor_icon.dart';
+import '../widgets/language_toggle_button.dart';
 
 class ServerConfigScreen extends ConsumerStatefulWidget {
   final String? initialUrl;
@@ -50,17 +52,16 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
     if (e is DioException) {
       if (e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.receiveTimeout) {
-        errorMessage = 'Connection timed out. Check the URL and try again.';
+        errorMessage = context.l10n.connectionTimedOut;
       } else if (e.type == DioExceptionType.connectionError) {
-        errorMessage = 'Could not connect to server. Check the URL.';
+        errorMessage = context.l10n.couldNotConnect;
       } else if (e.type == DioExceptionType.badCertificate) {
-        errorMessage =
-            'Certificate error. Try enabling "Allow self-signed certificates" below.';
+        errorMessage = context.l10n.certificateErrorTryToggle;
       } else {
-        errorMessage = 'Failed to connect to server';
+        errorMessage = context.l10n.failedToConnect;
       }
     } else {
-      errorMessage = 'Failed to connect to server';
+      errorMessage = context.l10n.failedToConnect;
     }
     setState(() {
       _error = errorMessage;
@@ -107,12 +108,12 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
         if (mounted) {
           AppSnackbar.showSuccess(
             context,
-            message: 'Server is running! Version: $version',
+            message: context.l10n.serverRunningVersion(version.toString()),
           );
         }
       } else {
         setState(() {
-          _error = 'Invalid server response. Is this an Anchor server?';
+          _error = context.l10n.invalidServerResponse;
         });
       }
     } catch (e) {
@@ -156,7 +157,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
         ref.invalidate(registrationModeProvider);
       } else {
         setState(() {
-          _error = 'Invalid server response. Is this an Anchor server?';
+          _error = context.l10n.invalidServerResponse;
         });
       }
     } catch (e) {
@@ -172,21 +173,21 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
   String? _validateUrl(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Please enter the server URL';
+      return context.l10n.pleaseEnterServerUrl;
     }
 
     final url = value.trim();
     if (!url.startsWith('http://') && !url.startsWith('https://')) {
-      return 'URL must start with http:// or https://';
+      return context.l10n.urlMustStartWith;
     }
 
     try {
       final uri = Uri.parse(url);
       if (uri.host.isEmpty) {
-        return 'Please enter a valid URL';
+        return context.l10n.pleaseEnterValidUrl;
       }
     } catch (_) {
-      return 'Please enter a valid URL';
+      return context.l10n.pleaseEnterValidUrl;
     }
 
     return null;
@@ -200,10 +201,19 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Form(
+        child: Stack(
+          children: [
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: const LanguageToggleButton(),
+              ),
+            ),
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Form(
               key: _formKey,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -214,7 +224,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
                   // Title
                   Text(
-                    'Connect to Server',
+                    context.l10n.connectToServer,
                     style: GoogleFonts.playfairDisplay(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -226,7 +236,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
                   // Subtitle
                   Text(
-                    'Enter your Anchor server URL to get started',
+                    context.l10n.enterServerUrl,
                     style: GoogleFonts.dmSans(
                       fontSize: 16,
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -239,13 +249,13 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                   TextFormField(
                     controller: _urlController,
                     decoration: InputDecoration(
-                      labelText: 'Server URL',
-                      hintText: 'https://your-server.com',
+                      labelText: context.l10n.serverUrl,
+                      hintText: context.l10n.serverUrlHint,
                       prefixIcon: const Icon(LucideIcons.globe),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      helperText: 'Example: https://anchor.example.com',
+                      helperText: context.l10n.serverUrlHelper,
                     ),
                     keyboardType: TextInputType.url,
                     autocorrect: false,
@@ -271,12 +281,12 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Allow self-signed certificates',
+                              context.l10n.allowSelfSigned,
                               style: theme.textTheme.bodyMedium,
                             ),
                             if (allowSelfSigned)
                               Text(
-                                'Warning: Connection security is reduced',
+                                context.l10n.selfSignedWarning,
                                 style: TextStyle(
                                   color: theme.colorScheme.error,
                                   fontSize: 12,
@@ -294,8 +304,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                           if (value && mounted) {
                             AppSnackbar.showWarning(
                               context,
-                              message:
-                                  'Self-signed certificates are now accepted. This reduces connection security.',
+                              message: context.l10n.selfSignedSnackbar,
                             );
                           }
                         },
@@ -332,7 +341,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                                   ),
                                 )
                               : const Icon(LucideIcons.wifi),
-                          label: const Text('Test'),
+                          label: Text(context.l10n.test),
                           style: OutlinedButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -355,7 +364,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                                   ),
                                 )
                               : const Icon(LucideIcons.arrowRight),
-                          label: const Text('Connect'),
+                          label: Text(context.l10n.connect),
                           style: FilledButton.styleFrom(
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
@@ -386,7 +395,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Anchor is self-hosted. You need to run your own server to use this app.',
+                            context.l10n.selfHostedInfo,
                             style: GoogleFonts.dmSans(
                               fontSize: 13,
                               color: theme.colorScheme.onSurface.withValues(
@@ -402,6 +411,8 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
               ),
             ),
           ),
+        ),
+          ],
         ),
       ),
     );

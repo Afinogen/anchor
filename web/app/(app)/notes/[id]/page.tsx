@@ -28,6 +28,7 @@ import {
   updateNote,
 } from "@/features/notes";
 import type { RichTextEditorHandle } from "@/features/notes/components/editor";
+import { useTranslation } from "@/lib/i18n";
 
 type PendingFocusRestore =
   | {
@@ -46,6 +47,7 @@ function getFocusRestoreStorageKey(noteId: string) {
 }
 
 export default function NoteEditorPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const params = useParams();
   const router = useRouter();
@@ -278,12 +280,12 @@ export default function NoteEditorPage() {
           JSON.stringify(pendingFocusRestoreRef.current),
         );
       }
-      toast.success("Note created");
+      toast.success(t("notes.editor.created"));
       router.replace(`/notes/${newNote.id}`);
     },
     onError: () => {
       pendingFocusRestoreRef.current = null;
-      toast.error("Failed to create note");
+      toast.error(t("notes.editor.createFailed"));
     },
   });
 
@@ -342,7 +344,7 @@ export default function NoteEditorPage() {
       };
     },
     onError: () => {
-      toast.error("Failed to save note");
+      toast.error(t("notes.editor.saveFailed"));
     },
   });
 
@@ -352,11 +354,11 @@ export default function NoteEditorPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
-      toast.success("Note moved to trash");
+      toast.success(t("notes.editor.movedToTrash"));
       router.back();
     },
     onError: () => {
-      toast.error("Failed to delete note");
+      toast.error(t("notes.editor.deleteFailed"));
     },
   });
 
@@ -369,11 +371,11 @@ export default function NoteEditorPage() {
       queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       setIsArchived(true);
-      toast.success("Note archived");
+      toast.success(t("notes.editor.archived"));
       router.back();
     },
     onError: () => {
-      toast.error("Failed to archive note");
+      toast.error(t("notes.editor.archiveFailed"));
     },
   });
 
@@ -390,10 +392,10 @@ export default function NoteEditorPage() {
       setNoteFromStorage(null);
       // Refetch the note to get updated data
       await refetchNote();
-      toast.success("Note unarchived");
+      toast.success(t("notes.editor.unarchived"));
     },
     onError: () => {
-      toast.error("Failed to unarchive note");
+      toast.error(t("notes.editor.unarchiveFailed"));
     },
   });
 
@@ -409,10 +411,10 @@ export default function NoteEditorPage() {
       setNoteFromStorage(null);
       // Refetch the note to get updated data
       await refetchNote();
-      toast.success("Note restored");
+      toast.success(t("notes.editor.restored"));
     },
     onError: () => {
-      toast.error("Failed to restore note");
+      toast.error(t("notes.editor.restoreFailed"));
     },
   });
 
@@ -423,11 +425,11 @@ export default function NoteEditorPage() {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
-      toast.success("Note permanently deleted");
+      toast.success(t("notes.editor.permanentlyDeleted"));
       router.back();
     },
     onError: () => {
-      toast.error("Failed to delete note");
+      toast.error(t("notes.editor.deleteFailed"));
     },
   });
 
@@ -620,7 +622,9 @@ export default function NoteEditorPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
           <Loader2 className="h-8 w-8 animate-spin text-accent" />
-          <span className="text-sm text-muted-foreground">Loading note...</span>
+          <span className="text-sm text-muted-foreground">
+            {t("notes.editor.loadingNote")}
+          </span>
         </div>
       </div>
     );
@@ -664,8 +668,8 @@ export default function NoteEditorPage() {
         <ReadOnlyBanner
           message={
             note?.state === "trashed"
-              ? "This note is in trash and cannot be edited. Restore it to make changes."
-              : "You have viewer access. Only the owner can edit this note."
+              ? t("notes.editor.readOnlyTrashed")
+              : t("notes.editor.readOnlyViewer")
           }
         />
       )}

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../extensions/build_context_l10n.dart';
 import 'link_utils.dart';
 
 /// Formatting state for the editor toolbar
@@ -123,7 +124,7 @@ class EditorToolbar extends StatelessWidget {
                     controller.undo();
                     HapticFeedback.lightImpact();
                   },
-                  tooltip: 'Undo',
+                  tooltip: context.l10n.fmtUndo,
                 ),
                 _ToolbarButtonData(
                   icon: LucideIcons.redo2,
@@ -132,7 +133,7 @@ class EditorToolbar extends StatelessWidget {
                     controller.redo();
                     HapticFeedback.lightImpact();
                   },
-                  tooltip: 'Redo',
+                  tooltip: context.l10n.fmtRedo,
                 ),
               ],
             ),
@@ -145,25 +146,25 @@ class EditorToolbar extends StatelessWidget {
                   icon: LucideIcons.bold,
                   isActive: state.isBold,
                   onTap: () => _toggleFormat(Attribute.bold),
-                  tooltip: 'Bold',
+                  tooltip: context.l10n.fmtBold,
                 ),
                 _ToolbarButtonData(
                   icon: LucideIcons.italic,
                   isActive: state.isItalic,
                   onTap: () => _toggleFormat(Attribute.italic),
-                  tooltip: 'Italic',
+                  tooltip: context.l10n.fmtItalic,
                 ),
                 _ToolbarButtonData(
                   icon: LucideIcons.underline,
                   isActive: state.isUnderline,
                   onTap: () => _toggleFormat(Attribute.underline),
-                  tooltip: 'Underline',
+                  tooltip: context.l10n.fmtUnderline,
                 ),
                 _ToolbarButtonData(
                   icon: LucideIcons.strikethrough,
                   isActive: state.isStrikethrough,
                   onTap: () => _toggleFormat(Attribute.strikeThrough),
-                  tooltip: 'Strikethrough',
+                  tooltip: context.l10n.fmtStrikethrough,
                 ),
               ],
             ),
@@ -176,19 +177,19 @@ class EditorToolbar extends StatelessWidget {
                   icon: LucideIcons.heading1,
                   isActive: state.headerLevel == 1,
                   onTap: () => _toggleHeader(1),
-                  tooltip: 'Heading 1',
+                  tooltip: context.l10n.fmtHeading1,
                 ),
                 _ToolbarButtonData(
                   icon: LucideIcons.heading2,
                   isActive: state.headerLevel == 2,
                   onTap: () => _toggleHeader(2),
-                  tooltip: 'Heading 2',
+                  tooltip: context.l10n.fmtHeading2,
                 ),
                 _ToolbarButtonData(
                   icon: LucideIcons.heading3,
                   isActive: state.headerLevel == 3,
                   onTap: () => _toggleHeader(3),
-                  tooltip: 'Heading 3',
+                  tooltip: context.l10n.fmtHeading3,
                 ),
               ],
             ),
@@ -201,19 +202,19 @@ class EditorToolbar extends StatelessWidget {
                   icon: LucideIcons.listChecks,
                   isActive: state.isChecklist,
                   onTap: () => _toggleList(Attribute.unchecked),
-                  tooltip: 'Checklist',
+                  tooltip: context.l10n.fmtChecklist,
                 ),
                 _ToolbarButtonData(
                   icon: LucideIcons.listOrdered,
                   isActive: state.isNumberedList,
                   onTap: () => _toggleList(Attribute.ol),
-                  tooltip: 'Numbered List',
+                  tooltip: context.l10n.fmtNumberedList,
                 ),
                 _ToolbarButtonData(
                   icon: LucideIcons.list,
                   isActive: state.isBulletList,
                   onTap: () => _toggleList(Attribute.ul),
-                  tooltip: 'Bullet List',
+                  tooltip: context.l10n.fmtBulletList,
                 ),
               ],
             ),
@@ -226,19 +227,21 @@ class EditorToolbar extends StatelessWidget {
                   icon: LucideIcons.quote,
                   isActive: state.isQuote,
                   onTap: () => _toggleBlock(Attribute.blockQuote),
-                  tooltip: 'Quote',
+                  tooltip: context.l10n.fmtQuote,
                 ),
                 _ToolbarButtonData(
                   icon: LucideIcons.code,
                   isActive: state.isCode,
                   onTap: () => _toggleBlock(Attribute.codeBlock),
-                  tooltip: 'Code Block',
+                  tooltip: context.l10n.fmtCodeBlock,
                 ),
                 _ToolbarButtonData(
                   icon: LucideIcons.link,
                   isActive: state.linkUrl != null,
                   onTap: onLinkPressed ?? () {},
-                  tooltip: state.linkUrl != null ? 'Edit link' : 'Link',
+                  tooltip: state.linkUrl != null
+                      ? context.l10n.fmtEditLink
+                      : context.l10n.fmtLink,
                 ),
               ],
             ),

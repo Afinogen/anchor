@@ -1,0 +1,10 @@
+{
+  "accessRequired": "Admin access required",
+  "userAlreadyExists": "User already exists",
+  "userNotFound": "User not found",
+  "emailInUse": "Email already in use",
+  "cannotChangeOwnAdmin": "Cannot change your own admin status",
+  "cannotRemoveLastAdmin": "Cannot remove admin status from the last admin user",
+  "cannotDeleteLastAdmin": "Cannot delete the last admin user",
+  "userNotPending": "User is not pending approval"
+}

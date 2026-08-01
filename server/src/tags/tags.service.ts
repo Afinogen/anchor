@@ -11,6 +11,7 @@ import {
   getSyncUpdatedAtWindow,
   withForcedSyncIds,
 } from '../sync/sync-window.util';
+import { t } from '../i18n/i18n.util';
 
 @Injectable()
 export class TagsService {
@@ -27,7 +28,7 @@ export class TagsService {
     });
 
     if (existing) {
-      throw new ConflictException('A tag with this name already exists');
+      throw new ConflictException(t('tags.nameExists'));
     }
 
     return this.prisma.tag.create({
@@ -90,7 +91,7 @@ export class TagsService {
     });
 
     if (!tag || tag.userId !== userId || tag.isDeleted) {
-      throw new NotFoundException('Tag not found');
+      throw new NotFoundException(t('tags.notFound'));
     }
 
     return tag;
@@ -111,7 +112,7 @@ export class TagsService {
       });
 
       if (existing) {
-        throw new ConflictException('A tag with this name already exists');
+        throw new ConflictException(t('tags.nameExists'));
       }
     }
 

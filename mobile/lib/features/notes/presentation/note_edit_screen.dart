@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:anchor/core/logging/app_logger.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/core/providers/active_user_id_provider.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/rich_text_editor.dart';
@@ -294,12 +295,14 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       builder: (ctx) => ConfirmDialog(
         icon: LucideIcons.archive,
         iconColor: Theme.of(context).colorScheme.primary,
-        title: wasArchived ? 'Unarchive Note' : 'Archive Note',
+        title: wasArchived
+            ? context.l10n.unarchiveNoteTitle
+            : context.l10n.archiveNoteTitle,
         message: wasArchived
-            ? 'This note will be moved back to your notes.'
-            : 'This note will be moved to archive.',
-        cancelText: 'Cancel',
-        confirmText: wasArchived ? 'Unarchive' : 'Archive',
+            ? context.l10n.noteMovedBack
+            : context.l10n.noteWillBeArchived,
+        cancelText: context.l10n.cancel,
+        confirmText: wasArchived ? context.l10n.unarchive : context.l10n.archive,
         onConfirm: () {},
       ),
     );
@@ -321,7 +324,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       if (mounted) {
         AppSnackbar.showSuccess(
           context,
-          message: wasArchived ? 'Note unarchived' : 'Note archived',
+          message: wasArchived
+              ? context.l10n.noteUnarchived
+              : context.l10n.noteArchived,
         );
 
         // If archiving, go back after showing snackbar
@@ -339,8 +344,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         AppSnackbar.showError(
           context,
           message: wasArchived
-              ? 'Failed to unarchive note'
-              : 'Failed to archive note',
+              ? context.l10n.failedToUnarchive
+              : context.l10n.failedToArchive,
         );
       }
     }
@@ -408,10 +413,16 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
             final repo = ref.read(noteAttachmentsRepositoryProvider);
             await repo.addAttachment(noteId, filePath, mimeType, filename);
             if (!context.mounted) return;
-            AppSnackbar.showSuccess(context, message: 'Attachment added');
+            AppSnackbar.showSuccess(
+              context,
+              message: context.l10n.attachmentAdded,
+            );
           } catch (_) {
             if (!context.mounted) return;
-            AppSnackbar.showError(context, message: 'Failed to add attachment');
+            AppSnackbar.showError(
+              context,
+              message: context.l10n.failedToAddAttachment,
+            );
           }
         },
       ),
@@ -576,11 +587,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       builder: (ctx) => ConfirmDialog(
         icon: LucideIcons.trash2,
         iconColor: Theme.of(context).colorScheme.error,
-        title: 'Delete Note',
-        message:
-            'This note will be gone forever. Are you sure you want to let it go?',
-        cancelText: 'Keep',
-        confirmText: 'Delete',
+        title: context.l10n.deleteNoteTitle,
+        message: context.l10n.deleteNoteMessage,
+        cancelText: context.l10n.keep,
+        confirmText: context.l10n.delete,
         confirmColor: Theme.of(context).colorScheme.error,
         onConfirm: () {},
       ),
@@ -592,12 +602,18 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         _isDeleted = true;
 
         if (mounted) {
-          AppSnackbar.showSuccess(context, message: 'Note moved to trash');
+          AppSnackbar.showSuccess(
+            context,
+            message: context.l10n.noteMovedToTrash,
+          );
           _popOrExit();
         }
       } catch (e) {
         if (mounted) {
-          AppSnackbar.showError(context, message: 'Failed to delete note');
+          AppSnackbar.showError(
+            context,
+            message: context.l10n.failedToDeleteNote,
+          );
         }
       }
     }
@@ -611,10 +627,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       builder: (ctx) => ConfirmDialog(
         icon: LucideIcons.rotateCcw,
         iconColor: Theme.of(context).colorScheme.primary,
-        title: 'Restore Note',
-        message: 'This note will be restored to your notes.',
-        cancelText: 'Cancel',
-        confirmText: 'Restore',
+        title: context.l10n.restoreNoteTitle,
+        message: context.l10n.noteWillBeRestored,
+        cancelText: context.l10n.cancel,
+        confirmText: context.l10n.restore,
         onConfirm: () {},
       ),
     );
@@ -628,11 +644,11 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       await _loadNote();
 
       if (mounted) {
-        AppSnackbar.showSuccess(context, message: 'Note restored');
+        AppSnackbar.showSuccess(context, message: context.l10n.noteRestored);
       }
     } catch (e) {
       if (mounted) {
-        AppSnackbar.showError(context, message: 'Failed to restore note');
+        AppSnackbar.showError(context, message: context.l10n.failedToRestore);
       }
     }
   }
@@ -645,11 +661,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       builder: (ctx) => ConfirmDialog(
         icon: LucideIcons.trash2,
         iconColor: Theme.of(context).colorScheme.error,
-        title: 'Delete Forever',
-        message:
-            'This action cannot be undone. This note will be permanently deleted and cannot be recovered.',
-        cancelText: 'Cancel',
-        confirmText: 'Delete Forever',
+        title: context.l10n.deleteForever,
+        message: context.l10n.deleteForeverMessageLong,
+        cancelText: context.l10n.cancel,
+        confirmText: context.l10n.deleteForever,
         confirmColor: Theme.of(context).colorScheme.error,
         onConfirm: () {},
       ),
@@ -661,12 +676,18 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         _isDeleted = true;
 
         if (mounted) {
-          AppSnackbar.showSuccess(context, message: 'Note permanently deleted');
+          AppSnackbar.showSuccess(
+            context,
+            message: context.l10n.notePermanentlyDeleted,
+          );
           _popOrExit();
         }
       } catch (e) {
         if (mounted) {
-          AppSnackbar.showError(context, message: 'Failed to delete note');
+          AppSnackbar.showError(
+            context,
+            message: context.l10n.failedToDeleteNote,
+          );
         }
       }
     }
@@ -693,7 +714,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
               ),
               const SizedBox(width: 6),
               Text(
-                'Shared by ${sharedBy.name}',
+                context.l10n.sharedBy(sharedBy.name),
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSecondaryContainer,
                   fontWeight: FontWeight.w600,
@@ -733,7 +754,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         ],
       ),
       onPressed: _isLoaded ? _togglePinned : null,
-      tooltip: _isPinned ? 'Unpin Note' : 'Pin Note',
+      tooltip: _isPinned ? context.l10n.unpinNote : context.l10n.pinNote,
     );
   }
 
@@ -769,7 +790,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         ],
       ),
       onPressed: _isLoaded && !_isNew ? _showShareSheet : null,
-      tooltip: 'Share Note',
+      tooltip: context.l10n.shareNote,
     );
   }
 
@@ -789,8 +810,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
           Expanded(
             child: Text(
               isTrashed
-                  ? 'This note is in trash and cannot be edited. Restore it to make changes.'
-                  : 'You have viewer access. Only the owner can edit this note.',
+                  ? context.l10n.readOnlyTrashed
+                  : context.l10n.readOnlyViewer,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
@@ -825,7 +846,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                 color: theme.colorScheme.onSurface,
               ),
               decoration: InputDecoration(
-                hintText: isReadOnly ? 'Untitled' : 'Title',
+                hintText: isReadOnly
+                    ? context.l10n.untitledNote
+                    : context.l10n.titleHint,
                 hintStyle: isReadOnly
                     ? theme.textTheme.displaySmall?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -898,12 +921,12 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                 IconButton(
                   icon: const Icon(LucideIcons.rotateCcw),
                   onPressed: _isLoaded && !_isNew ? _restoreNote : null,
-                  tooltip: 'Restore Note',
+                  tooltip: context.l10n.restoreNoteTitle,
                 ),
                 IconButton(
                   icon: const Icon(LucideIcons.trash2),
                   onPressed: _isLoaded && !_isNew ? _permanentDeleteNote : null,
-                  tooltip: 'Delete Forever',
+                  tooltip: context.l10n.deleteForever,
                 ),
               ] else ...[
                 if (_existingNote?.sharedBy != null)
@@ -913,7 +936,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                 if (!isReadOnly || (_existingNote?.isOwner ?? true))
                   IconButton(
                     icon: const Icon(LucideIcons.moreVertical),
-                    tooltip: 'More options',
+                    tooltip: context.l10n.moreOptionsTooltip,
                     onPressed: _showOptionsSheet,
                   ),
               ],
@@ -932,7 +955,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                         ? RichTextEditor(
                             key: _editorKey,
                             initialContent: _initialContent,
-                            hintText: 'Start typing...',
+                            hintText: context.l10n.startTyping,
                             showToolbar: _isEditing && !isReadOnly,
                             canEdit: !isReadOnly,
                             onEditingChanged: (_) => _updateEditingState(),

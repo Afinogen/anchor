@@ -19,6 +19,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { generateApiToken } from './utils/generate-api-token';
+import { t } from '../i18n/i18n.util';
 
 const REFRESH_TOKEN_VALIDITY_DAYS = 90;
 
@@ -42,7 +43,7 @@ export class AuthService {
     const registrationMode = await this.settingsService.getRegistrationMode();
 
     if (registrationMode === 'disabled') {
-      throw new ForbiddenException('Registration is disabled');
+      throw new ForbiddenException(t('auth.registrationDisabled'));
     }
 
     const existingUser = await this.prisma.user.findUnique({
@@ -50,7 +51,7 @@ export class AuthService {
     });
 
     if (existingUser) {
-      throw new ConflictException('User already exists');
+      throw new ConflictException(t('auth.userAlreadyExists'));
     }
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
@@ -96,7 +97,7 @@ export class AuthService {
     // Return without token for pending users
     return {
       user,
-      message: 'Registration successful. Your account is pending approval.',
+      message: t('auth.registrationPending'),
     };
   }
 
@@ -117,14 +118,12 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(t('auth.invalidCredentials'));
     }
 
     // OIDC users don't have passwords - they must use OIDC login
     if (!user.password) {
-      throw new UnauthorizedException(
-        'This account uses OIDC authentication. Please use the OIDC login option.',
-      );
+      throw new UnauthorizedException(t('auth.oidcAccount'));
     }
 
     const isPasswordValid = await bcrypt.compare(
@@ -133,14 +132,12 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
+      throw new UnauthorizedException(t('auth.invalidCredentials'));
     }
 
     // Check if user is pending approval
     if (user.status === UserStatus.pending) {
-      throw new ForbiddenException(
-        'Account pending approval. Please wait for an administrator to approve your account.',
-      );
+      throw new ForbiddenException(t('auth.accountPendingApprovalLong'));
     }
 
     // Remove password from user object
@@ -161,7 +158,7 @@ export class AuthService {
     });
 
     if (!storedToken) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new UnauthorizedException(t('auth.invalidRefreshToken'));
     }
 
     // Check if token has expired
@@ -170,12 +167,12 @@ export class AuthService {
       await this.prisma.refreshToken.deleteMany({
         where: { id: storedToken.id },
       });
-      throw new UnauthorizedException('Refresh token has expired');
+      throw new UnauthorizedException(t('auth.refreshTokenExpired'));
     }
 
     // Check if user is still active
     if (storedToken.user.status === UserStatus.pending) {
-      throw new UnauthorizedException('Account pending approval');
+      throw new UnauthorizedException(t('auth.accountPendingApproval'));
     }
 
     // Revoke the old refresh token (token rotation)
@@ -210,11 +207,11 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new ForbiddenException('User not found');
+      throw new ForbiddenException(t('auth.userNotFound'));
     }
 
     if (user.status !== UserStatus.active) {
-      throw new ForbiddenException('Account pending approval');
+      throw new ForbiddenException(t('auth.accountPendingApproval'));
     }
 
     return { apiToken: user.apiToken };
@@ -227,11 +224,11 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new ForbiddenException('User not found');
+      throw new ForbiddenException(t('auth.userNotFound'));
     }
 
     if (user.status !== UserStatus.active) {
-      throw new ForbiddenException('Account pending approval');
+      throw new ForbiddenException(t('auth.accountPendingApproval'));
     }
 
     await this.prisma.user.update({
@@ -249,11 +246,11 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new ForbiddenException('User not found');
+      throw new ForbiddenException(t('auth.userNotFound'));
     }
 
     if (user.status !== UserStatus.active) {
-      throw new ForbiddenException('Account pending approval');
+      throw new ForbiddenException(t('auth.accountPendingApproval'));
     }
 
     const apiToken = await this.generateUniqueApiToken();
@@ -272,14 +269,12 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new ForbiddenException('User not found');
+      throw new ForbiddenException(t('auth.userNotFound'));
     }
 
     // OIDC users don't have passwords
     if (!user.password) {
-      throw new BadRequestException(
-        'Password change is not available for OIDC-authenticated users. Please change your password through your identity provider.',
-      );
+      throw new BadRequestException(t('auth.oidcPasswordChange'));
     }
 
     // Verify current password
@@ -289,7 +284,7 @@ export class AuthService {
     );
 
     if (!isCurrentPasswordValid) {
-      throw new ForbiddenException('Current password is incorrect');
+      throw new ForbiddenException(t('auth.currentPasswordIncorrect'));
     }
 
     // Check if new password is different from current password
@@ -299,9 +294,7 @@ export class AuthService {
     );
 
     if (isSamePassword) {
-      throw new BadRequestException(
-        'New password must be different from current password',
-      );
+      throw new BadRequestException(t('auth.newPasswordSame'));
     }
 
     // Hash and update password
@@ -312,7 +305,7 @@ export class AuthService {
       data: { password: hashedPassword },
     });
 
-    return { message: 'Password changed successfully' };
+    return { message: t('auth.passwordChanged') };
   }
 
   async updateProfile(userId: string, updateProfileDto: UpdateProfileDto) {
@@ -322,7 +315,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new ForbiddenException('User not found');
+      throw new ForbiddenException(t('auth.userNotFound'));
     }
 
     try {
@@ -343,9 +336,7 @@ export class AuthService {
 
       return updatedUser;
     } catch {
-      throw new BadRequestException(
-        'Failed to update profile. Please try again.',
-      );
+      throw new BadRequestException(t('auth.updateProfileFailed'));
     }
   }
 
@@ -356,7 +347,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new ForbiddenException('User not found');
+      throw new ForbiddenException(t('auth.userNotFound'));
     }
 
     // Ensure uploads directory exists
@@ -414,9 +405,7 @@ export class AuthService {
           );
         }
       }
-      throw new BadRequestException(
-        'Failed to upload profile image. Please try again.',
-      );
+      throw new BadRequestException(t('auth.uploadImageFailed'));
     }
   }
 
@@ -427,7 +416,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new ForbiddenException('User not found');
+      throw new ForbiddenException(t('auth.userNotFound'));
     }
 
     const oldImagePath: string | null = user.profileImage || null;
@@ -455,9 +444,7 @@ export class AuthService {
 
       return updatedUser;
     } catch {
-      throw new BadRequestException(
-        'Failed to remove profile image. Please try again.',
-      );
+      throw new BadRequestException(t('auth.removeImageFailed'));
     }
   }
 
@@ -500,9 +487,7 @@ export class AuthService {
       }
     }
 
-    throw new BadRequestException(
-      'Failed to generate API token. Please try again.',
-    );
+    throw new BadRequestException(t('auth.generateApiTokenFailed'));
   }
 
   /**

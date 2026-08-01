@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/features/notes/domain/note_attachment.dart';
@@ -69,7 +70,10 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
     // Listen to playback errors per the just_audio docs
     _errorSub = _player.errorStream.listen((e) {
       if (mounted) {
-        AppSnackbar.showError(context, message: 'Playback error: ${e.message}');
+        AppSnackbar.showError(
+          context,
+          message: context.l10n.playbackError(e.message ?? ''),
+        );
       }
     });
   }
@@ -126,7 +130,7 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
       await _player.play();
     } else if (widget.onDownload != null) {
       if (!widget.isOnline) {
-        AppSnackbar.showInfo(context, message: 'Available when online');
+        AppSnackbar.showInfo(context, message: context.l10n.availableWhenOnline);
         return;
       }
       setState(() => _isLoading = true);
@@ -139,12 +143,15 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
         if (mounted) {
           AppSnackbar.showError(
             context,
-            message: 'Could not play audio: ${e.message}',
+            message: context.l10n.couldNotPlayAudio(e.message ?? ''),
           );
         }
       } catch (_) {
         if (mounted) {
-          AppSnackbar.showError(context, message: 'Failed to load audio');
+          AppSnackbar.showError(
+            context,
+            message: context.l10n.failedToLoadAudio,
+          );
         }
       } finally {
         if (mounted) setState(() => _isLoading = false);
@@ -158,11 +165,12 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
       context: context,
       icon: LucideIcons.trash2,
       iconColor: Theme.of(context).colorScheme.error,
-      title: 'Delete audio?',
-      message:
-          'This will permanently delete "${widget.attachment.originalFilename}".',
-      cancelText: 'Cancel',
-      confirmText: 'Delete',
+      title: context.l10n.deleteAudioTitle,
+      message: context.l10n.deleteAttachmentMessage(
+        widget.attachment.originalFilename,
+      ),
+      cancelText: context.l10n.cancel,
+      confirmText: context.l10n.delete,
       confirmColor: Theme.of(context).colorScheme.error,
     );
     if (confirm == true) {
@@ -273,7 +281,7 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    'Pending',
+                                    context.l10n.pending,
                                     style: theme.textTheme.labelSmall?.copyWith(
                                       color: theme.colorScheme.primary,
                                       fontWeight: FontWeight.w600,
@@ -287,10 +295,10 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
                       const SizedBox(height: 4),
                       Text(
                         _isCompleted
-                            ? 'Tap to replay'
+                            ? context.l10n.tapToReplay
                             : _duration.inMilliseconds > 0
                             ? '${_formatDuration(_position)} / ${_formatDuration(_duration)}'
-                            : 'Tap to play',
+                            : context.l10n.tapToPlay,
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
@@ -312,7 +320,7 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
                         alpha: 0.7,
                       ),
                     ),
-                    tooltip: 'Delete audio',
+                    tooltip: context.l10n.deleteAudioTooltip,
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
                     style: IconButton.styleFrom(shape: const CircleBorder()),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../extensions/build_context_l10n.dart';
 import '../app_snackbar.dart';
 
 const _schemes = [
@@ -47,18 +48,18 @@ Future<void> launchExternal(BuildContext context, String url) async {
   final uri = Uri.tryParse(normalized);
   if (uri == null) {
     if (context.mounted) {
-      AppSnackbar.showError(context, message: 'Invalid link');
+      AppSnackbar.showError(context, message: context.l10n.invalidLink);
     }
     return;
   }
   try {
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {
-      AppSnackbar.showError(context, message: "Couldn't open link");
+      AppSnackbar.showError(context, message: context.l10n.couldNotOpenLink);
     }
   } catch (_) {
     if (context.mounted) {
-      AppSnackbar.showError(context, message: "Couldn't open link");
+      AppSnackbar.showError(context, message: context.l10n.couldNotOpenLink);
     }
   }
 }

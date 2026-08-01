@@ -10,8 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { deltaToFullPlainText, getNotes, NoteCard } from "@/features/notes";
 import { getTags } from "@/features/tags";
+import { useTranslation } from "@/lib/i18n";
 
 export default function NotesPage() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   const tagIdParam = searchParams.get("tagId");
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,7 +61,7 @@ export default function NotesPage() {
           <div className="mb-4">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-muted/50">
               <span className="text-sm text-muted-foreground">
-                Filtering by
+                {t("notes.list.filteringBy")}
               </span>
               <Badge
                 variant="secondary"
@@ -92,20 +94,20 @@ export default function NotesPage() {
               <>
                 <Search className="h-16 w-16 text-muted-foreground/50 mb-4" />
                 <h3 className="text-xl font-medium text-muted-foreground">
-                  No matching notes found
+                  {t("notes.list.noMatchingTitle")}
                 </h3>
                 <p className="text-sm text-muted-foreground/70 mt-1">
-                  Try a different search term
+                  {t("notes.list.tryDifferentSearch")}
                 </p>
               </>
             ) : (
               <>
                 <Sparkles className="h-16 w-16 text-muted-foreground/50 mb-4" />
                 <h3 className="text-xl font-medium text-muted-foreground">
-                  Capture your ideas here
+                  {t("notes.list.captureIdeasHere")}
                 </h3>
                 <p className="text-sm text-muted-foreground/70 mt-1">
-                  Create your first note to get started
+                  {t("notes.list.createFirstToStart")}
                 </p>
               </>
             )}
@@ -116,7 +118,7 @@ export default function NotesPage() {
             {pinnedNotes.length > 0 && (
               <div>
                 <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
-                  <span>Pinned</span>
+                  <span>{t("notes.list.pinned")}</span>
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {pinnedNotes.map((note) => (
@@ -131,7 +133,7 @@ export default function NotesPage() {
               <div>
                 {pinnedNotes.length > 0 && (
                   <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                    Others
+                    {t("notes.list.others")}
                   </h2>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

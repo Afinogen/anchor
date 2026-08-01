@@ -1,0 +1,19 @@
+{
+  "notEnabled": "OIDC не включён",
+  "initiateFailed": "Не удалось начать вход через OIDC",
+  "missingCode": "Отсутствует или неверный код",
+  "missingAccessToken": "Отсутствует или неверный access_token",
+  "missingCodeOrState": "Отсутствует код авторизации или state",
+  "invalidState": "Недействительный или истёкший state",
+  "callbackFailedLong": "Не удалось обработать обратный вызов OIDC. Попробуйте снова со страницы входа.",
+  "callbackFailed": "Не удалось обработать обратный вызов OIDC",
+  "providerError": "Ошибка OIDC-провайдера: {msg}",
+  "invalidLoginCode": "Недействительный или истёкший код входа. Войдите снова со страницы входа.",
+  "invalidToken": "Недействительный или истёкший токен OIDC. Войдите снова.",
+  "missingClaims": "OIDC-провайдер не вернул обязательные данные (email, sub)",
+  "invalidEmailClaim": "OIDC-провайдер вернул некорректный email",
+  "invalidRedirectUrl": "Недопустимый URL перенаправления",
+  "notConfigured": "OIDC настроен неправильно",
+  "initConfigFailed": "Не удалось инициализировать конфигурацию OIDC. Проверьте настройки OIDC.",
+  "emailLinkedToDifferent": "Этот email уже привязан к другому аккаунту для входа."
+}

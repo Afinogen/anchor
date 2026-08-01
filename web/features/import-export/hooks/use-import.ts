@@ -2,6 +2,7 @@
 
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef, useState } from "react";
+import { useTranslation } from "@/lib/i18n";
 import { detectFormat } from "../adapters";
 import {
   IMPORT_BATCH_SIZE,
@@ -53,6 +54,7 @@ function chunk<T>(items: T[], size: number): T[][] {
 }
 
 export function useImport() {
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
 
   const [step, setStep] = useState<ImportStep>("pick");
@@ -83,32 +85,35 @@ export function useImport() {
     isRunningRef.current = false;
   }, []);
 
-  const selectFile = useCallback(async (file: File) => {
-    setPickError(null);
-    setIsDetecting(true);
-    try {
-      const detected = await detectFormat(file);
-      if (!detected) {
+  const selectFile = useCallback(
+    async (file: File) => {
+      setPickError(null);
+      setIsDetecting(true);
+      try {
+        const detected = await detectFormat(file);
+        if (!detected) {
+          setPickError(t("importExport.errors.unrecognizedFile"));
+          return;
+        }
+        const result = await detected.adapter.parse(detected.zip);
+        if (!result.notes.length) {
+          setPickError(t("importExport.errors.noNotes"));
+          return;
+        }
+        setParsed(result);
+        setStep("preview");
+      } catch (error) {
         setPickError(
-          "Unrecognized file. Use an Anchor backup zip or a Google Takeout zip containing Keep notes.",
+          error instanceof Error
+            ? error.message
+            : t("importExport.errors.readFailed"),
         );
-        return;
+      } finally {
+        setIsDetecting(false);
       }
-      const result = await detected.adapter.parse(detected.zip);
-      if (!result.notes.length) {
-        setPickError("No importable notes found in this file.");
-        return;
-      }
-      setParsed(result);
-      setStep("preview");
-    } catch (error) {
-      setPickError(
-        error instanceof Error ? error.message : "Failed to read file",
-      );
-    } finally {
-      setIsDetecting(false);
-    }
-  }, []);
+    },
+    [t],
+  );
 
   const finishRun = useCallback(
     (
@@ -126,7 +131,7 @@ export function useImport() {
           .filter((result) => result.status === "failed")
           .map((result) => ({
             item: result.ref,
-            reason: result.error ?? "Failed to import",
+            reason: result.error ?? t("importExport.errors.importFailed"),
           })),
         ...results
           .filter((result) => result.warning)
@@ -151,7 +156,7 @@ export function useImport() {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
     },
-    [queryClient],
+    [queryClient, t],
   );
 
   const run = useCallback(async () => {
@@ -191,7 +196,7 @@ export function useImport() {
       setRunError(
         error instanceof Error
           ? error.message
-          : "Import failed. Check your connection and retry.",
+          : t("importExport.errors.runFailed"),
       );
       return;
     }
@@ -245,7 +250,7 @@ export function useImport() {
         } catch {
           attachmentFailures.push({
             item: upload.filename,
-            reason: "Failed to upload attachment",
+            reason: t("importExport.errors.attachmentFailed"),
           });
         }
         setProgress({
@@ -264,7 +269,7 @@ export function useImport() {
 
     isRunningRef.current = false;
     finishRun(parsed, uploaded, attachmentFailures);
-  }, [parsed, finishRun, skipExisting]);
+  }, [parsed, finishRun, skipExisting, t]);
 
   return {
     step,

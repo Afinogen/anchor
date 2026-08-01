@@ -6,6 +6,7 @@ import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { NoteState } from 'src/generated/prisma/enums';
 import { attachmentFilePath } from '../notes/constants/notes.constants';
+import { t } from '../i18n/i18n.util';
 import {
   buildManifest,
   ExportManifestV1,
@@ -97,7 +98,7 @@ export class ExportService {
       select: { id: true, email: true },
     });
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException(t('notes.userNotFound'));
     }
 
     const tags = await this.prisma.tag.findMany({

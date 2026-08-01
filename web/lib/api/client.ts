@@ -8,6 +8,27 @@ import {
   setAccessToken,
   setRefreshToken,
 } from "@/features/auth";
+import { defaultLocale, isLocale } from "@/lib/i18n/config";
+
+// Read the active interface locale from the persisted preferences store
+// (outside React) so API requests advertise the user's language.
+function getActiveLocale(): string {
+  if (typeof window === "undefined") {
+    return defaultLocale;
+  }
+  try {
+    const raw = window.localStorage.getItem("preferences");
+    if (raw) {
+      const locale = JSON.parse(raw)?.state?.locale;
+      if (isLocale(locale)) {
+        return locale;
+      }
+    }
+  } catch {
+    // Ignore malformed storage and fall back to the default locale.
+  }
+  return defaultLocale;
+}
 
 // Flag to prevent multiple simultaneous refresh attempts
 let isRefreshing = false;
@@ -46,6 +67,7 @@ export const api = ky.create({
         if (token) {
           request.headers.set("Authorization", `Bearer ${token}`);
         }
+        request.headers.set("Accept-Language", getActiveLocale());
       },
     ],
     beforeError: [

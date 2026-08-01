@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { isLikelyUrl } from "@/features/notes";
+import { useTranslation } from "@/lib/i18n";
 
 export interface LinkDialogProps {
   open: boolean;
@@ -33,6 +34,7 @@ export function LinkDialog({
   onRemove,
   onOpenChange,
 }: LinkDialogProps) {
+  const { t } = useTranslation();
   const [text, setText] = useState(initialText);
   const [url, setUrl] = useState(initialUrl);
 
@@ -71,7 +73,9 @@ export function LinkDialog({
             <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center">
               <LinkIcon className="h-5 w-5 text-accent" />
             </div>
-            {isEditing ? "Edit Link" : "Insert Link"}
+            {isEditing
+              ? t("notes.link.editTitle")
+              : t("notes.link.insertTitle")}
           </DialogTitle>
         </DialogHeader>
 
@@ -81,7 +85,7 @@ export function LinkDialog({
             <Input
               value={text}
               onChange={(e) => setText(e.target.value)}
-              placeholder={url.trim() || "Link text"}
+              placeholder={url.trim() || t("notes.link.textPlaceholder")}
               className="pl-9"
             />
           </div>
@@ -90,7 +94,7 @@ export function LinkDialog({
             <Input
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://..."
+              placeholder={t("notes.link.urlPlaceholder")}
               className="pl-9"
               inputMode="url"
               autoFocus={!isEditing}
@@ -112,7 +116,7 @@ export function LinkDialog({
               onClick={onRemove}
               className="text-destructive hover:text-destructive"
             >
-              Remove
+              {t("notes.link.remove")}
             </Button>
           )}
           <Button
@@ -120,7 +124,7 @@ export function LinkDialog({
             variant="ghost"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             type="button"
@@ -128,7 +132,7 @@ export function LinkDialog({
             disabled={!url.trim()}
             className="bg-accent text-accent-foreground hover:bg-accent/90"
           >
-            {isEditing ? "Save" : "Insert"}
+            {isEditing ? t("common.save") : t("notes.link.insert")}
           </Button>
         </DialogFooter>
       </DialogContent>

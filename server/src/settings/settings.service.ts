@@ -1,6 +1,7 @@
 import { Injectable, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
+import { t } from '../i18n/i18n.util';
 
 export type RegistrationMode = 'disabled' | 'enabled' | 'review';
 
@@ -87,9 +88,7 @@ export class SettingsService {
    */
   async setRegistrationMode(mode: RegistrationMode): Promise<void> {
     if (this.isRegistrationModeLocked()) {
-      throw new ForbiddenException(
-        'Registration mode is locked by USER_SIGNUP environment variable',
-      );
+      throw new ForbiddenException(t('settings.registrationModeLocked'));
     }
 
     if (!['disabled', 'enabled', 'review'].includes(mode)) {

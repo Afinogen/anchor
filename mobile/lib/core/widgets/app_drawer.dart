@@ -8,6 +8,7 @@ import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/tags/domain/tag.dart';
 import '../../features/tags/presentation/tags_controller.dart';
 import '../../core/network/server_config_provider.dart';
+import '../extensions/build_context_l10n.dart';
 import 'anchor_icon.dart';
 
 class AppDrawer extends ConsumerStatefulWidget {
@@ -57,7 +58,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                       // Primary Navigation
                       _buildNavItem(
                         icon: LucideIcons.fileText,
-                        label: 'All Notes',
+                        label: context.l10n.allNotes,
                         isSelected: selectedTagId == null,
                         onTap: () {
                           ref.read(selectedTagFilterProvider.notifier).clear();
@@ -68,7 +69,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
                       _buildNavItem(
                         icon: LucideIcons.archive,
-                        label: 'Archive',
+                        label: context.l10n.archive,
                         onTap: () {
                           Navigator.pop(context);
                           context.push('/archive');
@@ -78,7 +79,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
                       _buildNavItem(
                         icon: LucideIcons.trash2,
-                        label: 'Trash',
+                        label: context.l10n.trash,
                         onTap: () {
                           Navigator.pop(context);
                           context.push('/trash');
@@ -128,7 +129,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                   ),
                 ),
                 Text(
-                  'Your thoughts, secured',
+                  context.l10n.appTagline,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     fontSize: 11,
@@ -237,7 +238,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  'TAGS',
+                  context.l10n.tagsSectionLabel,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     fontWeight: FontWeight.w700,
@@ -253,7 +254,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                   onPressed: () => _showCreateTagSheet(),
-                  tooltip: 'New tag',
+                  tooltip: context.l10n.newTagTooltip,
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(
@@ -344,7 +345,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                'Create tags to organize your notes',
+                context.l10n.createTagsHint,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
@@ -374,7 +375,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           if (user == null) {
             return _buildNavItem(
               icon: LucideIcons.settings,
-              label: 'Settings',
+              label: context.l10n.settings,
               onTap: () {
                 Navigator.pop(context);
                 context.push('/settings');
@@ -474,7 +475,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
         },
         loading: () => _buildNavItem(
           icon: LucideIcons.settings,
-          label: 'Settings',
+          label: context.l10n.settings,
           onTap: () {
             Navigator.pop(context);
             context.push('/settings');
@@ -483,7 +484,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
         ),
         error: (_, _) => _buildNavItem(
           icon: LucideIcons.settings,
-          label: 'Settings',
+          label: context.l10n.settings,
           onTap: () {
             Navigator.pop(context);
             context.push('/settings');
@@ -564,7 +565,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                             ),
                           ),
                           Text(
-                            '${tag.noteCount} notes',
+                            context.l10n.tagNotesCount(tag.noteCount),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.6,
@@ -581,7 +582,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 // Action buttons
                 _buildSheetAction(
                   icon: LucideIcons.pencil,
-                  label: 'Rename tag',
+                  label: context.l10n.renameTag,
                   theme: theme,
                   onTap: () {
                     Navigator.pop(context);
@@ -591,7 +592,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 const SizedBox(height: 8),
                 _buildSheetAction(
                   icon: LucideIcons.trash2,
-                  label: 'Delete tag',
+                  label: context.l10n.deleteTag,
                   theme: theme,
                   isDestructive: true,
                   onTap: () {
@@ -713,7 +714,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
                     // Title
                     Text(
-                      'Rename Tag',
+                      context.l10n.renameTagTitle,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
@@ -732,7 +733,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                         }
                       },
                       decoration: InputDecoration(
-                        hintText: 'Tag name',
+                        hintText: context.l10n.tagNameHint,
                         prefixIcon: Icon(
                           LucideIcons.hash,
                           color: errorMessage != null
@@ -795,7 +796,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                 ),
                               ),
                             ),
-                            child: const Text('Cancel'),
+                            child: Text(context.l10n.cancel),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -831,7 +832,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text('Rename'),
+                            child: Text(context.l10n.rename),
                           ),
                         ),
                       ],
@@ -899,7 +900,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
                 // Title
                 Text(
-                  'Delete Tag',
+                  context.l10n.deleteTagTitle,
                   style: theme.textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -908,7 +909,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
                 // Message
                 Text(
-                  'Delete "${tag.name}"? This will remove it from all notes.',
+                  context.l10n.deleteTagConfirm(tag.name),
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -933,7 +934,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                             ),
                           ),
                         ),
-                        child: const Text('Cancel'),
+                        child: Text(context.l10n.cancel),
                       ),
                     ),
                     const SizedBox(width: 12),
@@ -952,7 +953,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text('Delete'),
+                        child: Text(context.l10n.delete),
                       ),
                     ),
                   ],
@@ -1017,14 +1018,14 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
                     // Title
                     Text(
-                      'New Tag',
+                      context.l10n.newTagTitle,
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Create a tag to organize your notes',
+                      context.l10n.createTagSubtitle,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(
                           alpha: 0.6,
@@ -1045,7 +1046,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                         }
                       },
                       decoration: InputDecoration(
-                        hintText: 'Tag name',
+                        hintText: context.l10n.tagNameHint,
                         prefixIcon: Icon(
                           LucideIcons.hash,
                           color: errorMessage != null
@@ -1108,7 +1109,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                 ),
                               ),
                             ),
-                            child: const Text('Cancel'),
+                            child: Text(context.l10n.cancel),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1138,7 +1139,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text('Create'),
+                            child: Text(context.l10n.create),
                           ),
                         ),
                       ],

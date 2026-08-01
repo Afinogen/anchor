@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import type { Note } from "@/features/notes";
 import { QuillPreview } from "@/features/notes";
+import { useTranslation } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { NoteBackground } from "./backgrounds";
 import { ListImageThumbnail, NoteCardImages } from "./note-card-images";
@@ -39,6 +40,7 @@ export function NoteCard({
   footerRight,
   onClick: onClickProp,
 }: NoteCardProps) {
+  const { t } = useTranslation();
   const router = useRouter();
 
   // Handle note click - store note in sessionStorage and navigate
@@ -136,7 +138,7 @@ export function NoteCard({
                 <div className="flex-1 min-w-0">
                   {/* Title */}
                   <h3 className="font-semibold text-base leading-tight mb-1.5 line-clamp-1 group-hover:text-accent transition-colors duration-200">
-                    {note.title || "Untitled"}
+                    {note.title || t("common.untitled")}
                   </h3>
 
                   {/* Content Preview */}
@@ -288,7 +290,7 @@ export function NoteCard({
                 viewMode === "grid" ? "text-base" : "text-lg",
               )}
             >
-              {note.title || "Untitled"}
+              {note.title || t("common.untitled")}
             </h3>
 
             {/* Content Preview */}

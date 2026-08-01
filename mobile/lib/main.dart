@@ -7,7 +7,9 @@ import 'core/home_widget/home_widget_service.dart';
 import 'core/network/connectivity_provider.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/settings/presentation/controllers/locale_preferences_controller.dart';
 import 'features/settings/presentation/controllers/theme_preferences_controller.dart';
+import 'l10n/app_localizations.dart';
 
 void main() async {
   await initializeApp();
@@ -21,6 +23,7 @@ class AnchorApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(goRouterProvider);
     final themeMode = ref.watch(themeModeControllerProvider);
+    final locale = ref.watch(localeControllerProvider);
 
     // Initialize sync manager to listen for connectivity changes
     ref.watch(syncManagerProvider);
@@ -34,14 +37,16 @@ class AnchorApp extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
+      locale: locale,
       routerConfig: router,
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         FlutterQuillLocalizations.delegate,
       ],
-      supportedLocales: const [Locale('en', '')],
+      supportedLocales: AppLocalizations.supportedLocales,
     );
   }
 }

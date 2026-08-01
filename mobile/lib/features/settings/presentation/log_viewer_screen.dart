@@ -11,6 +11,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../core/extensions/build_context_l10n.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/confirm_dialog.dart';
@@ -161,7 +162,10 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
     if (lines.isEmpty) return;
     await Clipboard.setData(ClipboardData(text: lines.join('\n')));
     if (!mounted) return;
-    AppSnackbar.showSuccess(context, message: '${lines.length} entries copied');
+    AppSnackbar.showSuccess(
+      context,
+      message: context.l10n.logEntriesCopied(lines.length),
+    );
     _exitSelectionMode();
   }
 
@@ -169,10 +173,12 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
     final dump = await AppLogger.instance.dumpAll();
     await Clipboard.setData(ClipboardData(text: dump));
     if (!mounted) return;
-    AppSnackbar.showSuccess(context, message: 'Logs copied to clipboard');
+    AppSnackbar.showSuccess(context, message: context.l10n.logsCopied);
   }
 
   Future<void> _exportToFile() async {
+    // Resolve before any await to avoid using BuildContext across an async gap.
+    final saveLogsTitle = context.l10n.saveLogs;
     final dump = await AppLogger.instance.dumpAll();
     final bytes = Uint8List.fromList(utf8.encode(dump));
     final stamp = DateFormat('yyyyMMdd-HHmmss').format(DateTime.now());
@@ -181,7 +187,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
     String? result;
     try {
       result = await FilePicker.platform.saveFile(
-        dialogTitle: 'Save logs',
+        dialogTitle: saveLogsTitle,
         fileName: filename,
         bytes: bytes,
         type: FileType.custom,
@@ -195,7 +201,10 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
         stackTrace: st,
       );
       if (!mounted) return;
-      AppSnackbar.showError(context, message: 'Export failed: $e');
+      AppSnackbar.showError(
+        context,
+        message: context.l10n.exportFailed(e.toString()),
+      );
       return;
     }
     if (result == null) return; // user cancelled
@@ -211,13 +220,16 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
           stackTrace: st,
         );
         if (!mounted) return;
-        AppSnackbar.showError(context, message: 'Export failed: $e');
+        AppSnackbar.showError(
+        context,
+        message: context.l10n.exportFailed(e.toString()),
+      );
         return;
       }
     }
 
     if (!mounted) return;
-    AppSnackbar.showSuccess(context, message: 'Saved $filename');
+    AppSnackbar.showSuccess(context, message: context.l10n.savedFile(filename));
   }
 
   void _confirmClear() {
@@ -225,10 +237,10 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
       context: context,
       builder: (ctx) => ConfirmDialog(
         icon: LucideIcons.trash2,
-        title: 'Clear Logs',
-        message: 'This will delete all stored logs from this device. Continue?',
-        cancelText: 'Cancel',
-        confirmText: 'Clear',
+        title: context.l10n.clearLogsTitle,
+        message: context.l10n.clearLogsMessage,
+        cancelText: context.l10n.cancel,
+        confirmText: context.l10n.clear,
         onConfirm: () async {
           await AppLogger.instance.clear();
           if (mounted) {
@@ -275,7 +287,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
                   child: visible.isEmpty
                       ? Center(
                           child: Text(
-                            'No log entries yet',
+                            context.l10n.noLogEntries,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.5,
@@ -386,18 +398,18 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
         _iconAction(
           icon: LucideIcons.x,
           onPressed: _exitSelectionMode,
-          tooltip: 'Cancel selection',
+          tooltip: context.l10n.cancelSelection,
         ),
         const SizedBox(width: 12),
         _iconAction(
           icon: LucideIcons.listChecks,
           onPressed: _selectAllVisible,
-          tooltip: 'Select all',
+          tooltip: context.l10n.selectAll,
         ),
         const SizedBox(width: 12),
         _primaryAction(
           icon: LucideIcons.copy,
-          label: 'Copy ($count)',
+          label: context.l10n.copyCount(count),
           onPressed: count == 0 ? null : _copySelected,
         ),
       ];
@@ -406,19 +418,19 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
         _iconAction(
           icon: LucideIcons.trash2,
           onPressed: _confirmClear,
-          tooltip: 'Clear logs',
+          tooltip: context.l10n.clearLogsTooltip,
           destructive: true,
         ),
         const SizedBox(width: 12),
         _iconAction(
           icon: LucideIcons.download,
           onPressed: _exportToFile,
-          tooltip: 'Export to file',
+          tooltip: context.l10n.exportToFile,
         ),
         const SizedBox(width: 12),
         _primaryAction(
           icon: LucideIcons.copy,
-          label: 'Copy all',
+          label: context.l10n.copyAll,
           onPressed: _copyAll,
         ),
       ];
@@ -498,7 +510,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
           ),
           if (Platform.isIOS) const Spacer(),
           Text(
-            'Logs',
+            context.l10n.logs,
             style: GoogleFonts.playfairDisplay(
               fontSize: 24,
               fontWeight: FontWeight.bold,
@@ -507,7 +519,9 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
           ),
           const Spacer(),
           IconButton(
-            tooltip: _searchVisible ? 'Hide search' : 'Search',
+            tooltip: _searchVisible
+                ? context.l10n.hideSearch
+                : context.l10n.search,
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
@@ -545,13 +559,13 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
               style: theme.textTheme.bodyMedium,
               decoration: InputDecoration(
                 isDense: true,
-                hintText: 'Search messages and tags',
+                hintText: context.l10n.searchMessagesAndTags,
                 prefixIcon: const Icon(LucideIcons.search, size: 18),
                 suffixIcon: _search.isEmpty
                     ? null
                     : IconButton(
                         icon: const Icon(LucideIcons.x, size: 18),
-                        tooltip: 'Clear search',
+                        tooltip: context.l10n.clearSearch,
                         onPressed: () {
                           _searchController.clear();
                           setState(() => _search = '');
@@ -585,11 +599,11 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _filterChip('All', null, theme),
-                _filterChip('Debug', LogLevel.debug, theme),
-                _filterChip('Info', LogLevel.info, theme),
-                _filterChip('Warn', LogLevel.warn, theme),
-                _filterChip('Error', LogLevel.error, theme),
+                _filterChip(context.l10n.filterAll, null, theme),
+                _filterChip(context.l10n.logLevelDebug, LogLevel.debug, theme),
+                _filterChip(context.l10n.logLevelInfo, LogLevel.info, theme),
+                _filterChip(context.l10n.logLevelWarn, LogLevel.warn, theme),
+                _filterChip(context.l10n.logLevelError, LogLevel.error, theme),
               ],
             ),
           ),
@@ -604,8 +618,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'This list shows logs from the current session only. '
-                  'Export and Copy all include the full saved history.',
+                  context.l10n.logViewerSessionInfo,
                   style: theme.textTheme.labelSmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.45),
                     height: 1.3,

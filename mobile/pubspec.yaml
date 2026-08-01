@@ -125,6 +125,9 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
+  # Generate localization classes (AppLocalizations) from lib/l10n/*.arb
+  generate: true
+
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/icons/anchor_icon.png

@@ -17,6 +17,7 @@ import { OidcUserService } from './oidc-user.service';
 import { UserStatus } from '../../generated/prisma/enums';
 import type { OidcAuthResult, OidcUserClaims } from './oidc.types';
 import { getErrorMessage } from './oidc.utils';
+import { t } from '../../i18n/i18n.util';
 
 export type { OidcAuthResult } from './oidc.types';
 
@@ -68,7 +69,7 @@ export class OidcService {
     // Retrieve and validate state
     const storedState = this.oidcStateService.getState(stateFromProvider);
     if (!storedState) {
-      throw new BadRequestException('Invalid or expired state');
+      throw new BadRequestException(t('oidc.invalidState'));
     }
 
     // Clean up state immediately after validation
@@ -104,9 +105,7 @@ export class OidcService {
 
       // Check if user is pending approval
       if (user.status === UserStatus.pending) {
-        throw new UnauthorizedException(
-          'Account pending approval. Please wait for an administrator to approve your account.',
-        );
+        throw new UnauthorizedException(t('auth.accountPendingApprovalLong'));
       }
 
       // Generate access and refresh tokens
@@ -141,14 +140,11 @@ export class OidcService {
       ) {
         throw error;
       }
-      const msg = getErrorMessage(
-        error,
-        'Failed to process OIDC callback. Please try again from the login page.',
-      );
+      const msg = getErrorMessage(error, t('oidc.callbackFailedLong'));
       const isProviderError =
         !(error instanceof Error) || (error as { cause?: unknown }).cause;
       throw new InternalServerErrorException(
-        isProviderError ? `OIDC provider error: ${msg}` : msg,
+        isProviderError ? t('oidc.providerError', { msg }) : msg,
       );
     }
   }
@@ -174,9 +170,7 @@ export class OidcService {
   exchangeCode(code: string): OidcAuthResult {
     const result = this.oidcStateService.consumeExchangeCode(code);
     if (!result) {
-      throw new BadRequestException(
-        'Invalid or expired login code. Please sign in again from the login page.',
-      );
+      throw new BadRequestException(t('oidc.invalidLoginCode'));
     }
     return result;
   }
@@ -187,9 +181,7 @@ export class OidcService {
   async exchangeMobileToken(accessToken: string): Promise<OidcAuthResult> {
     const userinfo = await this.oidcClientService.fetchUserInfo(accessToken);
     if (!userinfo) {
-      throw new UnauthorizedException(
-        'Invalid or expired OIDC token. Please sign in again.',
-      );
+      throw new UnauthorizedException(t('oidc.invalidToken'));
     }
 
     const emptyTokenResponse = {
@@ -247,15 +239,11 @@ export class OidcService {
       | undefined;
 
     if (!email || !subject) {
-      throw new BadRequestException(
-        'OIDC provider did not return required claims (email, sub)',
-      );
+      throw new BadRequestException(t('oidc.missingClaims'));
     }
 
     if (!this.isValidEmail(email)) {
-      throw new BadRequestException(
-        'OIDC provider returned an invalid email claim',
-      );
+      throw new BadRequestException(t('oidc.invalidEmailClaim'));
     }
 
     return { email, name, subject, picture };
@@ -277,7 +265,7 @@ export class OidcService {
     // Reject protocol-relative URLs
     if (trimmed.startsWith('//')) {
       if (fallback !== undefined) return fallback;
-      throw new BadRequestException('Invalid redirect URL');
+      throw new BadRequestException(t('oidc.invalidRedirectUrl'));
     }
     // Allow relative paths (must start with single / and not contain //)
     if (trimmed.startsWith('/') && !trimmed.includes('//')) {

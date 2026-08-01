@@ -8,6 +8,7 @@ import '../../domain/note_share_permission.dart';
 import '../../domain/user_search_result.dart';
 import '../../data/repository/users_repository.dart';
 import '../../data/repository/note_shares_repository.dart';
+import '../../../../core/extensions/build_context_l10n.dart';
 import '../../../../core/widgets/app_snackbar.dart';
 import '../../../../core/network/server_config_provider.dart';
 
@@ -80,7 +81,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingShares = false);
-        AppSnackbar.showError(context, message: 'Failed to load shares');
+        AppSnackbar.showError(context, message: context.l10n.failedToLoadShares);
       }
     }
   }
@@ -131,12 +132,15 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
       if (mounted) {
         _searchController.clear();
         setState(() => _searchResults = []);
-        AppSnackbar.showSuccess(context, message: 'Shared with ${user.name}');
+        AppSnackbar.showSuccess(
+          context,
+          message: context.l10n.sharedWithUser(user.name),
+        );
         _loadShares();
       }
     } catch (e) {
       if (mounted) {
-        AppSnackbar.showError(context, message: 'Failed to share');
+        AppSnackbar.showError(context, message: context.l10n.failedToShare);
       }
     }
   }
@@ -155,7 +159,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
       await _loadShares();
     } catch (e) {
       if (mounted) {
-        AppSnackbar.showError(context, message: 'Failed to update');
+        AppSnackbar.showError(context, message: context.l10n.failedToUpdate);
       }
     }
   }
@@ -168,12 +172,12 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
       if (mounted) {
         AppSnackbar.showSuccess(
           context,
-          message: 'Removed ${share.sharedWithUser.name}',
+          message: context.l10n.removedUser(share.sharedWithUser.name),
         );
       }
     } catch (e) {
       if (mounted) {
-        AppSnackbar.showError(context, message: 'Failed to remove');
+        AppSnackbar.showError(context, message: context.l10n.failedToRemove);
       }
     }
   }
@@ -259,14 +263,14 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Share Note',
+                          context.l10n.shareNote,
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          'Collaborate with others',
+                          context.l10n.collaborateWithOthers,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurface.withValues(
                               alpha: 0.6,
@@ -287,7 +291,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text('Done'),
+                    child: Text(context.l10n.done),
                   ),
                 ],
               ),
@@ -301,7 +305,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
                 focusNode: _searchFocus,
                 style: theme.textTheme.bodyLarge,
                 decoration: InputDecoration(
-                  hintText: 'Search by name or email...',
+                  hintText: context.l10n.searchByEmail,
                   hintStyle: TextStyle(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
                   ),
@@ -403,7 +407,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Results', theme),
+        _buildSectionLabel(context.l10n.results, theme),
         const SizedBox(height: 12),
         ListView.builder(
           shrinkWrap: true,
@@ -471,7 +475,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Recently shared with', theme),
+        _buildSectionLabel(context.l10n.recentlySharedWith, theme),
         const SizedBox(height: 12),
         ListView.builder(
           shrinkWrap: true,
@@ -516,7 +520,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
             ),
             const SizedBox(height: 16),
             Text(
-              'Not shared yet',
+              context.l10n.notSharedYet,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
@@ -524,7 +528,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Search by name or email to invite collaborators',
+              context.l10n.searchToInvite,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               ),
@@ -538,7 +542,7 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionLabel('Collaborators', theme),
+        _buildSectionLabel(context.l10n.collaborators, theme),
         const SizedBox(height: 12),
         ListView.builder(
           shrinkWrap: true,
@@ -633,8 +637,8 @@ class _PermissionPickerSheet extends StatelessWidget {
               padding: const EdgeInsets.all(20),
               child: Text(
                 currentPermission == null
-                    ? 'Share with $userName'
-                    : 'Change permission',
+                    ? context.l10n.shareWithName(userName)
+                    : context.l10n.changePermission,
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
                 ),
@@ -642,15 +646,15 @@ class _PermissionPickerSheet extends StatelessWidget {
             ),
             _PermissionOption(
               icon: LucideIcons.eye,
-              title: 'Viewer',
-              subtitle: 'Can view but not edit',
+              title: context.l10n.viewer,
+              subtitle: context.l10n.viewerDesc,
               isSelected: currentPermission == NoteSharePermission.viewer,
               onTap: () => onSelect(NoteSharePermission.viewer),
             ),
             _PermissionOption(
               icon: LucideIcons.edit3,
-              title: 'Editor',
-              subtitle: 'Can view and edit',
+              title: context.l10n.editor,
+              subtitle: context.l10n.editorDesc,
               isSelected: currentPermission == NoteSharePermission.editor,
               onTap: () => onSelect(NoteSharePermission.editor),
             ),
@@ -785,7 +789,7 @@ class _PermissionChip extends StatelessWidget {
             ),
             const SizedBox(width: 4),
             Text(
-              isEditor ? 'Editor' : 'Viewer',
+              isEditor ? context.l10n.editor : context.l10n.viewer,
               style: theme.textTheme.labelSmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 fontWeight: FontWeight.w500,

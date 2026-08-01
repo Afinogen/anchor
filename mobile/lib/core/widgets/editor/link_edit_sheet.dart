@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../extensions/build_context_l10n.dart';
 import 'link_utils.dart';
 
 class LinkEditSheet extends StatefulWidget {
@@ -137,16 +138,16 @@ class _LinkEditSheetState extends State<LinkEditSheet> {
             ),
             _TextField(
               controller: _textController,
-              label: 'Text',
-              hint: trimmedUrl.isEmpty ? 'Link text' : trimmedUrl,
+              label: context.l10n.linkTextLabel,
+              hint: trimmedUrl.isEmpty ? context.l10n.linkTextHint : trimmedUrl,
               icon: LucideIcons.type,
               padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
             ),
             _TextField(
               controller: _urlController,
               focusNode: _urlFocus,
-              label: 'URL',
-              hint: 'https://...',
+              label: context.l10n.urlLabel,
+              hint: context.l10n.urlHint,
               icon: LucideIcons.globe,
               keyboardType: TextInputType.url,
               textInputAction: TextInputAction.done,
@@ -223,7 +224,7 @@ class _Header extends StatelessWidget {
           const SizedBox(width: 14),
           Expanded(
             child: Text(
-              isEditing ? 'Edit Link' : 'Insert Link',
+              isEditing ? context.l10n.editLinkTitle : context.l10n.insertLinkTitle,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
@@ -318,7 +319,7 @@ class _Actions extends StatelessWidget {
                 onPressed: onRemove,
                 icon: const Icon(LucideIcons.unlink, size: 16),
                 label: Text(
-                  'Remove',
+                  context.l10n.remove,
                   style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
                 ),
                 style: OutlinedButton.styleFrom(
@@ -347,7 +348,7 @@ class _Actions extends StatelessWidget {
                 ),
               ),
               child: Text(
-                isEditing ? 'Save' : 'Insert',
+                isEditing ? context.l10n.save : context.l10n.insert,
                 style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
               ),
             ),

@@ -18,6 +18,7 @@ import {
   ClientSecretPost,
 } from 'openid-client';
 import { OidcConfigService } from './oidc-config.service';
+import { t } from '../../i18n/i18n.util';
 
 /**
  * Client auth for public clients (no secret).
@@ -45,7 +46,7 @@ export class OidcClientService {
   async getConfiguration(): Promise<Configuration> {
     const oidcConfig = await this.oidcConfigService.getConfig();
     if (!oidcConfig.enabled || !oidcConfig.issuerUrl || !oidcConfig.clientId) {
-      throw new InternalServerErrorException('OIDC is not properly configured');
+      throw new InternalServerErrorException(t('oidc.notConfigured'));
     }
 
     try {
@@ -68,9 +69,7 @@ export class OidcClientService {
       return config;
     } catch (error) {
       this.logger.error('Failed to initialize OIDC configuration:', error);
-      throw new InternalServerErrorException(
-        'Failed to initialize OIDC configuration. Check your OIDC settings.',
-      );
+      throw new InternalServerErrorException(t('oidc.initConfigFailed'));
     }
   }
 

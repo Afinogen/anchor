@@ -13,12 +13,12 @@ import {
   withForcedSyncIds,
 } from '../../sync/sync-window.util';
 import {
-  ERROR_MESSAGES,
   NOTE_INCLUDE_TAGS,
   NOTE_INCLUDE_SHARES,
   NOTE_INCLUDE_ATTACHMENT_COUNT,
   notePinInclude,
 } from '../constants/notes.constants';
+import { t } from '../../i18n/i18n.util';
 
 @Injectable()
 export class NotesService {
@@ -124,7 +124,7 @@ export class NotesService {
     const access = await this.noteAccessService.hasNoteAccess(userId, id);
 
     if (!access.hasAccess) {
-      throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
+      throw new NotFoundException(t('notes.noteNotFound'));
     }
 
     const note = await this.prisma.note.findUnique({
@@ -138,11 +138,11 @@ export class NotesService {
     });
 
     if (!note) {
-      throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
+      throw new NotFoundException(t('notes.noteNotFound'));
     }
 
     if (!includeAllStates && note.state === NoteState.deleted) {
-      throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
+      throw new NotFoundException(t('notes.noteNotFound'));
     }
 
     return transformNote(note, userId);
@@ -200,7 +200,7 @@ export class NotesService {
     });
 
     if (!note || note.state !== NoteState.trashed) {
-      throw new NotFoundException('Note is not in trash');
+      throw new NotFoundException(t('notes.noteNotInTrash'));
     }
 
     const restoredNote = await this.prisma.note.update({
@@ -331,9 +331,7 @@ export class NotesService {
     });
 
     if (notes.length !== noteIds.length) {
-      throw new NotFoundException(
-        'One or more notes not found or you do not have permission',
-      );
+      throw new NotFoundException(t('notes.bulkNotFound'));
     }
 
     await this.prisma.note.updateMany({
@@ -358,9 +356,7 @@ export class NotesService {
     });
 
     if (notes.length !== noteIds.length) {
-      throw new NotFoundException(
-        'One or more notes not found or you do not have permission',
-      );
+      throw new NotFoundException(t('notes.bulkNotFound'));
     }
 
     await this.prisma.note.updateMany({
