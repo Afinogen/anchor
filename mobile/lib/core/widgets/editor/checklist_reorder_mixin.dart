@@ -1,33 +1,31 @@
+import 'dart:async';
+
 import 'package:dart_quill_delta/dart_quill_delta.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
-/// Parsed line from delta operations for checklist reordering
+/// A line in the document: its offset range and newline (block) attributes.
 class ParsedLine {
-  final List<Operation> contentOps;
-  final Operation newlineOp;
   final int startOffset;
+
+  /// Length including the trailing newline.
   final int length;
+  final Map<String, dynamic>? newlineAttributes;
 
   ParsedLine({
-    required this.contentOps,
-    required this.newlineOp,
     required this.startOffset,
     required this.length,
+    required this.newlineAttributes,
   });
 
-  String? get listType {
-    final attrs = newlineOp.attributes;
-    if (attrs == null) return null;
-    return attrs['list'] as String?;
-  }
-
+  String? get listType => newlineAttributes?[Attribute.list.key] as String?;
   bool get isChecklist => listType == 'checked' || listType == 'unchecked';
   bool get isChecked => listType == 'checked';
 }
 
-/// Mixin that adds checklist reordering functionality to a rich text editor.
-/// Automatically moves checked items to bottom and unchecked items to top.
+/// Keeps checklists sorted: unchecked items on top, checked items at the
+/// bottom of their group. Toggles are detected on the document change stream
+/// and the item is moved by composing a delta onto the live document.
 mixin ChecklistReorderMixin<T extends StatefulWidget> on State<T> {
   /// Override to provide the QuillController
   QuillController get controller;
@@ -35,159 +33,71 @@ mixin ChecklistReorderMixin<T extends StatefulWidget> on State<T> {
   /// Override to check if sorting is enabled
   bool get sortChecklistItems;
 
-  /// Override to notify when content changes
-  void onContentChanged();
+  StreamSubscription<DocChange>? _changesSub;
+  bool _isSorting = false;
 
-  /// Override to rebuild the controller with new document
-  void rebuildController(Document newDocument, int cursorPos);
-
-  // Internal state
-  Map<int, String> _previousChecklistState = {};
-  int? _previousLineCount;
-  bool _isReordering = false;
-
-  /// Initialize checklist state tracking
-  void initChecklistState() {
-    final lines = _parseDocumentLines();
-    _previousChecklistState = _buildChecklistState();
-    _previousLineCount = lines.length;
+  /// Start watching [controller] for checkbox toggles. Call again after the
+  /// controller instance changes.
+  void attachChecklistSorting() {
+    _changesSub?.cancel();
+    _changesSub = controller.changes.listen(_onDocChange);
   }
 
-  /// Call this when the document changes
-  void onDocumentChanged() {
-    if (!sortChecklistItems || _isReordering || !mounted) return;
+  void detachChecklistSorting() {
+    _changesSub?.cancel();
+    _changesSub = null;
+  }
 
+  void _onDocChange(DocChange change) {
+    if (!sortChecklistItems || _isSorting || !mounted) return;
+    if (change.source != ChangeSource.local) return;
+
+    final offset = _toggledNewlineOffset(change.change);
+    if (offset == null) return;
+
+    // A microtask runs before the editor's post-frame selection restore.
+    scheduleMicrotask(() {
+      if (!mounted || _isSorting) return;
+      _sortToggledLine(offset);
+    });
+  }
+
+  /// Returns the offset of the single newline whose `list` attribute was set
+  /// to checked/unchecked by [delta], or null for any other kind of change.
+  int? _toggledNewlineOffset(Delta delta) {
+    var position = 0;
+    int? found;
+    for (final op in delta.toList()) {
+      if (!op.isRetain) return null;
+      final list = op.attributes?[Attribute.list.key];
+      if (list == 'checked' || list == 'unchecked') {
+        if (found != null || op.length != 1) return null;
+        found = position;
+      }
+      position += op.length!;
+    }
+    return found;
+  }
+
+  void _sortToggledLine(int newlineOffset) {
     final lines = _parseDocumentLines();
-    final currentState = <int, String>{};
 
-    // Build current checklist state
+    var lineIndex = -1;
     for (var i = 0; i < lines.length; i++) {
       final line = lines[i];
-      if (line.isChecklist) {
-        currentState[i] = line.listType!;
-      }
-    }
-
-    // If line count changed (user added/deleted a line), only sync state.
-    // Comparing by index would wrongly treat shifted lines as toggles.
-    if (_previousLineCount != null && lines.length != _previousLineCount!) {
-      _previousChecklistState = currentState;
-      _previousLineCount = lines.length;
-      return;
-    }
-
-    // Find if any item changed from unchecked to checked or vice versa
-    int? toggledLineIndex;
-    bool? isNowChecked;
-
-    for (final entry in currentState.entries) {
-      final lineIndex = entry.key;
-      final currentValue = entry.value;
-      final previousValue = _previousChecklistState[lineIndex];
-
-      if (previousValue != null && previousValue != currentValue) {
-        toggledLineIndex = lineIndex;
-        isNowChecked = currentValue == 'checked';
+      if (newlineOffset >= line.startOffset &&
+          newlineOffset < line.startOffset + line.length) {
+        lineIndex = i;
         break;
       }
     }
+    if (lineIndex == -1) return;
 
-    // Update previous state
-    _previousChecklistState = currentState;
-    _previousLineCount = lines.length;
+    final line = lines[lineIndex];
+    if (!line.isChecklist) return;
 
-    // If a checkbox was toggled, schedule reorder
-    if (toggledLineIndex != null && isNowChecked != null) {
-      Future.delayed(const Duration(milliseconds: 50), () {
-        if (mounted && !_isReordering) {
-          _reorderChecklistItem(toggledLineIndex!, isNowChecked!);
-        }
-      });
-    }
-  }
-
-  /// Update checklist state after content changes
-  void updateChecklistState() {
-    _previousChecklistState = _buildChecklistState();
-    _previousLineCount = _parseDocumentLines().length;
-  }
-
-  /// Parse document into lines with their operations and positions
-  List<ParsedLine> _parseDocumentLines() {
-    final lines = <ParsedLine>[];
-    final delta = controller.document.toDelta();
-    final ops = delta.toList();
-
-    var currentContentOps = <Operation>[];
-    var currentOffset = 0;
-    var lineStartOffset = 0;
-
-    for (final op in ops) {
-      if (op.data is! String) {
-        currentContentOps.add(op);
-        currentOffset += 1;
-        continue;
-      }
-
-      final text = op.data as String;
-      final parts = text.split('\n');
-
-      for (var i = 0; i < parts.length; i++) {
-        final part = parts[i];
-
-        if (part.isNotEmpty) {
-          currentContentOps.add(Operation.insert(part, op.attributes));
-          currentOffset += part.length;
-        }
-
-        if (i < parts.length - 1) {
-          final newlineOp = Operation.insert('\n', op.attributes);
-          final lineLength = currentOffset - lineStartOffset + 1;
-
-          lines.add(
-            ParsedLine(
-              contentOps: List.from(currentContentOps),
-              newlineOp: newlineOp,
-              startOffset: lineStartOffset,
-              length: lineLength,
-            ),
-          );
-
-          currentOffset += 1;
-          lineStartOffset = currentOffset;
-          currentContentOps = [];
-        }
-      }
-    }
-
-    return lines;
-  }
-
-  Map<int, String> _buildChecklistState() {
-    final lines = _parseDocumentLines();
-    final state = <int, String>{};
-    for (var i = 0; i < lines.length; i++) {
-      final line = lines[i];
-      if (line.isChecklist) {
-        state[i] = line.listType!;
-      }
-    }
-    return state;
-  }
-
-  void _reorderChecklistItem(int lineIndex, bool isNowChecked) {
-    if (_isReordering) return;
-
-    final lines = _parseDocumentLines();
-    if (lineIndex >= lines.length) return;
-
-    final toggledLine = lines[lineIndex];
-    if (!toggledLine.isChecklist) return;
-
-    // Find checklist group boundaries
-    int groupStart = lineIndex;
-    int groupEnd = lineIndex;
-
+    var groupStart = lineIndex;
+    var groupEnd = lineIndex;
     while (groupStart > 0 && lines[groupStart - 1].isChecklist) {
       groupStart--;
     }
@@ -195,74 +105,137 @@ mixin ChecklistReorderMixin<T extends StatefulWidget> on State<T> {
       groupEnd++;
     }
 
-    // Calculate target position
-    int targetLineIndex;
-    if (isNowChecked) {
+    int targetIndex;
+    if (line.isChecked) {
       if (lineIndex == groupEnd) return;
-      targetLineIndex = groupEnd;
+      targetIndex = groupEnd;
     } else {
-      int firstCheckedIndex = -1;
-      for (int i = groupStart; i <= groupEnd; i++) {
+      var firstCheckedIndex = -1;
+      for (var i = groupStart; i <= groupEnd; i++) {
         if (lines[i].isChecked) {
           firstCheckedIndex = i;
           break;
         }
       }
       if (firstCheckedIndex == -1 || lineIndex < firstCheckedIndex) return;
-      targetLineIndex = firstCheckedIndex;
+      targetIndex = firstCheckedIndex;
+    }
+    if (targetIndex == lineIndex) return;
+
+    // Document.compose (and the history inverses of deltas) cannot delete
+    // the final newline or insert after it; end-of-document moves retain it
+    // and patch its attributes.
+    final srcStart = line.startOffset;
+    final srcLength = line.length;
+    final delta = controller.document.toDelta();
+    final docLength = controller.document.length;
+
+    final move = Delta();
+    if (targetIndex > lineIndex) {
+      // Move down = pull the lines below it up in front of it.
+      final blockLast = lines[targetIndex];
+      final blockStart = srcStart + srcLength;
+      final blockEnd = blockLast.startOffset + blockLast.length;
+      if (blockEnd < docLength) {
+        move.retain(srcStart);
+        delta.slice(blockStart, blockEnd).toList().forEach(move.push);
+        move
+          ..retain(srcLength)
+          ..delete(blockEnd - blockStart);
+      } else {
+        move
+          ..retain(srcStart)
+          ..delete(srcLength)
+          ..retain(blockEnd - blockStart - 1)
+          ..insert('\n', blockLast.newlineAttributes);
+        delta.slice(srcStart, srcStart + srcLength - 1).toList().forEach(
+          move.push,
+        );
+        move.retain(
+          1,
+          _attributeDiff(blockLast.newlineAttributes, line.newlineAttributes),
+        );
+      }
+    } else {
+      final insertAt = lines[targetIndex].startOffset;
+      final srcEnd = srcStart + srcLength;
+      if (srcEnd < docLength) {
+        move.retain(insertAt);
+        delta.slice(srcStart, srcEnd).toList().forEach(move.push);
+        move
+          ..retain(srcStart - insertAt)
+          ..delete(srcLength);
+      } else {
+        // Toggled line is the last line of the document.
+        final lineAbove = lines[lineIndex - 1];
+        move.retain(insertAt);
+        delta.slice(srcStart, srcEnd - 1).toList().forEach(move.push);
+        move
+          ..insert('\n', line.newlineAttributes)
+          ..retain(srcStart - insertAt - 1)
+          ..delete(srcLength)
+          ..retain(
+            1,
+            _attributeDiff(line.newlineAttributes, lineAbove.newlineAttributes),
+          );
+      }
     }
 
-    _isReordering = true;
-
+    _isSorting = true;
     try {
-      _moveLineInDocument(lines, lineIndex, targetLineIndex);
-      _previousChecklistState = _buildChecklistState();
-      _previousLineCount = _parseDocumentLines().length;
+      controller.compose(move, controller.selection, ChangeSource.local);
     } finally {
-      _isReordering = false;
+      _isSorting = false;
     }
   }
 
-  void _moveLineInDocument(
-    List<ParsedLine> lines,
-    int sourceIndex,
-    int targetIndex,
+  /// Attribute map that turns [from] into [to] when applied via retain.
+  Map<String, dynamic>? _attributeDiff(
+    Map<String, dynamic>? from,
+    Map<String, dynamic>? to,
   ) {
-    final reorderedLines = List<ParsedLine>.from(lines);
-    final movedLine = reorderedLines.removeAt(sourceIndex);
-    final insertAt = sourceIndex < targetIndex ? targetIndex : targetIndex;
-    reorderedLines.insert(insertAt, movedLine);
+    final diff = <String, dynamic>{};
+    for (final key in {...?from?.keys, ...?to?.keys}) {
+      final before = from?[key];
+      final after = to?[key];
+      if (before != after) diff[key] = after;
+    }
+    return diff.isEmpty ? null : diff;
+  }
 
-    // Convert lines back to ops
-    final newOps = <Map<String, dynamic>>[];
-    for (final line in reorderedLines) {
-      for (final contentOp in line.contentOps) {
-        final opMap = <String, dynamic>{'insert': contentOp.data};
-        if (contentOp.attributes != null && contentOp.attributes!.isNotEmpty) {
-          opMap['attributes'] = Map<String, dynamic>.from(
-            contentOp.attributes!,
-          );
+  List<ParsedLine> _parseDocumentLines() {
+    final lines = <ParsedLine>[];
+    var offset = 0;
+    var lineStart = 0;
+
+    for (final op in controller.document.toDelta().toList()) {
+      final data = op.data;
+      if (data is! String) {
+        // Embeds occupy one position and never contain a newline.
+        offset += 1;
+        continue;
+      }
+
+      var searchFrom = 0;
+      while (true) {
+        final newlineIndex = data.indexOf('\n', searchFrom);
+        if (newlineIndex == -1) {
+          offset += data.length - searchFrom;
+          break;
         }
-        newOps.add(opMap);
-      }
-      final newlineMap = <String, dynamic>{'insert': '\n'};
-      if (line.newlineOp.attributes != null &&
-          line.newlineOp.attributes!.isNotEmpty) {
-        newlineMap['attributes'] = Map<String, dynamic>.from(
-          line.newlineOp.attributes!,
+        offset += newlineIndex - searchFrom + 1;
+        lines.add(
+          ParsedLine(
+            startOffset: lineStart,
+            length: offset - lineStart,
+            newlineAttributes: op.attributes,
+          ),
         );
+        lineStart = offset;
+        searchFrom = newlineIndex + 1;
       }
-      newOps.add(newlineMap);
     }
 
-    final newDocument = Document.fromJson(newOps);
-
-    int cursorPos = 0;
-    for (int i = 0; i < insertAt && i < reorderedLines.length; i++) {
-      cursorPos += reorderedLines[i].length;
-    }
-
-    rebuildController(newDocument, cursorPos);
-    onContentChanged();
+    return lines;
   }
 }

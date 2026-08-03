@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -21,8 +22,9 @@ class RichTextEditor extends StatefulWidget {
   /// Initial content in JSON Delta format.
   final String? initialContent;
 
-  /// Callback when content changes. Returns JSON Delta string.
-  final ValueChanged<String>? onChanged;
+  /// Callback when the document changes. Selection-only changes don't fire;
+  /// read the content with [RichTextEditorState.getContent].
+  final VoidCallback? onChanged;
 
   /// Callback when editing state changes (focus gained/lost).
   final ValueChanged<bool>? onEditingChanged;
@@ -71,9 +73,10 @@ class RichTextEditorState extends State<RichTextEditor>
   late QuillController _controller;
   late FocusNode _focusNode;
   late ScrollController _scrollController;
+  StreamSubscription<DocChange>? _onChangedSub;
   bool _isInternalFocusNode = false;
   bool _isEditing = false;
-  EditorFormattingState _formattingState = const EditorFormattingState();
+  bool _consumeEditorTapUp = false;
 
   // ChecklistReorderMixin requirements
   @override
@@ -83,30 +86,13 @@ class RichTextEditorState extends State<RichTextEditor>
   bool get sortChecklistItems => widget.sortChecklistItems;
 
   @override
-  void onContentChanged() => _notifyChange();
-
-  @override
-  void rebuildController(Document newDocument, int cursorPos) {
-    _removeListeners();
-    _controller.dispose();
-    _controller = QuillController(
-      document: newDocument,
-      selection: TextSelection.collapsed(
-        offset: cursorPos.clamp(0, newDocument.length - 1),
-      ),
-    );
-    _addListeners();
-    if (mounted) setState(() {});
-  }
-
-  @override
   void initState() {
     super.initState();
     _controller = _createController(widget.initialContent);
     _controller.readOnly = !widget.canEdit;
     _scrollController = ScrollController();
-    _addListeners();
-    initChecklistState();
+    _onChangedSub = _controller.changes.listen((_) => widget.onChanged?.call());
+    attachChecklistSorting();
 
     if (widget.focusNode != null) {
       _focusNode = widget.focusNode!;
@@ -123,11 +109,49 @@ class RichTextEditorState extends State<RichTextEditor>
     if (oldWidget.canEdit != widget.canEdit) {
       _controller.readOnly = !widget.canEdit;
     }
+    if (widget.initialContent != oldWidget.initialContent) {
+      _syncExternalContent();
+    }
+  }
+
+  /// Applies externally reloaded content (restore, unarchive, sync) to the
+  /// live controller. No-op when the document already matches. Does not fire
+  /// [RichTextEditor.onChanged] and touches neither focus nor the keyboard.
+  void _syncExternalContent() {
+    final incoming = _parseDocument(widget.initialContent);
+    if (incoming.toDelta() == _controller.document.toDelta()) return;
+
+    final previousOffset = _controller.selection.extentOffset;
+    // controller.changes is a stream on the document itself; both
+    // subscriptions die with the old one.
+    detachChecklistSorting();
+    _onChangedSub?.cancel();
+    _controller
+      ..ignoreFocusOnTextChange = true
+      ..skipRequestKeyboard = true
+      ..document = incoming;
+    _controller.updateSelection(
+      TextSelection.collapsed(
+        offset: previousOffset.clamp(0, _controller.document.length - 1),
+      ),
+      ChangeSource.silent,
+    );
+    _onChangedSub = _controller.changes.listen((_) => widget.onChanged?.call());
+    attachChecklistSorting();
+    // The armed focus guard suppresses the editor's own repaint.
+    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _controller
+        ..ignoreFocusOnTextChange = false
+        ..skipRequestKeyboard = false;
+    });
   }
 
   @override
   void dispose() {
-    _removeListeners();
+    detachChecklistSorting();
+    _onChangedSub?.cancel();
     _focusNode.removeListener(_onFocusChanged);
     _controller.dispose();
     _scrollController.dispose();
@@ -135,18 +159,6 @@ class RichTextEditorState extends State<RichTextEditor>
       _focusNode.dispose();
     }
     super.dispose();
-  }
-
-  void _addListeners() {
-    _controller.addListener(_notifyChange);
-    _controller.addListener(_updateFormattingState);
-    _controller.addListener(onDocumentChanged);
-  }
-
-  void _removeListeners() {
-    _controller.removeListener(_notifyChange);
-    _controller.removeListener(_updateFormattingState);
-    _controller.removeListener(onDocumentChanged);
   }
 
   void _onFocusChanged() {
@@ -165,13 +177,6 @@ class RichTextEditorState extends State<RichTextEditor>
     }
   }
 
-  void _updateFormattingState() {
-    if (!mounted) return;
-    setState(() {
-      _formattingState = EditorFormattingState.fromController(_controller);
-    });
-  }
-
   QuillController _createController(String? content) {
     // ignore: experimental_member_use
     final config = QuillControllerConfig(
@@ -182,25 +187,25 @@ class RichTextEditorState extends State<RichTextEditor>
       ),
     );
 
-    if (content == null || content.isEmpty) {
-      return QuillController.basic(config: config);
-    }
+    return QuillController(
+      document: _parseDocument(content),
+      selection: const TextSelection.collapsed(offset: 0),
+      config: config,
+    );
+  }
 
-    try {
-      final json = jsonDecode(content);
-      if (json is Map && json['ops'] is List) {
-        final document = Document.fromJson(json['ops'] as List);
-        return QuillController(
-          document: document,
-          selection: const TextSelection.collapsed(offset: 0),
-          config: config,
-        );
+  Document _parseDocument(String? content) {
+    if (content != null && content.isNotEmpty) {
+      try {
+        final json = jsonDecode(content);
+        if (json is Map && json['ops'] is List) {
+          return Document.fromJson(json['ops'] as List);
+        }
+      } catch (_) {
+        // Invalid JSON -> empty document
       }
-    } catch (_) {
-      // Invalid JSON -> fall through to empty document
     }
-
-    return QuillController.basic(config: config);
+    return Document();
   }
 
   Future<bool> _onClipboardPaste() async {
@@ -231,13 +236,6 @@ class RichTextEditorState extends State<RichTextEditor>
       );
     }
     return true;
-  }
-
-  void _notifyChange() {
-    if (widget.onChanged != null) {
-      final ops = _controller.document.toDelta().toJson();
-      widget.onChanged!(jsonEncode({'ops': ops}));
-    }
   }
 
   void _openLinkDialog() {
@@ -360,22 +358,80 @@ class RichTextEditorState extends State<RichTextEditor>
 
   bool get isEditing => _isEditing;
 
-  void setContent(String? content) {
-    _removeListeners();
-    _controller.dispose();
-    _controller = _createController(content);
-    _addListeners();
-    updateChecklistState();
-    if (mounted) setState(() {});
+  Widget? _buildLeading(Node node, LeadingConfig config) {
+    final isCheck =
+        config.attribute == Attribute.checked ||
+        config.attribute == Attribute.unchecked;
+    if (!isCheck) return null;
+    final enabled = config.enabled ?? true;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: enabled
+          ? () => _handleCheckboxTap(node.documentOffset, !config.value)
+          : null,
+      child: AbsorbPointer(
+        child: QuillCheckboxPoint(
+          size: config.lineSize!,
+          value: config.value,
+          enabled: enabled,
+          uiBuilder: config.uiBuilder,
+          onChanged: (_) {},
+        ),
+      ),
+    );
+  }
+
+  /// Toggles the checkbox at [offset] without touching selection or focus.
+  void _handleCheckboxTap(int offset, bool checked) {
+    // Quill's transparent tap recognizer delivers this tap to the editor a
+    // second time; [_onEditorTapUp] swallows that duplicate.
+    _consumeEditorTapUp = true;
+    _controller
+      ..ignoreFocusOnTextChange = true
+      ..skipRequestKeyboard = true
+      ..formatText(
+        offset,
+        0,
+        checked ? Attribute.checked : Attribute.unchecked,
+      );
+    // While ignoreFocusOnTextChange is armed the editor skips its own repaint.
+    setState(() {});
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _consumeEditorTapUp = false;
+      _controller
+        ..ignoreFocusOnTextChange = false
+        ..skipRequestKeyboard = false;
+    });
+  }
+
+  /// Swallows the editor-level duplicate of a checkbox tap, which otherwise
+  /// moves the cursor to the tapped word and requests the keyboard.
+  bool _onEditorTapUp(
+    TapUpDetails details,
+    TextPosition Function(Offset offset) getPosition,
+  ) {
+    if (_consumeEditorTapUp) {
+      _consumeEditorTapUp = false;
+      return true;
+    }
+    return false;
+  }
+
+  /// Tap on empty space around the content: cursor to the end, keyboard up.
+  /// The selection update re-requests the keyboard even when focus is kept.
+  void _handleBackgroundTap() {
+    _focusNode.requestFocus();
+    _controller.updateSelection(
+      TextSelection.collapsed(offset: _controller.document.length - 1),
+      ChangeSource.local,
+    );
   }
 
   Widget _buildScrollableEditor(BuildContext context) {
     return GestureDetector(
-      onTap: widget.canEdit
-          ? () {
-              if (!_focusNode.hasFocus) _focusNode.requestFocus();
-            }
-          : null,
+      onTap: widget.canEdit ? _handleBackgroundTap : null,
       behavior: HitTestBehavior.opaque,
       child: SingleChildScrollView(
         controller: _scrollController,
@@ -398,6 +454,9 @@ class RichTextEditorState extends State<RichTextEditor>
                 customStyles: getEditorStyles(context),
                 customStyleBuilder: (attribute) =>
                     getCheckedListStyle(attribute, context),
+                // ignore: experimental_member_use
+                customLeadingBlockBuilder: _buildLeading,
+                onTapUp: _onEditorTapUp,
                 onLaunchUrl: _handleLaunchUrl,
                 linkActionPickerDelegate: _onLinkLongPress,
               ),
@@ -410,28 +469,47 @@ class RichTextEditorState extends State<RichTextEditor>
 
   @override
   Widget build(BuildContext context) {
-    final showBubble =
-        widget.canEdit && _isEditing && _formattingState.linkUrl != null;
-
     return Column(
       children: [
         Expanded(child: _buildScrollableEditor(context)),
-        if (showBubble)
-          _LinkActionBubble(
-            url: _formattingState.linkUrl!,
-            onOpen: () => _handleLaunchUrl(_formattingState.linkUrl!),
-            onCopy: () => _copyLink(_formattingState.linkUrl!),
-            onEdit: _openLinkDialog,
-            onRemove: () => _removeLinkAt(
-              _formattingState.linkStart,
-              _formattingState.linkLength,
-            ),
+        // Only the bubble and toolbar rebuild on controller changes.
+        if (widget.canEdit)
+          ListenableBuilder(
+            listenable: _controller,
+            builder: (context, _) => _buildEditingChrome(context),
           ),
-        if (widget.showToolbar && _isEditing && widget.canEdit)
-          EditorToolbar(
-            controller: _controller,
-            state: _formattingState,
-            onLinkPressed: _openLinkDialog,
+      ],
+    );
+  }
+
+  Widget _buildEditingChrome(BuildContext context) {
+    final formatting = EditorFormattingState.fromController(_controller);
+    final linkUrl = formatting.linkUrl;
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (_isEditing && linkUrl != null)
+          _LinkActionBubble(
+            url: linkUrl,
+            onOpen: () => _handleLaunchUrl(linkUrl),
+            onCopy: () => _copyLink(linkUrl),
+            onEdit: _openLinkDialog,
+            onRemove: () =>
+                _removeLinkAt(formatting.linkStart, formatting.linkLength),
+          ),
+        if (widget.showToolbar)
+          AnimatedSize(
+            duration: const Duration(milliseconds: 150),
+            curve: Curves.easeOut,
+            alignment: Alignment.topCenter,
+            child: _isEditing
+                ? EditorToolbar(
+                    controller: _controller,
+                    state: formatting,
+                    onLinkPressed: _openLinkDialog,
+                  )
+                : const SizedBox(width: double.infinity),
           ),
       ],
     );

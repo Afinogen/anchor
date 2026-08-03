@@ -46,7 +46,10 @@ class EditorFormattingState {
     final style = controller.getSelectionStyle();
     final listValue = style.attributes[Attribute.list.key]?.value;
     final header = style.attributes[Attribute.header.key];
-    final link = linkAtSelection(controller);
+    // linkAtSelection walks the whole document.
+    final link = style.attributes.containsKey(Attribute.link.key)
+        ? linkAtSelection(controller)
+        : null;
 
     return EditorFormattingState(
       isBold: style.attributes.containsKey(Attribute.bold.key),

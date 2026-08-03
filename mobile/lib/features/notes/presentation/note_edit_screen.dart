@@ -59,14 +59,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     return !isActive || _existingNote?.permission == NotePermission.viewer;
   }
 
-  // Auto-save state
   Timer? _autoSaveTimer;
   bool _hasUnsavedChanges = false;
-  String? _lastSavedTitle;
-  String? _lastSavedContent;
-  Set<String>? _lastSavedTagIds;
-  String? _lastSavedBackground;
-  bool? _lastSavedPinned;
+  String _lastTitleText = '';
 
   @override
   void initState() {
@@ -74,45 +69,30 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     WidgetsBinding.instance.addObserver(this);
 
     if (widget.note != null) {
-      // Note passed directly
       _isNew = false;
       _existingNote = widget.note;
       _isPinned = widget.note!.isPinned;
       _isArchived = widget.note!.isArchived;
+      _lastTitleText = widget.note!.title;
       _titleController.text = widget.note!.title;
       _initialContent = widget.note!.content;
       _selectedTagIds = List.from(widget.note!.tagIds);
       _selectedBackground = widget.note!.background;
       _isLoaded = true;
-      // Non-active notes or viewer notes are read-only
       if (!widget.note!.isActive || !widget.note!.canEdit) {
         _isEditing = false;
       }
-      // Initialize last saved state
-      _initializeLastSavedState(widget.note!);
     } else if (widget.noteId != null) {
-      // Fallback: fetch from repository if only ID is provided
       _isNew = false;
       _loadNote();
     } else {
-      // New notes start in edit mode
       _isEditing = true;
       _isPinned = false;
       _isLoaded = true;
     }
 
-    // Listen to title and content changes for auto-save
     _titleFocusNode.addListener(_updateEditingState);
-    _titleController.addListener(_onContentChanged);
-  }
-
-  void _initializeLastSavedState(Note note) {
-    // Trimmed to match the trimmed editor text, so stray whitespace isn't a false change.
-    _lastSavedTitle = note.title.trim();
-    _lastSavedContent = note.content;
-    _lastSavedTagIds = note.tagIds.toSet();
-    _lastSavedBackground = note.background;
-    _lastSavedPinned = note.isPinned;
+    _titleController.addListener(_onTitleChanged);
   }
 
   void _updateEditingState() {
@@ -134,6 +114,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         .read(notesRepositoryProvider)
         .getNote(widget.noteId!);
     if (note != null && mounted) {
+      _lastTitleText = note.title;
       setState(() {
         _existingNote = note;
         _isPinned = note.isPinned;
@@ -143,51 +124,24 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         _selectedTagIds = List.from(note.tagIds);
         _selectedBackground = note.background;
         _isLoaded = true;
-        // Non-active notes or viewer notes are read-only
         if (!note.isActive || !note.canEdit) {
           _isEditing = false;
         }
       });
-      _initializeLastSavedState(note);
     }
+  }
+
+  /// The title controller also notifies on selection changes; only text
+  /// changes mark the note dirty.
+  void _onTitleChanged() {
+    if (_titleController.text == _lastTitleText) return;
+    _lastTitleText = _titleController.text;
+    _onContentChanged();
   }
 
   void _onContentChanged() {
-    final hasChanges = _checkForChanges();
-
-    if (hasChanges != _hasUnsavedChanges) {
-      setState(() {
-        _hasUnsavedChanges = hasChanges;
-      });
-    }
-
-    if (hasChanges) {
-      _resetAutoSaveTimer();
-    }
-  }
-
-  bool _checkForChanges() {
-    final currentTitle = _titleController.text.trim();
-    final editorState = _editorKey.currentState;
-    final currentContent = editorState?.getContent() ?? '';
-    final currentTagIds = _selectedTagIds.toSet();
-
-    // For new notes, check if anything is non-empty
-    if (_isNew) {
-      final plainText = editorState?.getPlainText() ?? '';
-      return currentTitle.isNotEmpty ||
-          plainText.isNotEmpty ||
-          _isPinned ||
-          _selectedBackground != null ||
-          currentTagIds.isNotEmpty;
-    }
-
-    // For existing notes, compare with last saved state (blank title stays blank).
-    return currentTitle != (_lastSavedTitle ?? '') ||
-        currentContent != (_lastSavedContent ?? '') ||
-        !_setEquals(currentTagIds, _lastSavedTagIds ?? {}) ||
-        _selectedBackground != _lastSavedBackground ||
-        _isPinned != (_lastSavedPinned ?? false);
+    _hasUnsavedChanges = true;
+    _resetAutoSaveTimer();
   }
 
   bool _setEquals(Set<String> a, Set<String> b) {
@@ -208,26 +162,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     await _savePendingChanges();
   }
 
-  void _updateLastSavedState() {
-    // Track the saved title as-is; blank stays blank.
-    final title = _titleController.text.trim();
-    _lastSavedTitle = title;
-    final editorState = _editorKey.currentState;
-    _lastSavedContent = editorState?.getContent() ?? '';
-    _lastSavedTagIds = _selectedTagIds.toSet();
-    _lastSavedBackground = _selectedBackground;
-    _lastSavedPinned = _isPinned;
-  }
-
   Future<void> _savePendingChanges() async {
+    // Cleared before saving so edits made during the await stay flagged.
+    _hasUnsavedChanges = false;
     await _saveNote();
-    _updateLastSavedState();
-
-    if (mounted) {
-      setState(() {
-        _hasUnsavedChanges = false;
-      });
-    }
   }
 
   /// Leaves the editor: pops when there is a screen beneath, or exits the
@@ -247,8 +185,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     _autoSaveTimer?.cancel();
 
     try {
-      if (!_isDeleted &&
-          (_hasUnsavedChanges || _isEditing || _checkForChanges())) {
+      // _saveNote skips when no field changed.
+      if (!_isDeleted) {
         await _savePendingChanges();
       }
     } finally {
@@ -265,7 +203,6 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
 
-    // Save when app goes to background or is paused
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.inactive) {
       if (_hasUnsavedChanges) {
@@ -275,14 +212,13 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   Future<void> _togglePinned() async {
-    // Don't allow pinning if note is not active
     if (_existingNote?.isActive != true) {
       return;
     }
     setState(() {
       _isPinned = !_isPinned;
     });
-    _onContentChanged(); // Trigger change detection and auto-save
+    _onContentChanged();
   }
 
   Future<void> _toggleArchived() async {
@@ -314,17 +250,14 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         await repository.archiveNote(widget.noteId!);
       }
 
-      // Reload note to get updated state
       await _loadNote();
 
-      // Show success snackbar
       if (mounted) {
         AppSnackbar.showSuccess(
           context,
           message: wasArchived ? 'Note unarchived' : 'Note archived',
         );
 
-        // If archiving, go back after showing snackbar
         if (!wasArchived) {
           // Small delay to ensure snackbar is visible
           await Future.delayed(const Duration(milliseconds: 300));
@@ -334,7 +267,6 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         }
       }
     } catch (e) {
-      // Show error snackbar
       if (mounted) {
         AppSnackbar.showError(
           context,
@@ -347,7 +279,6 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   void _showColorPicker() {
-    // Don't allow changing background if an existing note is not active.
     // New notes have no _existingNote yet but are always editable.
     if (!_isNew && _existingNote?.isActive != true) {
       return;
@@ -362,14 +293,13 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
           setState(() {
             _selectedBackground = color;
           });
-          _onContentChanged(); // Trigger change detection and auto-save
+          _onContentChanged();
         },
       ),
     );
   }
 
   void _showShareSheet() {
-    // Only allow sharing for existing, active notes, and owners only
     if (_isNew ||
         _existingNote?.isActive != true ||
         !(_existingNote?.isOwner ?? true)) {
@@ -382,7 +312,6 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       builder: (context) =>
           ShareNoteSheet(noteId: widget.noteId ?? _existingNote!.id),
     ).then((_) {
-      // Reload note to update share count after sheet closes
       if (widget.noteId != null || _existingNote != null) {
         _reloadNoteShareInfo();
       }
@@ -401,10 +330,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
             // the user may start by adding an attachment, so create the note
             // now that there's something to attach to.
             var noteId = widget.noteId ?? _existingNote?.id;
-            if (noteId == null) {
-              noteId = await _createNote();
-              _updateLastSavedState();
-            }
+            noteId ??= await _createNote();
             final repo = ref.read(noteAttachmentsRepositoryProvider);
             await repo.addAttachment(noteId, filePath, mimeType, filename);
             if (!context.mounted) return;
@@ -452,7 +378,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _autoSaveTimer?.cancel();
-    _titleController.removeListener(_onContentChanged);
+    _titleController.removeListener(_onTitleChanged);
     _titleController.dispose();
     _titleFocusNode.removeListener(_updateEditingState);
     _titleFocusNode.dispose();
@@ -489,7 +415,6 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   Future<void> _saveNote() async {
-    // Don't save if note is not active or user can't edit.
     // New notes (_existingNote == null) are always treated as active/editable.
     final isActive =
         _existingNote == null || (_existingNote?.isActive ?? false);
@@ -518,7 +443,6 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     if (_isNew) {
       await _createNote();
     } else if (_existingNote != null) {
-      // Check if anything changed
       final tagsChanged = !_listEquals(_existingNote!.tagIds, _selectedTagIds);
       final titleChanged = _existingNote!.title != title;
       final contentChanged = _existingNote!.content != content;
@@ -624,7 +548,6 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     try {
       await ref.read(notesRepositoryProvider).restoreNote(widget.noteId!);
 
-      // Reload note to get updated state
       await _loadNote();
 
       if (mounted) {
@@ -933,10 +856,10 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                             key: _editorKey,
                             initialContent: _initialContent,
                             hintText: 'Start typing...',
-                            showToolbar: _isEditing && !isReadOnly,
+                            showToolbar: !isReadOnly,
                             canEdit: !isReadOnly,
                             onEditingChanged: (_) => _updateEditingState(),
-                            onChanged: (_) => _onContentChanged(),
+                            onChanged: _onContentChanged,
                             sortChecklistItems: ref
                                 .watch(editorPreferencesControllerProvider)
                                 .sortChecklistItems,
