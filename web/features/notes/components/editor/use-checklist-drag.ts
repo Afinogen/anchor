@@ -16,6 +16,8 @@ const MAX_SCROLL_SPEED = 16;
 const GUTTER_EXTENT = 48;
 /** Vertical slack so the handle survives the small gaps between rows. */
 const BAND_SLACK = 3;
+/** Horizontal pointer travel per nesting level, matching the editor CSS. */
+const INDENT_STEP = 24;
 
 export type ChecklistDragHandle = {
   top: number;
@@ -23,12 +25,16 @@ export type ChecklistDragHandle = {
 };
 
 export type ChecklistDragState = {
-  /** Null while the drop would put the item back where it started. */
+  /** Null while the drop would change nothing. */
   indicatorTop: number | null;
+  /** Left edge of the block's row at the indent the drop would give it. */
+  indicatorLeft: number;
   ghostTop: number;
   ghostLeft: number;
   text: string;
   checked: boolean;
+  /** Indented children travelling with the dragged line. */
+  childCount: number;
 };
 
 type ActiveDrag = {
@@ -38,7 +44,13 @@ type ActiveDrag = {
    * coordinates so it stays valid across auto-scroll.
    */
   bands: { top: number; height: number }[];
+  /** Left of the dragged block's row relative to the container. */
+  blockLeft: number;
+  /** Pointer X at drag start; horizontal travel from here picks the indent. */
+  startX: number;
   gap: number | null;
+  /** Indent the head line takes on drop, picked by horizontal travel. */
+  indent: number;
   pointer: { x: number; y: number };
   cleanup: () => void;
 };
@@ -133,29 +145,47 @@ export function useChecklistDrag({
 
       // Bands are in document coordinates, so they survive auto-scroll.
       const docY = y + window.scrollY;
-      let gap = plan.groupEnd + 1;
-      for (let i = 0; i < bands.length; i++) {
-        if (docY < bands[i].top + bands[i].height / 2) {
-          gap = plan.groupStart + i;
-          break;
+      // Y of a gap, centered in the visual seam between the two rows.
+      const gapEdge = (g: number) => {
+        const rel = g - plan.groupStart;
+        if (rel <= 0) return bands[0].top;
+        if (rel >= bands.length) {
+          const last = bands[bands.length - 1];
+          return last.top + last.height;
+        }
+        const prev = bands[rel - 1];
+        return (prev.top + prev.height + bands[rel].top) / 2;
+      };
+      // Snap to the nearest structurally valid gap.
+      let entry = plan.gaps[0];
+      let bestDistance = Number.POSITIVE_INFINITY;
+      for (const g of plan.gaps) {
+        const distance = Math.abs(docY - gapEdge(g.gap));
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          entry = g;
         }
       }
-      gap = Math.min(Math.max(gap, plan.minGap), plan.maxGap);
-      active.gap = gap;
+      // Horizontal travel from the grab point picks the indent at this gap.
+      const desired =
+        plan.indent + Math.round((x - active.startX) / INDENT_STEP);
+      const indent = Math.min(
+        entry.maxIndent,
+        Math.max(entry.minIndent, desired),
+      );
+      active.gap = entry.gap;
+      active.indent = indent;
 
       const containerRect = containerEl.getBoundingClientRect();
+      const moves = entry.gap < plan.lineIndex || entry.gap > plan.blockEnd + 1;
       let indicatorTop: number | null = null;
-      if (gap !== plan.lineIndex && gap !== plan.lineIndex + 1) {
-        const rel = gap - plan.groupStart;
-        const edgeDocY =
-          rel < bands.length
-            ? bands[rel].top
-            : bands[bands.length - 1].top + bands[bands.length - 1].height;
-        indicatorTop = edgeDocY - window.scrollY - containerRect.top;
+      if (moves || indent !== plan.indent) {
+        indicatorTop = gapEdge(entry.gap) - window.scrollY - containerRect.top;
       }
 
       setDrag({
         indicatorTop,
+        indicatorLeft: active.blockLeft + (indent - plan.indent) * INDENT_STEP,
         ghostTop: y - containerRect.top,
         ghostLeft: Math.min(
           x - containerRect.left + 14,
@@ -163,6 +193,7 @@ export function useChecklistDrag({
         ),
         text: plan.text,
         checked: plan.checked,
+        childCount: plan.blockEnd - plan.lineIndex,
       });
     },
     [containerEl],
@@ -183,6 +214,7 @@ export function useChecklistDrag({
         quill.getContents(),
         active.plan.lineIndex,
         active.gap,
+        active.indent,
       );
       if (!moveDelta) return;
       // Cutoffs keep the move out of the surrounding typing's undo batches.
@@ -253,8 +285,14 @@ export function useChecklistDrag({
         const rect = el.getBoundingClientRect();
         return { top: rect.top + window.scrollY, height: rect.height };
       });
+      const blockEls = items.slice(
+        plan.lineIndex - plan.groupStart,
+        plan.blockEnd - plan.groupStart + 1,
+      );
 
-      item.classList.add("anchor-checklist-dragging");
+      for (const el of blockEls) {
+        el.classList.add("anchor-checklist-dragging");
+      }
       document.body.style.userSelect = "none";
       document.body.style.cursor = "grabbing";
 
@@ -268,7 +306,12 @@ export function useChecklistDrag({
       dragRef.current = {
         plan,
         bands,
+        blockLeft:
+          blockEls[0].getBoundingClientRect().left -
+          containerEl.getBoundingClientRect().left,
+        startX: e.clientX,
         gap: null,
+        indent: plan.indent,
         pointer: { x: e.clientX, y: e.clientY },
         cleanup: () => {
           window.removeEventListener("pointermove", onMove);
@@ -276,7 +319,9 @@ export function useChecklistDrag({
           window.removeEventListener("pointercancel", onCancel);
           // Before updateContents: quill reuses li nodes across renders and
           // the class would stick to whichever line ends up in this one.
-          item.classList.remove("anchor-checklist-dragging");
+          for (const el of blockEls) {
+            el.classList.remove("anchor-checklist-dragging");
+          }
           document.body.style.userSelect = "";
           document.body.style.cursor = "";
           if (scrollFrameRef.current !== null) {
