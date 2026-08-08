@@ -1,19 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../../../core/theme/context_extensions.dart';
+
 class EmptyNotesState extends StatelessWidget {
   const EmptyNotesState({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const SliverFillRemaining(
+    return SliverFillRemaining(
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.sparkles, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('Capture your ideas here'),
+            Icon(
+              LucideIcons.sparkles,
+              size: 64,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.35),
+            ),
+            SizedBox(height: context.dims.md),
+            const Text('Capture your ideas here'),
           ],
         ),
       ),
@@ -26,14 +34,20 @@ class EmptySearchState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const SliverFillRemaining(
+    return SliverFillRemaining(
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.search, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('No matching notes found'),
+            Icon(
+              LucideIcons.search,
+              size: 64,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.35),
+            ),
+            SizedBox(height: context.dims.md),
+            const Text('No matching notes found'),
           ],
         ),
       ),

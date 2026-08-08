@@ -8,6 +8,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
+import 'package:anchor/core/theme/context_extensions.dart';
+import 'package:anchor/core/theme/tokens/app_icon_sizes.dart';
+import 'package:anchor/core/theme/tokens/app_radius.dart';
 import 'package:anchor/core/widgets/image_shimmer.dart';
 import 'package:anchor/core/widgets/quill_preview.dart';
 import 'package:anchor/core/network/connectivity_provider.dart';
@@ -42,6 +45,7 @@ class NoteCard extends ConsumerWidget {
     final tagsAsync = ref.watch(tagsControllerProvider);
     final serverUrl = ref.watch(serverUrlProvider);
     final theme = Theme.of(context);
+    final dims = context.dims;
     final hasImages = note.imagePreviewData.isNotEmpty;
 
     final cardColor = note.background != null
@@ -57,7 +61,7 @@ class NoteCard extends ConsumerWidget {
           clipBehavior: Clip.antiAlias,
           elevation: isSelected ? 2 : 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.lgBorder,
             side: isSelected
                 ? BorderSide(color: theme.colorScheme.primary, width: 2)
                 : BorderSide.none,
@@ -65,7 +69,7 @@ class NoteCard extends ConsumerWidget {
           child: InkWell(
             onTap: onTap ?? () => context.go('/note/${note.id}', extra: note),
             onLongPress: onLongPress,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.lgBorder,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -87,7 +91,7 @@ class NoteCard extends ConsumerWidget {
                   styleId: note.background,
                   borderRadius: BorderRadius.zero,
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    padding: dims.noteCardPadding,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -96,12 +100,16 @@ class NoteCard extends ConsumerWidget {
                           children: [
                             if (isSelectionMode && !hasImages) ...[
                               _SelectionBadge(isSelected: isSelected),
-                              const SizedBox(width: 12),
+                              SizedBox(width: dims.sm),
                             ],
                             Expanded(
                               child: Text(
                                 note.displayTitle,
-                                style: theme.textTheme.titleLarge,
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: -0.3,
+                                ),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -109,10 +117,10 @@ class NoteCard extends ConsumerWidget {
                             if (!isSelectionMode &&
                                 !hasImages &&
                                 note.isPinned) ...[
-                              const SizedBox(width: 8),
+                              SizedBox(width: dims.xs),
                               Icon(
                                 LucideIcons.pin,
-                                size: 16,
+                                size: AppIconSizes.sm,
                                 color: theme.colorScheme.primary,
                               ),
                             ],
@@ -120,11 +128,14 @@ class NoteCard extends ConsumerWidget {
                         ),
                         if (note.content != null &&
                             note.content!.isNotEmpty) ...[
-                          const SizedBox(height: 10),
-                          QuillPreview(content: note.content, maxLines: 6),
+                          SizedBox(height: dims.noteCardTitleGap),
+                          QuillPreview(
+                            content: note.content,
+                            maxLines: dims.notePreviewMaxLines,
+                          ),
                         ],
                         if (note.tagIds.isNotEmpty) ...[
-                          const SizedBox(height: 12),
+                          SizedBox(height: dims.noteCardTagGap),
                           tagsAsync.when(
                             data: (allTags) {
                               final userNoteTags = allTags
@@ -139,23 +150,23 @@ class NoteCard extends ConsumerWidget {
                               final remaining =
                                   userNoteTags.length - displayedTags.length;
                               return Wrap(
-                                spacing: 4,
-                                runSpacing: 4,
+                                spacing: dims.xxs,
+                                runSpacing: dims.xxs,
                                 children: [
                                   ...displayedTags.map(
                                     (tag) => TagChip(tag: tag, selected: false),
                                   ),
                                   if (remaining > 0)
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: dims.xs,
+                                        vertical: dims.xxs,
                                       ),
                                       decoration: BoxDecoration(
                                         color: theme
                                             .colorScheme
                                             .surfaceContainerHighest,
-                                        borderRadius: BorderRadius.circular(12),
+                                        borderRadius: AppRadius.smBorder,
                                       ),
                                       child: Text(
                                         '+$remaining',
@@ -169,7 +180,7 @@ class NoteCard extends ConsumerWidget {
                             error: (_, _) => const SizedBox.shrink(),
                           ),
                         ],
-                        const SizedBox(height: 14),
+                        SizedBox(height: dims.noteCardFooterGap),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -185,7 +196,7 @@ class NoteCard extends ConsumerWidget {
                                       size: 20,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: dims.xs),
                                 ],
                                 if (note.isOwner && note.hasShares) ...[
                                   _SharedByMeIndicator(
@@ -200,7 +211,7 @@ class NoteCard extends ConsumerWidget {
                                                 ShareNoteSheet(noteId: note.id),
                                           ),
                                   ),
-                                  const SizedBox(width: 8),
+                                  SizedBox(width: dims.xs),
                                 ],
                                 if (note.updatedAt != null)
                                   Text(
@@ -223,7 +234,7 @@ class NoteCard extends ConsumerWidget {
                             if (trailingActions == null && !note.isSynced)
                               Icon(
                                 LucideIcons.cloudOff,
-                                size: 16,
+                                size: AppIconSizes.sm,
                                 color: theme.hintColor,
                               ),
                           ],
@@ -264,7 +275,7 @@ class _SelectionBadge extends StatelessWidget {
       child: isSelected
           ? Icon(
               LucideIcons.check,
-              size: 14,
+              size: AppIconSizes.xs,
               color: theme.colorScheme.onPrimary,
             )
           : null,
@@ -281,7 +292,7 @@ class _PinBadge extends StatelessWidget {
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
         color: Colors.black.withValues(alpha: 0.35),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.lgBorder,
       ),
       child: const Icon(LucideIcons.pin, size: 13, color: Colors.white),
     );
@@ -302,7 +313,7 @@ class _NoteImagePreviews extends StatelessWidget {
 
     if (count == 1) {
       return AspectRatio(
-        aspectRatio: 16 / 9,
+        aspectRatio: context.dims.noteCardSingleImageAspect,
         child: _Thumb(
           key: ValueKey(previews[0].attachmentId),
           preview: previews[0],
@@ -526,7 +537,7 @@ class _ThumbState extends ConsumerState<_Thumb> {
       child: Center(
         child: Icon(
           LucideIcons.image,
-          size: 20,
+          size: AppIconSizes.md,
           color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.35),
         ),
       ),
@@ -547,18 +558,23 @@ class _SharedByMeIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    final dims = context.dims;
     return Tooltip(
       message: 'Shared with $count ${count == 1 ? 'person' : 'people'}',
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: AppRadius.xsBorder,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+          padding: EdgeInsets.symmetric(horizontal: dims.xxs, vertical: 2),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(LucideIcons.users, size: 14, color: theme.hintColor),
-              const SizedBox(width: 4),
+              Icon(
+                LucideIcons.users,
+                size: AppIconSizes.xs,
+                color: theme.hintColor,
+              ),
+              SizedBox(width: dims.xxs),
               Text(
                 '$count',
                 style: theme.textTheme.labelSmall?.copyWith(

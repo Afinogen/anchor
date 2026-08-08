@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'link_utils.dart';
+import '../../../core/theme/context_extensions.dart';
+import '../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../core/theme/tokens/app_radius.dart';
 
 class LinkEditSheet extends StatefulWidget {
   final String initialText;
@@ -100,7 +102,7 @@ class _LinkEditSheetState extends State<LinkEditSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final safeBottom = MediaQuery.of(context).viewPadding.bottom;
     final trimmedUrl = _urlController.text.trim();
@@ -110,21 +112,9 @@ class _LinkEditSheetState extends State<LinkEditSheet> {
       padding: EdgeInsets.only(bottom: keyboardHeight),
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-                : [Colors.white, const Color(0xFFF8F9FC)],
-          ),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
+          gradient: context.colorTokens.sheetGradient,
+          borderRadius: AppRadius.sheetTopBorder,
+          boxShadow: [context.colorTokens.sheetShadow],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -140,7 +130,7 @@ class _LinkEditSheetState extends State<LinkEditSheet> {
               label: 'Text',
               hint: trimmedUrl.isEmpty ? 'Link text' : trimmedUrl,
               icon: LucideIcons.type,
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+              padding: EdgeInsets.fromLTRB(dims.xl, 0, dims.xl, dims.xs),
             ),
             _TextField(
               controller: _urlController,
@@ -151,7 +141,7 @@ class _LinkEditSheetState extends State<LinkEditSheet> {
               keyboardType: TextInputType.url,
               textInputAction: TextInputAction.done,
               onSubmitted: (_) => _submit(),
-              padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+              padding: EdgeInsets.fromLTRB(dims.xl, dims.xs, dims.xl, dims.lg),
             ),
             _Actions(
               theme: theme,
@@ -180,12 +170,12 @@ class _HandleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 12),
+      margin: EdgeInsets.only(top: context.dims.sm),
       width: 40,
       height: 4,
       decoration: BoxDecoration(
         color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: AppRadius.handleBorder,
       ),
     );
   }
@@ -204,20 +194,21 @@ class _Header extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dims = context.dims;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 12, 16),
+      padding: EdgeInsets.fromLTRB(dims.xl, dims.lg, dims.sm, dims.md),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: theme.colorScheme.tertiary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.smBorder,
             ),
             child: Icon(
               LucideIcons.link,
               color: theme.colorScheme.tertiary,
-              size: 20,
+              size: AppIconSizes.md,
             ),
           ),
           const SizedBox(width: 14),
@@ -231,7 +222,7 @@ class _Header extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(LucideIcons.x, size: 20),
+            icon: const Icon(LucideIcons.x, size: AppIconSizes.md),
             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             onPressed: onClose,
           ),
@@ -271,16 +262,14 @@ class _TextField extends StatelessWidget {
       child: TextField(
         controller: controller,
         focusNode: focusNode,
-        style: GoogleFonts.dmSans(),
         keyboardType: keyboardType,
         textInputAction: textInputAction,
         onSubmitted: onSubmitted,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: GoogleFonts.dmSans(),
           hintText: hint,
           prefixIcon: Icon(icon, size: 18),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+          border: OutlineInputBorder(borderRadius: AppRadius.buttonBorder),
         ),
       ),
     );
@@ -306,20 +295,21 @@ class _Actions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dims = context.dims;
     final showRemove = isEditing && onRemove != null;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(24, 0, 24, bottomPadding),
+      padding: EdgeInsets.fromLTRB(dims.xl, 0, dims.xl, bottomPadding),
       child: Row(
         children: [
           if (showRemove) ...[
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: onRemove,
-                icon: const Icon(LucideIcons.unlink, size: 16),
+                icon: const Icon(LucideIcons.unlink, size: AppIconSizes.sm),
                 label: Text(
                   'Remove',
-                  style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.colorScheme.error,
@@ -327,13 +317,13 @@ class _Actions extends StatelessWidget {
                   side: BorderSide(
                     color: theme.colorScheme.error.withValues(alpha: 0.3),
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadius.buttonBorder,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: context.dims.sm),
           ],
           Expanded(
             child: FilledButton(
@@ -342,13 +332,13 @@ class _Actions extends StatelessWidget {
                 backgroundColor: theme.colorScheme.tertiary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: AppRadius.buttonBorder,
                 ),
               ),
               child: Text(
                 isEditing ? 'Save' : 'Insert',
-                style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                style: const TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ),

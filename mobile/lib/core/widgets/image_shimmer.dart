@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 
+import '../theme/context_extensions.dart';
+
 /// Shimmer placeholder for image loading states.
 /// Adapts to theme for cards/grids, or use [dark] for lightbox/overlays.
 class ImageShimmer extends StatelessWidget {
@@ -11,23 +13,14 @@ class ImageShimmer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final tokens = context.colorTokens;
 
-    final (base, highlight) = switch ((dark, isDark)) {
-      (true, _) => (
-        Colors.white.withValues(alpha: 0.06),
-        Colors.white.withValues(alpha: 0.14),
-      ),
-      (false, false) => (
-        const Color(0xFFE5E9EE), // Soft cool grey
-        const Color(0xFFF2F4F8), // Lighter sweep
-      ),
-      (false, true) => (
-        const Color(0xFF3A3E4A), // Elevated dark surface
-        const Color(0xFF484D5A), // Subtle lift
-      ),
-    };
+    final (base, highlight) = dark
+        ? (
+            Colors.white.withValues(alpha: 0.06),
+            Colors.white.withValues(alpha: 0.14),
+          )
+        : (tokens.shimmerBase, tokens.shimmerHighlight);
 
     return Shimmer.fromColors(
       baseColor: base,

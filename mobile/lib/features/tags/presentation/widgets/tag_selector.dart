@@ -4,6 +4,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../domain/tag.dart';
 import '../tags_controller.dart';
 import 'tag_chip.dart';
+import '../../../../core/theme/context_extensions.dart';
+import '../../../../core/theme/tokens/app_durations.dart';
+import '../../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../../core/theme/tokens/app_radius.dart';
 
 class TagSelector extends ConsumerStatefulWidget {
   final List<String> selectedTagIds;
@@ -40,21 +44,25 @@ class _TagSelectorState extends ConsumerState<TagSelector> {
   Widget build(BuildContext context) {
     final tagsAsync = ref.watch(tagsControllerProvider);
     final theme = Theme.of(context);
+    final dims = context.dims;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (!widget.readOnly)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            padding: EdgeInsets.symmetric(
+              horizontal: dims.xl,
+              vertical: dims.xs,
+            ),
             child: Row(
               children: [
                 Icon(
                   LucideIcons.tags,
-                  size: 16,
+                  size: AppIconSizes.sm,
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: dims.xs),
                 Text(
                   'Tags',
                   style: theme.textTheme.labelMedium?.copyWith(
@@ -79,11 +87,11 @@ class _TagSelectorState extends ConsumerState<TagSelector> {
                 }
                 return ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: EdgeInsets.symmetric(horizontal: dims.lg),
                   children: selectedTags
                       .map(
                         (tag) => Padding(
-                          padding: const EdgeInsets.only(right: 8),
+                          padding: EdgeInsets.only(right: dims.xs),
                           child: TagChip(tag: tag, selected: false),
                         ),
                       )
@@ -94,11 +102,11 @@ class _TagSelectorState extends ConsumerState<TagSelector> {
               // Edit mode: show tags with delete and add button
               return ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.symmetric(horizontal: dims.lg),
                 children: [
                   ...selectedTags.map(
                     (tag) => Padding(
-                      padding: const EdgeInsets.only(right: 8),
+                      padding: EdgeInsets.only(right: dims.xs),
                       child: TagChip(
                         tag: tag,
                         selected: true,
@@ -114,14 +122,14 @@ class _TagSelectorState extends ConsumerState<TagSelector> {
                   ),
                   InkWell(
                     onTap: _showTagPickerSheet,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: AppRadius.lgBorder,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: dims.sm,
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: AppRadius.lgBorder,
                         border: Border.all(
                           color: theme.colorScheme.outline.withValues(
                             alpha: 0.5,
@@ -134,10 +142,10 @@ class _TagSelectorState extends ConsumerState<TagSelector> {
                         children: [
                           Icon(
                             LucideIcons.plus,
-                            size: 14,
+                            size: AppIconSizes.xs,
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
-                          const SizedBox(width: 4),
+                          SizedBox(width: dims.xxs),
                           Text(
                             'Add tag',
                             style: theme.textTheme.labelMedium?.copyWith(
@@ -250,7 +258,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
   Widget build(BuildContext context) {
     final tagsAsync = ref.watch(tagsControllerProvider);
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
     return Padding(
@@ -260,51 +268,39 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
           maxHeight: MediaQuery.of(context).size.height * 0.75,
         ),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-                : [Colors.white, const Color(0xFFF8F9FC)],
-          ),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
+          gradient: context.colorTokens.sheetGradient,
+          borderRadius: AppRadius.sheetTopBorder,
+          boxShadow: [context.colorTokens.sheetShadow],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             // Handle bar
             Container(
-              margin: const EdgeInsets.only(top: 12),
+              margin: EdgeInsets.only(top: dims.sm),
               width: 40,
               height: 4,
               decoration: BoxDecoration(
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: AppRadius.handleBorder,
               ),
             ),
 
             // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(24, 20, 16, 16),
+              padding: EdgeInsets.fromLTRB(dims.xl, dims.lg, dims.md, dims.md),
               child: Row(
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.smBorder,
                     ),
                     child: Icon(
                       LucideIcons.tags,
                       color: theme.colorScheme.primary,
-                      size: 20,
+                      size: AppIconSizes.md,
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -334,9 +330,9 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                   FilledButton.tonal(
                     onPressed: () => Navigator.pop(context),
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
+                      padding: EdgeInsets.symmetric(
+                        horizontal: dims.md,
+                        vertical: dims.xs,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -350,7 +346,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
 
             // Create new tag input
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: dims.xl),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -373,9 +369,9 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                             : theme.colorScheme.primary,
                       ),
                       suffixIcon: _isCreatingTag
-                          ? const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: SizedBox(
+                          ? Padding(
+                              padding: EdgeInsets.all(dims.sm),
+                              child: const SizedBox(
                                 width: 20,
                                 height: 20,
                                 child: CircularProgressIndicator(
@@ -386,7 +382,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                           : _newTagController.text.isNotEmpty
                           ? IconButton(
                               icon: Container(
-                                padding: const EdgeInsets.all(4),
+                                padding: EdgeInsets.all(dims.xxs),
                                 decoration: BoxDecoration(
                                   color: _errorMessage != null
                                       ? theme.colorScheme.error
@@ -397,7 +393,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                                   _errorMessage != null
                                       ? LucideIcons.x
                                       : LucideIcons.check,
-                                  size: 14,
+                                  size: AppIconSizes.xs,
                                   color: theme.colorScheme.onPrimary,
                                 ),
                               ),
@@ -416,12 +412,12 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                       errorStyle: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.error,
                       ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                      border: const OutlineInputBorder(
+                        borderRadius: AppRadius.buttonBorder,
                         borderSide: BorderSide.none,
                       ),
                       focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: AppRadius.buttonBorder,
                         borderSide: BorderSide(
                           color: _errorMessage != null
                               ? theme.colorScheme.error
@@ -430,21 +426,21 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                         ),
                       ),
                       errorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: AppRadius.buttonBorder,
                         borderSide: BorderSide(
                           color: theme.colorScheme.error,
                           width: 1.5,
                         ),
                       ),
                       focusedErrorBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: AppRadius.buttonBorder,
                         borderSide: BorderSide(
                           color: theme.colorScheme.error,
                           width: 1.5,
                         ),
                       ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
+                      contentPadding: EdgeInsets.symmetric(
+                        horizontal: dims.md,
                         vertical: 14,
                       ),
                     ),
@@ -455,11 +451,11 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
               ),
             ),
 
-            const SizedBox(height: 16),
+            SizedBox(height: dims.md),
 
             // Divider
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: EdgeInsets.symmetric(horizontal: dims.xl),
               child: Row(
                 children: [
                   Expanded(
@@ -471,7 +467,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: EdgeInsets.symmetric(horizontal: dims.sm),
                     child: Text(
                       'Available Tags',
                       style: theme.textTheme.labelSmall?.copyWith(
@@ -495,7 +491,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
               ),
             ),
 
-            const SizedBox(height: 12),
+            SizedBox(height: dims.sm),
 
             // Tags list
             Flexible(
@@ -508,7 +504,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Container(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(dims.md),
                             decoration: BoxDecoration(
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.05,
@@ -523,7 +519,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          SizedBox(height: dims.md),
                           Text(
                             'No tags yet',
                             style: theme.textTheme.titleMedium?.copyWith(
@@ -533,7 +529,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: dims.xxs),
                           Text(
                             'Create your first tag above',
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -549,7 +545,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
 
                   return ListView.builder(
                     shrinkWrap: true,
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                    padding: EdgeInsets.fromLTRB(dims.md, 0, dims.md, dims.xxl),
                     itemCount: tags.length,
                     itemBuilder: (context, index) {
                       final tag = tags[index];
@@ -563,15 +559,15 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                         padding: const EdgeInsets.only(bottom: 6),
                         child: Material(
                           color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: AppRadius.smBorder,
                           child: InkWell(
                             onTap: () => _toggleTag(tag.id),
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: AppRadius.smBorder,
                             child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(
+                              duration: AppDurations.medium,
+                              padding: EdgeInsets.symmetric(
                                 horizontal: 14,
-                                vertical: 12,
+                                vertical: dims.sm,
                               ),
                               decoration: BoxDecoration(
                                 color: isSelected
@@ -579,7 +575,7 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                                     : theme.colorScheme.onSurface.withValues(
                                         alpha: 0.03,
                                       ),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: AppRadius.smBorder,
                                 border: Border.all(
                                   color: isSelected
                                       ? tagColor.withValues(alpha: 0.3)
@@ -591,18 +587,18 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                               child: Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.all(8),
+                                    padding: EdgeInsets.all(dims.xs),
                                     decoration: BoxDecoration(
                                       color: tagColor.withValues(alpha: 0.15),
-                                      borderRadius: BorderRadius.circular(8),
+                                      borderRadius: AppRadius.xsBorder,
                                     ),
                                     child: Icon(
                                       LucideIcons.hash,
-                                      size: 16,
+                                      size: AppIconSizes.sm,
                                       color: tagColor,
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  SizedBox(width: dims.sm),
                                   Expanded(
                                     child: Text(
                                       tag.name,
@@ -618,17 +614,17 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                                     ),
                                   ),
                                   AnimatedSwitcher(
-                                    duration: const Duration(milliseconds: 200),
+                                    duration: AppDurations.medium,
                                     child: isSelected
                                         ? Container(
-                                            padding: const EdgeInsets.all(4),
+                                            padding: EdgeInsets.all(dims.xxs),
                                             decoration: BoxDecoration(
                                               color: tagColor,
                                               shape: BoxShape.circle,
                                             ),
                                             child: const Icon(
                                               LucideIcons.check,
-                                              size: 14,
+                                              size: AppIconSizes.xs,
                                               color: Colors.white,
                                             ),
                                           )
@@ -656,15 +652,15 @@ class _TagPickerSheetState extends ConsumerState<TagPickerSheet> {
                     },
                   );
                 },
-                loading: () => const Center(
+                loading: () => Center(
                   child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(),
+                    padding: EdgeInsets.all(dims.xxl),
+                    child: const CircularProgressIndicator(),
                   ),
                 ),
                 error: (err, _) => Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(32),
+                    padding: EdgeInsets.all(dims.xxl),
                     child: Text('Error: $err'),
                   ),
                 ),

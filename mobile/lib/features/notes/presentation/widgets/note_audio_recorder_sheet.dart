@@ -10,6 +10,9 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as path;
+import '../../../../core/theme/context_extensions.dart';
+import '../../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../../core/theme/tokens/app_radius.dart';
 
 class NoteAttachmentSheet extends StatefulWidget {
   final Future<void> Function(String filePath, String mimeType, String filename)
@@ -256,55 +259,43 @@ class _NoteAttachmentSheetState extends State<NoteAttachmentSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-              : [Colors.white, const Color(0xFFF8F9FC)],
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        gradient: context.colorTokens.sheetGradient,
+        borderRadius: AppRadius.sheetTopBorder,
+        boxShadow: [context.colorTokens.sheetShadow],
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          padding: EdgeInsets.fromLTRB(dims.xl, 0, dims.xl, dims.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                margin: const EdgeInsets.only(top: 12),
+                margin: EdgeInsets.only(top: dims.sm),
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppRadius.handleBorder,
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.fromLTRB(0, 20, 0, 24),
+                padding: EdgeInsets.fromLTRB(0, dims.lg, 0, dims.xl),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.smBorder,
                       ),
                       child: Icon(
                         LucideIcons.paperclip,
                         color: theme.colorScheme.primary,
-                        size: 20,
+                        size: AppIconSizes.md,
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -364,19 +355,19 @@ class _NoteAttachmentSheetState extends State<NoteAttachmentSheet> {
                       label: 'Take Photo',
                       onTap: () => _pickImage(ImageSource.camera),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: dims.xs),
                     _OptionTile(
                       icon: LucideIcons.image,
                       label: 'Choose Image',
                       onTap: () => _pickImage(ImageSource.gallery),
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: dims.xs),
                     _OptionTile(
                       icon: LucideIcons.mic,
                       label: 'Record Audio',
                       onTap: _startRecording,
                     ),
-                    const SizedBox(height: 8),
+                    SizedBox(height: dims.xs),
                     _OptionTile(
                       icon: LucideIcons.music,
                       label: 'Choose Audio File',
@@ -406,11 +397,12 @@ class _RecordingWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(dims.lg),
       decoration: BoxDecoration(
         color: theme.colorScheme.primary.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.mdBorder,
         border: Border.all(
           color: theme.colorScheme.primary.withValues(alpha: 0.3),
         ),
@@ -419,7 +411,7 @@ class _RecordingWidget extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(LucideIcons.mic, size: 40, color: theme.colorScheme.primary),
-          const SizedBox(height: 8),
+          SizedBox(height: dims.xs),
           Text(
             formatDuration(duration),
             style: theme.textTheme.headlineMedium?.copyWith(
@@ -427,10 +419,10 @@ class _RecordingWidget extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: dims.sm),
           FilledButton.icon(
             onPressed: onStop,
-            icon: const Icon(LucideIcons.square, size: 16),
+            icon: const Icon(LucideIcons.square, size: AppIconSizes.sm),
             label: const Text('Stop Recording'),
             style: FilledButton.styleFrom(
               backgroundColor: theme.colorScheme.error,
@@ -467,6 +459,7 @@ class _PreviewWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final progress = duration.inMilliseconds > 0
         ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
         : 0.0;
@@ -475,12 +468,12 @@ class _PreviewWidget extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: EdgeInsets.all(dims.lg),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest.withValues(
               alpha: 0.5,
             ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadius.mdBorder,
             border: Border.all(
               color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
             ),
@@ -500,7 +493,7 @@ class _PreviewWidget extends StatelessWidget {
                         color: isPlaying
                             ? theme.colorScheme.primary
                             : theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: AppRadius.mdBorder,
                       ),
                       child: Icon(
                         isPlaying ? LucideIcons.pause : LucideIcons.play,
@@ -511,7 +504,7 @@ class _PreviewWidget extends StatelessWidget {
                       ),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  SizedBox(width: dims.md),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -534,7 +527,7 @@ class _PreviewWidget extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: dims.md),
               // Progress bar
               ClipRRect(
                 borderRadius: BorderRadius.circular(4),
@@ -550,7 +543,7 @@ class _PreviewWidget extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 12),
+        SizedBox(height: dims.sm),
         // Action row
         Row(
           children: [
@@ -558,38 +551,38 @@ class _PreviewWidget extends StatelessWidget {
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: onDiscard,
-                icon: const Icon(LucideIcons.trash2, size: 16),
+                icon: const Icon(LucideIcons.trash2, size: AppIconSizes.sm),
                 label: const Text('Discard'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: theme.colorScheme.error,
                   side: BorderSide(
                     color: theme.colorScheme.error.withValues(alpha: 0.4),
                   ),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: EdgeInsets.symmetric(vertical: dims.sm),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: dims.xs),
             // Re-record
             Expanded(
               child: OutlinedButton.icon(
                 onPressed: onRestart,
-                icon: const Icon(LucideIcons.rotateCcw, size: 16),
+                icon: const Icon(LucideIcons.rotateCcw, size: AppIconSizes.sm),
                 label: const Text('Re-record'),
                 style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: EdgeInsets.symmetric(vertical: dims.sm),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: dims.xs),
             // Save
             Expanded(
               child: FilledButton.icon(
                 onPressed: onSave,
-                icon: const Icon(LucideIcons.check, size: 16),
+                icon: const Icon(LucideIcons.check, size: AppIconSizes.sm),
                 label: const Text('Save'),
                 style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: EdgeInsets.symmetric(vertical: dims.sm),
                 ),
               ),
             ),
@@ -614,19 +607,20 @@ class _OptionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: AppRadius.smBorder,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: dims.md, vertical: 14),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerLow,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.smBorder,
         ),
         child: Row(
           children: [
             Icon(icon, size: 22, color: theme.colorScheme.primary),
-            const SizedBox(width: 16),
+            SizedBox(width: dims.md),
             Text(label, style: theme.textTheme.bodyLarge),
           ],
         ),

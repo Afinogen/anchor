@@ -25,6 +25,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:uuid/uuid.dart';
 
 import '../data/repository/notes_repository.dart';
+import 'package:anchor/core/theme/context_extensions.dart';
+import 'package:anchor/core/theme/tokens/app_icon_sizes.dart';
+import 'package:anchor/core/theme/tokens/app_radius.dart';
 
 class NoteEditScreen extends ConsumerStatefulWidget {
   final String? noteId;
@@ -597,14 +600,15 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
 
   Widget _buildSharedByBadge(ThemeData theme, String? serverUrl) {
     final sharedBy = _existingNote!.sharedBy!;
+    final dims = context.dims;
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: EdgeInsets.only(right: dims.xs),
       child: Center(
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          padding: EdgeInsets.symmetric(horizontal: dims.xs, vertical: 6),
           decoration: BoxDecoration(
             color: theme.colorScheme.secondaryContainer,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.lgBorder,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
@@ -697,18 +701,22 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   Widget _buildReadOnlyBanner(ThemeData theme, bool isTrashed) {
+    final dims = context.dims;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      padding: EdgeInsets.symmetric(
+        horizontal: dims.editorPadding.left,
+        vertical: dims.sm,
+      ),
       color: theme.colorScheme.surfaceContainerHighest,
       child: Row(
         children: [
           Icon(
             LucideIcons.lock,
-            size: 16,
+            size: AppIconSizes.sm,
             color: theme.colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(width: 8),
+          SizedBox(width: dims.xs),
           Expanded(
             child: Text(
               isTrashed
@@ -730,7 +738,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
+          padding: EdgeInsets.symmetric(
+            horizontal: context.dims.editorPadding.left,
+          ),
           child: GestureDetector(
             onTap: !isReadOnly
                 ? () {
@@ -743,14 +753,16 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
               controller: _titleController,
               focusNode: _titleFocusNode,
               readOnly: isReadOnly,
-              style: theme.textTheme.displaySmall?.copyWith(
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
               ),
               decoration: InputDecoration(
                 hintText: isReadOnly ? 'Untitled' : 'Title',
                 hintStyle: isReadOnly
-                    ? theme.textTheme.displaySmall?.copyWith(
+                    ? theme.textTheme.headlineSmall?.copyWith(
+                        fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: theme.colorScheme.onSurface,
                       )
@@ -760,7 +772,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                         ),
                       ),
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                contentPadding: EdgeInsets.symmetric(vertical: context.dims.md),
                 filled: false,
               ),
               textCapitalization: TextCapitalization.sentences,
@@ -840,7 +852,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                     onPressed: _showOptionsSheet,
                   ),
               ],
-              const SizedBox(width: 8),
+              SizedBox(width: context.dims.xs),
             ],
           ),
           body: Hero(
@@ -863,10 +875,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                             sortChecklistItems: ref
                                 .watch(editorPreferencesControllerProvider)
                                 .sortChecklistItems,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 24,
-                              vertical: 16,
-                            ),
+                            contentPadding: context.dims.editorPadding,
                             header: _buildEditorHeader(theme),
                           )
                         : const Center(child: CircularProgressIndicator()),

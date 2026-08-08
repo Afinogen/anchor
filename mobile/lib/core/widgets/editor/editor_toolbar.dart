@@ -5,6 +5,10 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'checklist_lines.dart';
 import 'link_utils.dart';
+import '../../theme/context_extensions.dart';
+import '../../theme/tokens/app_durations.dart';
+import '../../theme/tokens/app_icon_sizes.dart';
+import '../../theme/tokens/app_radius.dart';
 
 /// Formatting state for the editor toolbar
 class EditorFormattingState {
@@ -100,14 +104,15 @@ class EditorToolbar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final bottomPadding = MediaQuery.of(context).viewPadding.bottom;
     final isDark = theme.brightness == Brightness.dark;
 
     return Container(
       padding: EdgeInsets.only(
-        left: 12,
-        right: 12,
-        top: 8,
+        left: dims.sm,
+        right: dims.sm,
+        top: dims.xs,
         bottom: bottomPadding > 0 ? bottomPadding + 4 : 12,
       ),
       decoration: BoxDecoration(
@@ -150,7 +155,7 @@ class EditorToolbar extends StatelessWidget {
                 ),
               ],
             ),
-            _buildDivider(theme),
+            _buildDivider(context, theme),
 
             // Text styles
             _ToolbarGroup(
@@ -181,7 +186,7 @@ class EditorToolbar extends StatelessWidget {
                 ),
               ],
             ),
-            _buildDivider(theme),
+            _buildDivider(context, theme),
 
             // Headers
             _ToolbarGroup(
@@ -206,7 +211,7 @@ class EditorToolbar extends StatelessWidget {
                 ),
               ],
             ),
-            _buildDivider(theme),
+            _buildDivider(context, theme),
 
             // Lists
             _ToolbarGroup(
@@ -243,7 +248,7 @@ class EditorToolbar extends StatelessWidget {
                 ),
               ],
             ),
-            _buildDivider(theme),
+            _buildDivider(context, theme),
 
             // Blocks
             _ToolbarGroup(
@@ -274,9 +279,9 @@ class EditorToolbar extends StatelessWidget {
     );
   }
 
-  Widget _buildDivider(ThemeData theme) {
+  Widget _buildDivider(BuildContext context, ThemeData theme) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: EdgeInsets.symmetric(horizontal: context.dims.xs),
       child: Container(
         width: 1,
         height: 24,
@@ -395,9 +400,9 @@ class _ToolbarGroup extends StatelessWidget {
         color: isDark
             ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5)
             : theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.smBorder,
       ),
-      padding: const EdgeInsets.all(4),
+      padding: EdgeInsets.all(context.dims.xxs),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: buttons.map((btn) => _ToolbarButton(data: btn)).toList(),
@@ -434,7 +439,7 @@ class _ToolbarButton extends StatelessWidget {
               }
             : null,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
+          duration: AppDurations.fast,
           curve: Curves.easeOut,
           width: 36,
           height: 36,
@@ -444,12 +449,12 @@ class _ToolbarButton extends StatelessWidget {
                 : (data.isActive
                       ? activeColor.withValues(alpha: isDark ? 0.25 : 0.15)
                       : Colors.transparent),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.xsBorder,
           ),
           child: Center(
             child: Icon(
               data.icon,
-              size: 20,
+              size: AppIconSizes.md,
               color: hasEnabledState
                   ? (isEnabled ? inactiveColor : disabledColor)
                   : (data.isActive ? activeColor : inactiveColor),

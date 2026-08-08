@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../core/theme/context_extensions.dart';
+import '../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../core/theme/tokens/app_radius.dart';
 
 enum LinkAction { open, copy, edit, remove }
 
@@ -26,26 +28,13 @@ class LinkActionsSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final safeBottom = MediaQuery.of(context).viewPadding.bottom;
 
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: isDark
-              ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-              : [Colors.white, const Color(0xFFF8F9FC)],
-        ),
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 20,
-            offset: const Offset(0, -5),
-          ),
-        ],
+        gradient: context.colorTokens.sheetGradient,
+        borderRadius: AppRadius.sheetTopBorder,
+        boxShadow: [context.colorTokens.sheetShadow],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -87,12 +76,12 @@ class _HandleBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 12),
+      margin: EdgeInsets.only(top: context.dims.sm),
       width: 40,
       height: 4,
       decoration: BoxDecoration(
         color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: AppRadius.handleBorder,
       ),
     );
   }
@@ -109,21 +98,22 @@ class _Header extends StatelessWidget {
   Widget build(BuildContext context) {
     final title = text.trim().isEmpty ? url : text;
     final showSubtitle = url.isNotEmpty && url != title;
+    final dims = context.dims;
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 20, 12, 8),
+      padding: EdgeInsets.fromLTRB(dims.xl, dims.lg, dims.sm, dims.xs),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: theme.colorScheme.tertiary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.smBorder,
             ),
             child: Icon(
               LucideIcons.link,
               color: theme.colorScheme.tertiary,
-              size: 20,
+              size: AppIconSizes.md,
             ),
           ),
           const SizedBox(width: 14),
@@ -155,7 +145,7 @@ class _Header extends StatelessWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(LucideIcons.x, size: 20),
+            icon: const Icon(LucideIcons.x, size: AppIconSizes.md),
             color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
             onPressed: () => Navigator.pop(context),
           ),
@@ -188,14 +178,21 @@ class _Action extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+        padding: EdgeInsets.symmetric(
+          horizontal: context.dims.xl,
+          vertical: 14,
+        ),
         child: Row(
           children: [
-            Icon(icon, size: 20, color: color.withValues(alpha: 0.85)),
+            Icon(
+              icon,
+              size: AppIconSizes.md,
+              color: color.withValues(alpha: 0.85),
+            ),
             const SizedBox(width: 14),
             Text(
               label,
-              style: GoogleFonts.dmSans(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
                 color: color,

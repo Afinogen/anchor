@@ -2,7 +2,11 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+import 'app_typography.dart';
+import 'tokens/app_color_tokens.dart';
+import 'tokens/app_dimensions.dart';
+import 'tokens/app_radius.dart';
 
 class AppTheme {
   // A unique, sophisticated palette
@@ -19,137 +23,71 @@ class AppTheme {
   static const _accent = Color(0xFFEF8354); // Burnt Orange for interaction
   static const _secondary = Color(0xFF4F5D75); // Slate Blue
 
-  static TextTheme _buildTextTheme(TextTheme base) {
-    return GoogleFonts.dmSansTextTheme(base).copyWith(
-      displayLarge: GoogleFonts.playfairDisplay(
-        textStyle: base.displayLarge,
-        fontWeight: FontWeight.bold,
-      ),
-      displayMedium: GoogleFonts.playfairDisplay(
-        textStyle: base.displayMedium,
-        fontWeight: FontWeight.bold,
-      ),
-      headlineMedium: GoogleFonts.playfairDisplay(
-        textStyle: base.headlineMedium,
-        fontWeight: FontWeight.w600,
-      ),
-      titleLarge: GoogleFonts.dmSans(
-        textStyle: base.titleLarge,
-        fontWeight: FontWeight.bold,
-        letterSpacing: -0.5,
-      ),
-    );
-  }
+  static ThemeData light() => _build(Brightness.light);
 
-  static ThemeData get lightTheme {
-    final base = ThemeData.light();
+  static ThemeData dark() => _build(Brightness.dark);
+
+  static ThemeData _build(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+    final base = isDark ? ThemeData.dark() : ThemeData.light();
+    final primary = isDark ? _primaryDark : _primaryLight;
+    final surface = isDark ? _surfaceDark : _surfaceLight;
+    final dims = AppDimensions.comfortable;
+
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
+      brightness: brightness,
       colorScheme: ColorScheme.fromSeed(
         seedColor: _secondary,
-        primary: _primaryLight,
+        primary: primary,
         secondary: _secondary,
         tertiary: _accent,
-        surface: _bgLight,
-        onSurface: _primaryLight,
-        brightness: Brightness.light,
+        surface: isDark ? _bgDark : _bgLight,
+        onSurface: primary,
+        brightness: brightness,
       ),
-      scaffoldBackgroundColor: _bgLight,
-      textTheme: _buildTextTheme(base.textTheme),
+      scaffoldBackgroundColor: isDark ? _bgDark : _bgLight,
+      textTheme: AppTypography.buildTextTheme(base.textTheme),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: Platform.isIOS,
         scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: _primaryLight),
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarBrightness: Brightness.light, // iOS: light background
-          statusBarIconBrightness: Brightness.dark, // Android: dark icons
+        iconTheme: IconThemeData(color: primary),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarBrightness: brightness, // iOS
+          statusBarIconBrightness: isDark
+              ? Brightness.light
+              : Brightness.dark, // Android
           statusBarColor: Colors.transparent,
         ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: _surfaceLight,
+        color: surface,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24), // More organic roundness
-          side: BorderSide.none, // Cleaner look without borders
-        ),
-      ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: _primaryLight,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: _surfaceLight,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.all(20),
-        hintStyle: TextStyle(color: _secondary.withValues(alpha: 0.5)),
-      ),
-    );
-  }
-
-  static ThemeData get darkTheme {
-    final base = ThemeData.dark();
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: _secondary,
-        primary: _primaryDark,
-        secondary: _secondary,
-        tertiary: _accent,
-        surface: _bgDark,
-        onSurface: _primaryDark,
-        brightness: Brightness.dark,
-      ),
-      scaffoldBackgroundColor: _bgDark,
-      textTheme: _buildTextTheme(base.textTheme),
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: Platform.isIOS,
-        scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: _primaryDark),
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarBrightness: Brightness.dark, // iOS: dark background
-          statusBarIconBrightness: Brightness.light, // Android: light icons
-          statusBarColor: Colors.transparent,
-        ),
-      ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        color: _surfaceDark,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppRadius.lgBorder,
           side: BorderSide.none,
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: _accent,
+        backgroundColor: isDark ? _accent : _primaryLight,
         foregroundColor: Colors.white,
         elevation: 4,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: _surfaceDark,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+        fillColor: surface,
+        border: const OutlineInputBorder(
+          borderRadius: AppRadius.mdBorder,
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.all(20),
+        contentPadding: EdgeInsets.all(dims.lg),
         hintStyle: TextStyle(color: _secondary.withValues(alpha: 0.5)),
       ),
+      extensions: [dims, AppColorTokens.of(brightness)],
     );
   }
 }

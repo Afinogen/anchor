@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
+import 'package:anchor/core/theme/context_extensions.dart';
+import 'package:anchor/core/theme/tokens/app_icon_sizes.dart';
+import 'package:anchor/core/theme/tokens/app_radius.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/features/auth/presentation/providers/oidc_config_provider.dart';
 import 'package:anchor/features/auth/presentation/providers/registration_mode_provider.dart';
@@ -62,11 +65,12 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final signupDisabled =
         registrationModeAsync.hasValue &&
         registrationModeAsync.value == 'disabled';
+    final dims = context.dims;
 
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(dims.xl),
           child: AutofillGroup(
             child: Form(
               key: _formKey,
@@ -81,7 +85,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       context.push(AppRoutes.serverConfig, extra: serverUrl);
                     },
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: dims.xl),
                   Text(
                     'Welcome Back',
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
@@ -89,7 +93,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: dims.xs),
                   Text(
                     'Sign in to continue',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
@@ -100,10 +104,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   const SizedBox(height: 40),
                   // OIDC Login button
                   if (oidcConfigLoading)
-                    const Center(
+                    Center(
                       child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: SizedBox(
+                        padding: EdgeInsets.all(dims.xl),
+                        child: const SizedBox(
                           height: 24,
                           width: 24,
                           child: CircularProgressIndicator(strokeWidth: 2),
@@ -113,19 +117,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   else if (oidcConfig?.enabled == true) ...[
                     FilledButton.icon(
                       onPressed: isLoading ? null : _loginWithOidc,
-                      icon: const Icon(LucideIcons.logIn, size: 20),
+                      icon: const Icon(
+                        LucideIcons.logIn,
+                        size: AppIconSizes.md,
+                      ),
                       label: Text('Login with ${oidcConfig!.providerName}'),
                       style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                        padding: EdgeInsets.symmetric(vertical: dims.md),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.buttonBorder,
                         ),
                       ),
                     ),
                     if (showLocalLogin) ...[
-                      const SizedBox(height: 16),
+                      SizedBox(height: dims.md),
                       const _OrDivider(),
-                      const SizedBox(height: 16),
+                      SizedBox(height: dims.md),
                     ],
                   ],
                   if (showLocalLogin) ...[
@@ -137,8 +144,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       decoration: InputDecoration(
                         labelText: 'Email',
                         prefixIcon: const Icon(LucideIcons.mail),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                        border: const OutlineInputBorder(
+                          borderRadius: AppRadius.mdBorder,
                         ),
                       ),
                       validator: (value) {
@@ -148,7 +155,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 16),
+                    SizedBox(height: dims.md),
                     TextFormField(
                       controller: _passwordController,
                       onChanged: (_) => setState(() {}),
@@ -174,8 +181,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   });
                                 },
                               ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
+                        border: const OutlineInputBorder(
+                          borderRadius: AppRadius.mdBorder,
                         ),
                       ),
                       obscureText: !_isPasswordVisible,
@@ -186,13 +193,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         return null;
                       },
                     ),
-                    const SizedBox(height: 24),
+                    SizedBox(height: dims.xl),
                     FilledButton(
                       onPressed: isLoading ? null : _login,
                       style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
+                        padding: EdgeInsets.symmetric(vertical: dims.md),
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: AppRadius.buttonBorder,
                         ),
                       ),
                       child: isLoading
@@ -207,7 +214,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           : const Text('Sign In'),
                     ),
                     if (!signupDisabled) ...[
-                      const SizedBox(height: 16),
+                      SizedBox(height: dims.md),
                       TextButton(
                         onPressed: () => context.push(AppRoutes.register),
                         child: const Text('Create an account'),
@@ -233,7 +240,7 @@ class _OrDivider extends StatelessWidget {
       children: [
         const Expanded(child: Divider()),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: context.dims.md),
           child: Text(
             'Or continue with',
             style: Theme.of(
@@ -256,6 +263,7 @@ class _ServerUrlChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
 
     if (serverUrl == null) return const SizedBox.shrink();
 
@@ -272,21 +280,21 @@ class _ServerUrlChip extends StatelessWidget {
     return Center(
       child: InkWell(
         onTap: onChangeServer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.lgBorder,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: dims.sm, vertical: dims.xs),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest.withValues(
               alpha: 0.5,
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.lgBorder,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 LucideIcons.server,
-                size: 14,
+                size: AppIconSizes.xs,
                 color: theme.colorScheme.primary,
               ),
               const SizedBox(width: 6),
@@ -297,10 +305,10 @@ class _ServerUrlChip extends StatelessWidget {
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                 ),
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: dims.xxs),
               Icon(
                 LucideIcons.chevronDown,
-                size: 14,
+                size: AppIconSizes.xs,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ],

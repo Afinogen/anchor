@@ -17,6 +17,9 @@ import 'package:anchor/features/notes/domain/note.dart';
 import 'notes_controller.dart';
 import 'notes_view_options.dart';
 import 'widgets/view_options_sheet.dart';
+import '../../../core/theme/context_extensions.dart';
+import '../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../core/theme/tokens/app_radius.dart';
 
 class NotesListScreen extends ConsumerStatefulWidget {
   const NotesListScreen({super.key});
@@ -90,6 +93,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
     final viewOptionsAsync = ref.watch(notesViewOptionsProvider);
     final viewOptions = viewOptionsAsync.value;
     final theme = Theme.of(context);
+    final dims = context.dims;
 
     // Get selected tag
     Tag? selectedTag;
@@ -136,7 +140,9 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                   ),
                   floating: true,
                   pinned: true,
-                  expandedHeight: isSelectionMode ? 56 : 80,
+                  expandedHeight: isSelectionMode
+                      ? 56
+                      : dims.appBarExpandedHeight,
                   toolbarHeight: 56,
                   scrolledUnderElevation: 0,
                   leading: isSelectionMode
@@ -156,10 +162,11 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                       ? null
                       : FlexibleSpaceBar(
                           centerTitle: Platform.isIOS,
+                          expandedTitleScale: 1.2,
                           titlePadding: EdgeInsets.only(
                             left: 56,
                             right: Platform.isIOS ? 56 : 0,
-                            bottom: 12,
+                            bottom: dims.sm,
                           ),
                           title: Text(
                             'Anchor',
@@ -191,7 +198,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                       // Only show sync indicator when actively syncing
                       if (isSyncing)
                         Padding(
-                          padding: const EdgeInsets.only(right: 8),
+                          padding: EdgeInsets.only(right: dims.xs),
                           child: Center(child: _SyncIndicator(theme: theme)),
                         ),
                       if (viewOptions != null)
@@ -215,9 +222,9 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                   ],
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: dims.screenGutter,
+                    vertical: dims.xs,
                   ),
                   sliver: SliverToBoxAdapter(
                     child: Column(
@@ -247,8 +254,8 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                               ),
                           ],
                           shape: WidgetStateProperty.all(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                            const RoundedRectangleBorder(
+                              borderRadius: AppRadius.mdBorder,
                             ),
                           ),
                           onChanged: (value) {
@@ -257,7 +264,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                         ),
                         // Tag filter indicator
                         if (selectedTag != null) ...[
-                          const SizedBox(height: 12),
+                          SizedBox(height: dims.sm),
                           _TagFilterChip(
                             tag: selectedTag,
                             onClear: () {
@@ -318,12 +325,12 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                     });
 
                     return SliverPadding(
-                      padding: const EdgeInsets.all(16),
+                      padding: dims.screenInsets,
                       sliver: viewOptions.viewType == ViewType.grid
                           ? SliverMasonryGrid.count(
                               crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
+                              mainAxisSpacing: dims.gridSpacing,
+                              crossAxisSpacing: dims.gridSpacing,
                               childCount: filteredNotes.length,
                               itemBuilder: (context, index) {
                                 return _buildNoteItem(
@@ -339,7 +346,9 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                                 index,
                               ) {
                                 return Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
+                                  padding: EdgeInsets.only(
+                                    bottom: dims.listItemSpacing,
+                                  ),
                                   child: _buildNoteItem(
                                     filteredNotes[index],
                                     isSelectionMode,
@@ -382,16 +391,17 @@ class _TagFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final tagColor = parseTagColor(
       tag.color,
       fallback: theme.colorScheme.primary,
     );
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: dims.xxs, vertical: dims.xxs),
       decoration: BoxDecoration(
         color: tagColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.smBorder,
         border: Border.all(color: tagColor.withValues(alpha: 0.2)),
       ),
       child: Row(
@@ -402,7 +412,11 @@ class _TagFilterChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(LucideIcons.filter, size: 14, color: tagColor),
+                Icon(
+                  LucideIcons.filter,
+                  size: AppIconSizes.xs,
+                  color: tagColor,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   'Filtering by',
@@ -412,8 +426,8 @@ class _TagFilterChip extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: dims.xs,
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
@@ -440,15 +454,15 @@ class _TagFilterChip extends StatelessWidget {
           ),
           Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.xsBorder,
             child: InkWell(
               onTap: onClear,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.xsBorder,
               child: Padding(
                 padding: const EdgeInsets.all(6),
                 child: Icon(
                   LucideIcons.x,
-                  size: 16,
+                  size: AppIconSizes.sm,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
@@ -500,7 +514,7 @@ class _SyncIndicatorState extends State<_SyncIndicator>
       turns: _rotation,
       child: Icon(
         LucideIcons.refreshCw,
-        size: 20,
+        size: AppIconSizes.md,
         color: widget.theme.colorScheme.onSurface,
       ),
     );

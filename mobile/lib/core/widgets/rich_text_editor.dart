@@ -4,9 +4,11 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../theme/context_extensions.dart';
+import '../theme/tokens/app_durations.dart';
+import '../theme/tokens/app_icon_sizes.dart';
 import 'app_snackbar.dart';
 import 'editor/checklist_drag_mixin.dart';
 import 'editor/checklist_reorder_mixin.dart';
@@ -590,7 +592,7 @@ class RichTextEditorState extends State<RichTextEditor>
           ),
         if (widget.showToolbar)
           AnimatedSize(
-            duration: const Duration(milliseconds: 150),
+            duration: AppDurations.fast,
             curve: Curves.easeOut,
             alignment: Alignment.topCenter,
             child: _isEditing
@@ -660,6 +662,7 @@ class _ChecklistDragChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final textColor = checked
         ? theme.colorScheme.onSurface.withValues(alpha: 0.5)
         : theme.colorScheme.onSurface;
@@ -670,24 +673,24 @@ class _ChecklistDragChip extends StatelessWidget {
       color: theme.colorScheme.surfaceContainerLow,
       shadowColor: Colors.black.withValues(alpha: 0.25),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: dims.sm, vertical: dims.xs),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               checked ? LucideIcons.squareCheck : LucideIcons.square,
-              size: 16,
+              size: AppIconSizes.sm,
               color: checked
                   ? theme.colorScheme.primary
                   : theme.colorScheme.onSurface.withValues(alpha: 0.6),
             ),
-            const SizedBox(width: 8),
+            SizedBox(width: dims.xs),
             Flexible(
               child: Text(
                 text.isEmpty ? ' ' : text,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.dmSans(
+                style: theme.textTheme.bodyMedium?.copyWith(
                   fontSize: 15,
                   color: textColor,
                   decoration: checked ? TextDecoration.lineThrough : null,
@@ -696,11 +699,10 @@ class _ChecklistDragChip extends StatelessWidget {
               ),
             ),
             if (childCount > 0) ...[
-              const SizedBox(width: 8),
+              SizedBox(width: dims.xs),
               Text(
                 '+$childCount',
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
+                style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                 ),
               ),
@@ -731,9 +733,10 @@ class _LinkActionBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: dims.sm, vertical: dims.xs),
       decoration: BoxDecoration(
         color: isDark
             ? theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.6)
@@ -746,14 +749,18 @@ class _LinkActionBubble extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Icon(LucideIcons.link, size: 16, color: theme.colorScheme.tertiary),
-          const SizedBox(width: 8),
+          Icon(
+            LucideIcons.link,
+            size: AppIconSizes.sm,
+            color: theme.colorScheme.tertiary,
+          ),
+          SizedBox(width: dims.xs),
           Expanded(
             child: Text(
               url,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.dmSans(
+              style: theme.textTheme.bodyMedium?.copyWith(
                 fontSize: 13,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
               ),
@@ -812,7 +819,7 @@ class _BubbleAction extends StatelessWidget {
           width: 32,
           height: 32,
           alignment: Alignment.center,
-          child: Icon(icon, size: 16, color: iconColor),
+          child: Icon(icon, size: AppIconSizes.sm, color: iconColor),
         ),
       ),
     );

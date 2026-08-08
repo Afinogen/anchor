@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../theme/context_extensions.dart';
+import '../theme/tokens/app_icon_sizes.dart';
+import '../theme/tokens/app_radius.dart';
+
 /// Global snackbar utility for consistent styling across the app
 class AppSnackbar {
   AppSnackbar._();
@@ -14,10 +18,8 @@ class AppSnackbar {
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
 
-    // Success color: green with theme-aware tinting
-    final successColor = theme.brightness == Brightness.dark
-        ? const Color(0xFF4CAF50)
-        : const Color(0xFF2E7D32);
+    final successColor = context.colorTokens.success;
+    final dims = context.dims;
 
     messenger.showSnackBar(
       SnackBar(
@@ -29,10 +31,10 @@ class AppSnackbar {
         ),
         backgroundColor: theme.colorScheme.surface,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: EdgeInsets.symmetric(horizontal: dims.md, vertical: dims.sm),
+        padding: EdgeInsets.symmetric(horizontal: dims.md, vertical: dims.sm),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: AppRadius.xlBorder,
           side: BorderSide(
             color: theme.colorScheme.outline.withValues(alpha: 0.08),
             width: 1,
@@ -53,10 +55,8 @@ class AppSnackbar {
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
 
-    // Error color: red with theme-aware tinting
-    final errorColor = theme.brightness == Brightness.dark
-        ? const Color(0xFFEF5350)
-        : const Color(0xFFC62828);
+    final errorColor = context.colorTokens.error;
+    final dims = context.dims;
 
     messenger.showSnackBar(
       SnackBar(
@@ -68,10 +68,10 @@ class AppSnackbar {
         ),
         backgroundColor: theme.colorScheme.surface,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: EdgeInsets.symmetric(horizontal: dims.md, vertical: dims.sm),
+        padding: EdgeInsets.symmetric(horizontal: dims.md, vertical: dims.sm),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: AppRadius.xlBorder,
           side: BorderSide(
             color: theme.colorScheme.outline.withValues(alpha: 0.08),
             width: 1,
@@ -92,6 +92,8 @@ class AppSnackbar {
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
 
+    final dims = context.dims;
+
     messenger.showSnackBar(
       SnackBar(
         content: _SnackbarContent(
@@ -102,10 +104,10 @@ class AppSnackbar {
         ),
         backgroundColor: theme.colorScheme.surface,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: EdgeInsets.symmetric(horizontal: dims.md, vertical: dims.sm),
+        padding: EdgeInsets.symmetric(horizontal: dims.md, vertical: dims.sm),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: AppRadius.xlBorder,
           side: BorderSide(
             color: theme.colorScheme.outline.withValues(alpha: 0.08),
             width: 1,
@@ -126,10 +128,8 @@ class AppSnackbar {
     final messenger = ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
 
-    // Warning color: orange with theme-aware tinting
-    final warningColor = theme.brightness == Brightness.dark
-        ? const Color(0xFFFF9800)
-        : const Color(0xFFE65100);
+    final warningColor = context.colorTokens.warning;
+    final dims = context.dims;
 
     messenger.showSnackBar(
       SnackBar(
@@ -141,10 +141,10 @@ class AppSnackbar {
         ),
         backgroundColor: theme.colorScheme.surface,
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        margin: EdgeInsets.symmetric(horizontal: dims.md, vertical: dims.sm),
+        padding: EdgeInsets.symmetric(horizontal: dims.md, vertical: dims.sm),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: AppRadius.xlBorder,
           side: BorderSide(
             color: theme.colorScheme.outline.withValues(alpha: 0.08),
             width: 1,
@@ -172,6 +172,7 @@ class _SnackbarContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dims = context.dims;
     return Row(
       children: [
         // Icon container with subtle background
@@ -184,7 +185,7 @@ class _SnackbarContent extends StatelessWidget {
           ),
           child: Icon(icon, color: iconColor, size: 18),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: dims.sm),
         // Message text
         Expanded(
           child: Text(
@@ -197,20 +198,20 @@ class _SnackbarContent extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: dims.xs),
         // Dismiss button
         Material(
           color: Colors.transparent,
           child: InkWell(
             onTap: () => ScaffoldMessenger.of(context).hideCurrentSnackBar(),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: AppRadius.mdBorder,
             child: Container(
               width: 28,
               height: 28,
               alignment: Alignment.center,
               child: Icon(
                 LucideIcons.x,
-                size: 16,
+                size: AppIconSizes.sm,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
               ),
             ),

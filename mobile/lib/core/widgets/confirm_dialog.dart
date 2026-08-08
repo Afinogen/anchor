@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../theme/context_extensions.dart';
+import '../theme/tokens/app_radius.dart';
+
 class ConfirmDialog extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
@@ -26,6 +29,7 @@ class ConfirmDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final effectiveIconColor = iconColor ?? theme.colorScheme.primary;
     final effectiveConfirmColor = confirmColor ?? theme.colorScheme.primary;
 
@@ -37,9 +41,11 @@ class ConfirmDialog extends StatelessWidget {
     return Dialog(
       backgroundColor: theme.colorScheme.surface,
       surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.sheet),
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(dims.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -52,14 +58,14 @@ class ConfirmDialog extends StatelessWidget {
               ),
               child: Icon(icon, color: effectiveIconColor, size: 32),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: dims.lg),
             Text(
               title,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: dims.xs),
             Text(
               message,
               textAlign: TextAlign.center,
@@ -68,7 +74,7 @@ class ConfirmDialog extends StatelessWidget {
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: dims.xl),
             Row(
               children: [
                 Expanded(
@@ -76,8 +82,8 @@ class ConfirmDialog extends StatelessWidget {
                     onPressed: () => context.pop(false),
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.buttonBorder,
                       ),
                       side: BorderSide(
                         color: theme.colorScheme.outline.withValues(alpha: 0.3),
@@ -86,15 +92,15 @@ class ConfirmDialog extends StatelessWidget {
                     child: Text(cancelText),
                   ),
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: dims.sm),
                 Expanded(
                   child: FilledButton(
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       backgroundColor: effectiveConfirmColor,
                       foregroundColor: confirmTextColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.buttonBorder,
                       ),
                     ),
                     onPressed: () {

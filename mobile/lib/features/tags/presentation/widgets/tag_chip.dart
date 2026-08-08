@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../../../core/theme/context_extensions.dart';
+import '../../../../core/theme/tokens/app_durations.dart';
+import '../../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../../core/theme/tokens/app_radius.dart';
 import '../../domain/tag.dart';
 
 class TagChip extends StatelessWidget {
@@ -29,17 +33,18 @@ class TagChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = _getTagColor(context);
     final theme = Theme.of(context);
+    final dims = context.dims;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.lgBorder,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: AppDurations.medium,
           padding: EdgeInsets.only(
-            left: 12,
-            right: showDelete ? 4 : 12,
+            left: dims.sm,
+            right: showDelete ? dims.xxs : dims.sm,
             top: 6,
             bottom: 6,
           ),
@@ -47,7 +52,7 @@ class TagChip extends StatelessWidget {
             color: selected
                 ? color.withValues(alpha: 0.2)
                 : color.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.lgBorder,
             border: Border.all(
               color: selected ? color : color.withValues(alpha: 0.3),
               width: selected ? 2 : 1,
@@ -56,8 +61,8 @@ class TagChip extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(LucideIcons.hash, size: 14, color: color),
-              const SizedBox(width: 4),
+              Icon(LucideIcons.hash, size: AppIconSizes.xs, color: color),
+              SizedBox(width: dims.xxs),
               Text(
                 tag.name,
                 style: theme.textTheme.labelMedium?.copyWith(
@@ -66,13 +71,17 @@ class TagChip extends StatelessWidget {
                 ),
               ),
               if (showDelete) ...[
-                const SizedBox(width: 4),
+                SizedBox(width: dims.xxs),
                 InkWell(
                   onTap: onDelete,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.smBorder,
                   child: Padding(
-                    padding: const EdgeInsets.all(4),
-                    child: Icon(LucideIcons.x, size: 14, color: color),
+                    padding: EdgeInsets.all(dims.xxs),
+                    child: Icon(
+                      LucideIcons.x,
+                      size: AppIconSizes.xs,
+                      color: color,
+                    ),
                   ),
                 ),
               ],

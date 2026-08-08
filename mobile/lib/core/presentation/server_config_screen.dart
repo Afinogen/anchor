@@ -5,10 +5,12 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../network/dio_provider.dart';
 import '../network/server_config_provider.dart';
+import '../theme/context_extensions.dart';
+import '../theme/tokens/app_icon_sizes.dart';
+import '../theme/tokens/app_radius.dart';
 import '../widgets/app_snackbar.dart';
 import '../widgets/anchor_icon.dart';
 
@@ -195,6 +197,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final allowSelfSigned =
         ref.watch(allowSelfSignedCertProvider).value ?? false;
 
@@ -202,7 +205,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(dims.xl),
             child: Form(
               key: _formKey,
               child: Column(
@@ -215,20 +218,18 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                   // Title
                   Text(
                     'Connect to Server',
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 28,
+                    style: theme.textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: dims.xs),
 
                   // Subtitle
                   Text(
                     'Enter your Anchor server URL to get started',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 16,
+                    style: theme.textTheme.bodyLarge?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                     ),
                     textAlign: TextAlign.center,
@@ -242,8 +243,8 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                       labelText: 'Server URL',
                       hintText: 'https://your-server.com',
                       prefixIcon: const Icon(LucideIcons.globe),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                      border: const OutlineInputBorder(
+                        borderRadius: AppRadius.mdBorder,
                       ),
                       helperText: 'Example: https://anchor.example.com',
                     ),
@@ -251,7 +252,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                     autocorrect: false,
                     validator: _validateUrl,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: dims.xs),
 
                   // Self-signed certificate toggle
                   Row(
@@ -265,7 +266,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                                 alpha: 0.5,
                               ),
                       ),
-                      const SizedBox(width: 8),
+                      SizedBox(width: dims.xs),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -305,7 +306,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
                   // Error message
                   if (_error != null) ...[
-                    const SizedBox(height: 8),
+                    SizedBox(height: dims.xs),
                     Text(
                       _error!,
                       style: TextStyle(
@@ -315,7 +316,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                       textAlign: TextAlign.center,
                     ),
                   ],
-                  const SizedBox(height: 24),
+                  SizedBox(height: dims.xl),
 
                   // Actions
                   Row(
@@ -334,14 +335,14 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                               : const Icon(LucideIcons.wifi),
                           label: const Text('Test'),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                            padding: EdgeInsets.symmetric(vertical: dims.md),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.buttonBorder,
                             ),
                           ),
                         ),
                       ),
-                      const SizedBox(width: 16),
+                      SizedBox(width: dims.md),
                       Expanded(
                         child: FilledButton.icon(
                           onPressed: _isLoading ? null : _connect,
@@ -357,37 +358,37 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
                               : const Icon(LucideIcons.arrowRight),
                           label: const Text('Connect'),
                           style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                            padding: EdgeInsets.symmetric(vertical: dims.md),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.buttonBorder,
                             ),
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 32),
+                  SizedBox(height: dims.xxl),
 
                   // Info text
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(dims.md),
                     decoration: BoxDecoration(
                       color: theme.colorScheme.surfaceContainerHighest
                           .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: AppRadius.smBorder,
                     ),
                     child: Row(
                       children: [
                         Icon(
                           LucideIcons.info,
-                          size: 20,
+                          size: AppIconSizes.md,
                           color: theme.colorScheme.primary,
                         ),
-                        const SizedBox(width: 12),
+                        SizedBox(width: dims.sm),
                         Expanded(
                           child: Text(
                             'Anchor is self-hosted. You need to run your own server to use this app.',
-                            style: GoogleFonts.dmSans(
+                            style: theme.textTheme.bodyMedium?.copyWith(
                               fontSize: 13,
                               color: theme.colorScheme.onSurface.withValues(
                                 alpha: 0.8,

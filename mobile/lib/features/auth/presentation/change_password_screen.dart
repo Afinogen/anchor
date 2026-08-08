@@ -3,11 +3,13 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/settings_card.dart';
 import 'auth_controller.dart';
+import '../../../core/theme/context_extensions.dart';
+import '../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../core/theme/tokens/app_radius.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -68,19 +70,11 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
     });
 
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF1C1E26), const Color(0xFF262A36)]
-                : [const Color(0xFFF8F9FC), const Color(0xFFEEF1F8)],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: context.colorTokens.pageGradient),
         child: CustomScrollView(
           slivers: [
             // App Bar
@@ -92,14 +86,14 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               scrolledUnderElevation: 0,
               leading: IconButton(
                 icon: Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: EdgeInsets.all(dims.xs),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.smBorder,
                   ),
                   child: Icon(
                     LucideIcons.arrowLeft,
-                    size: 20,
+                    size: AppIconSizes.md,
                     color: theme.colorScheme.onSurface,
                   ),
                 ),
@@ -107,6 +101,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               ),
               flexibleSpace: FlexibleSpaceBar(
                 centerTitle: Platform.isIOS,
+                expandedTitleScale: 1.2,
                 titlePadding: EdgeInsets.only(
                   left: 56,
                   right: Platform.isIOS ? 56 : 0,
@@ -114,8 +109,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                 ),
                 title: Text(
                   'Change Password',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 28,
+                  style: theme.textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onSurface,
                   ),
@@ -125,7 +119,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
 
             // Form Content
             SliverPadding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(dims.md),
               sliver: SliverToBoxAdapter(
                 child: AutofillGroup(
                   child: Form(
@@ -135,7 +129,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                       children: [
                         SettingsCard(
                           child: Padding(
-                            padding: const EdgeInsets.all(16),
+                            padding: EdgeInsets.all(dims.md),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
@@ -146,7 +140,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                         .withValues(alpha: 0.7),
                                   ),
                                 ),
-                                const SizedBox(height: 24),
+                                SizedBox(height: dims.xl),
                                 TextFormField(
                                   controller: _currentPasswordController,
                                   onChanged: (_) => setState(() {}),
@@ -174,14 +168,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                             },
                                           ),
                                     filled: true,
-                                    fillColor: isDark
-                                        ? Colors.white.withValues(alpha: 0.03)
-                                        : Colors.white.withValues(alpha: 0.6),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                                    fillColor: context.colorTokens.inputFill,
+                                    border: const OutlineInputBorder(
+                                      borderRadius: AppRadius.mdBorder,
                                       borderSide: BorderSide.none,
                                     ),
-                                    contentPadding: const EdgeInsets.all(16),
+                                    contentPadding: EdgeInsets.all(dims.md),
                                   ),
                                   obscureText: !_isCurrentPasswordVisible,
                                   validator: (value) {
@@ -191,7 +183,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                     return null;
                                   },
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: dims.md),
                                 TextFormField(
                                   controller: _newPasswordController,
                                   onChanged: (_) => setState(() {}),
@@ -221,14 +213,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                             },
                                           ),
                                     filled: true,
-                                    fillColor: isDark
-                                        ? Colors.white.withValues(alpha: 0.03)
-                                        : Colors.white.withValues(alpha: 0.6),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                                    fillColor: context.colorTokens.inputFill,
+                                    border: const OutlineInputBorder(
+                                      borderRadius: AppRadius.mdBorder,
                                       borderSide: BorderSide.none,
                                     ),
-                                    contentPadding: const EdgeInsets.all(16),
+                                    contentPadding: EdgeInsets.all(dims.md),
                                   ),
                                   obscureText: !_isNewPasswordVisible,
                                   validator: (value) {
@@ -241,7 +231,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                     return null;
                                   },
                                 ),
-                                const SizedBox(height: 16),
+                                SizedBox(height: dims.md),
                                 TextFormField(
                                   controller: _confirmPasswordController,
                                   onChanged: (_) => setState(() {}),
@@ -274,14 +264,12 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                             },
                                           ),
                                     filled: true,
-                                    fillColor: isDark
-                                        ? Colors.white.withValues(alpha: 0.03)
-                                        : Colors.white.withValues(alpha: 0.6),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(16),
+                                    fillColor: context.colorTokens.inputFill,
+                                    border: const OutlineInputBorder(
+                                      borderRadius: AppRadius.mdBorder,
                                       borderSide: BorderSide.none,
                                     ),
-                                    contentPadding: const EdgeInsets.all(16),
+                                    contentPadding: EdgeInsets.all(dims.md),
                                   ),
                                   obscureText: !_isConfirmPasswordVisible,
                                   validator: (value) {
@@ -294,15 +282,15 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                     return null;
                                   },
                                 ),
-                                const SizedBox(height: 32),
+                                SizedBox(height: dims.xxl),
                                 FilledButton(
                                   onPressed: isLoading ? null : _changePassword,
                                   style: FilledButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(
-                                      vertical: 16,
+                                    padding: EdgeInsets.symmetric(
+                                      vertical: dims.md,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(14),
+                                    shape: const RoundedRectangleBorder(
+                                      borderRadius: AppRadius.buttonBorder,
                                     ),
                                   ),
                                   child: isLoading

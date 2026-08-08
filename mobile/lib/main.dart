@@ -31,8 +31,8 @@ class AnchorApp extends ConsumerWidget {
 
     return MaterialApp.router(
       title: 'Anchor Notes',
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
+      theme: AppTheme.light(),
+      darkTheme: AppTheme.dark(),
       themeMode: themeMode,
       routerConfig: router,
       localizationsDelegates: const [

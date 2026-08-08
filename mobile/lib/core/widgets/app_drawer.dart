@@ -2,13 +2,21 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../features/auth/presentation/auth_controller.dart';
 import '../../features/tags/domain/tag.dart';
 import '../../features/tags/presentation/tags_controller.dart';
+import '../../features/tags/presentation/widgets/tag_delete_sheet.dart';
+import '../../features/tags/presentation/widgets/tag_edit_sheet.dart';
+import '../../features/tags/presentation/widgets/tag_options_sheet.dart';
 import '../../core/network/server_config_provider.dart';
+import '../theme/app_typography.dart';
 import 'anchor_icon.dart';
+import 'gradient_background.dart';
+import '../theme/context_extensions.dart';
+import '../theme/tokens/app_durations.dart';
+import '../theme/tokens/app_icon_sizes.dart';
+import '../theme/tokens/app_radius.dart';
 
 class AppDrawer extends ConsumerStatefulWidget {
   const AppDrawer({super.key});
@@ -23,34 +31,25 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
     final tagsAsync = ref.watch(tagsControllerProvider);
     final selectedTagId = ref.watch(selectedTagFilterProvider);
 
     return Drawer(
       backgroundColor: Colors.transparent,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF1C1E26), const Color(0xFF262A36)]
-                : [const Color(0xFFF8F9FC), const Color(0xFFEEF1F8)],
-          ),
-        ),
+      child: GradientBackground(
         child: SafeArea(
           child: Column(
             children: [
               // Header with branding
-              _buildHeader(theme, isDark),
+              _buildHeader(theme),
 
-              const SizedBox(height: 8),
+              SizedBox(height: dims.xs),
 
               // Main navigation
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: EdgeInsets.symmetric(horizontal: dims.sm),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -86,7 +85,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                         theme: theme,
                       ),
 
-                      const SizedBox(height: 16),
+                      SizedBox(height: dims.md),
 
                       // Tags Section
                       _buildTagsSection(
@@ -100,7 +99,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               ),
 
               // Bottom section with settings
-              _buildBottomSection(theme, isDark),
+              _buildBottomSection(theme),
             ],
           ),
         ),
@@ -108,9 +107,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
     );
   }
 
-  Widget _buildHeader(ThemeData theme, bool isDark) {
+  Widget _buildHeader(ThemeData theme) {
+    final dims = context.dims;
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
+      padding: EdgeInsets.fromLTRB(dims.lg, dims.lg, dims.lg, dims.md),
       child: Row(
         children: [
           const SizedBox(width: 52, height: 52, child: AnchorIcon(size: 48)),
@@ -121,7 +121,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               children: [
                 Text(
                   'Anchor',
-                  style: GoogleFonts.playfairDisplay(
+                  style: AppTypography.serif(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: theme.colorScheme.onSurface,
@@ -153,24 +153,25 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
     Widget? trailing,
   }) {
     final color = activeColor ?? theme.colorScheme.primary;
+    final dims = context.dims;
 
     return Opacity(
       opacity: enabled ? 1.0 : 0.4,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 4),
+        margin: EdgeInsets.only(bottom: dims.xxs),
         child: Material(
           color: Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.smBorder,
           child: InkWell(
             onTap: enabled ? onTap : null,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.smBorder,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              padding: dims.drawerItemPadding,
               decoration: BoxDecoration(
                 color: isSelected
                     ? color.withValues(alpha: 0.12)
                     : Colors.transparent,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.smBorder,
                 border: isSelected
                     ? Border.all(color: color.withValues(alpha: 0.2), width: 1)
                     : null,
@@ -179,7 +180,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 children: [
                   Icon(
                     icon,
-                    size: 20,
+                    size: AppIconSizes.md,
                     color: isSelected
                         ? color
                         : theme.colorScheme.onSurface.withValues(alpha: 0.7),
@@ -215,23 +216,24 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
     required AsyncValue<List<Tag>> tagsAsync,
     required String? selectedTagId,
   }) {
+    final dims = context.dims;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Tags header with expand/collapse
         InkWell(
           onTap: () => setState(() => _tagsExpanded = !_tagsExpanded),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.xsBorder,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 8, 8, 4),
+            padding: EdgeInsets.fromLTRB(14, dims.xs, dims.xs, dims.xxs),
             child: Row(
               children: [
                 AnimatedRotation(
                   turns: _tagsExpanded ? 0.25 : 0,
-                  duration: const Duration(milliseconds: 200),
+                  duration: AppDurations.medium,
                   child: Icon(
                     LucideIcons.chevronRight,
-                    size: 14,
+                    size: AppIconSizes.xs,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
                 ),
@@ -249,10 +251,10 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 IconButton(
                   icon: Icon(
                     LucideIcons.plus,
-                    size: 16,
+                    size: AppIconSizes.sm,
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                   ),
-                  onPressed: () => _showCreateTagSheet(),
+                  onPressed: () => TagEditSheet.show(context),
                   tooltip: 'New tag',
                   visualDensity: VisualDensity.compact,
                   padding: EdgeInsets.zero,
@@ -300,9 +302,9 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                 },
               );
             },
-            loading: () => const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(
+            loading: () => Padding(
+              padding: EdgeInsets.all(dims.md),
+              child: const Center(
                 child: SizedBox(
                   width: 20,
                   height: 20,
@@ -316,20 +318,21 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
           crossFadeState: _tagsExpanded
               ? CrossFadeState.showFirst
               : CrossFadeState.showSecond,
-          duration: const Duration(milliseconds: 200),
+          duration: AppDurations.medium,
         ),
       ],
     );
   }
 
   Widget _buildEmptyTagsState(ThemeData theme) {
+    final dims = context.dims;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      padding: EdgeInsets.fromLTRB(14, dims.xs, 14, dims.xs),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(dims.md),
         decoration: BoxDecoration(
           color: theme.colorScheme.onSurface.withValues(alpha: 0.03),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.smBorder,
           border: Border.all(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
           ),
@@ -341,7 +344,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
               size: 18,
               color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: dims.sm),
             Expanded(
               child: Text(
                 'Create tags to organize your notes',
@@ -356,12 +359,13 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
     );
   }
 
-  Widget _buildBottomSection(ThemeData theme, bool isDark) {
+  Widget _buildBottomSection(ThemeData theme) {
     final userAsync = ref.watch(authControllerProvider);
     final serverUrl = ref.watch(serverUrlProvider);
+    final dims = context.dims;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: EdgeInsets.symmetric(horizontal: dims.sm, vertical: dims.xs),
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
@@ -398,17 +402,17 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
 
           return Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.smBorder,
             child: InkWell(
               onTap: () {
                 Navigator.pop(context);
                 context.push('/settings');
               },
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: AppRadius.smBorder,
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
+                padding: EdgeInsets.symmetric(
+                  horizontal: dims.sm,
+                  vertical: dims.xs,
                 ),
                 child: Row(
                   children: [
@@ -463,7 +467,7 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
                     // Settings Icon
                     Icon(
                       LucideIcons.settings,
-                      size: 16,
+                      size: AppIconSizes.sm,
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
                     ),
                   ],
@@ -494,663 +498,17 @@ class _AppDrawerState extends ConsumerState<AppDrawer> {
     );
   }
 
-  void _showTagOptionsSheet(Tag tag) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final tagColor = parseTagColor(
-      tag.color,
-      fallback: theme.colorScheme.primary,
-    );
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-                : [Colors.white, const Color(0xFFF8F9FC)],
-          ),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle bar
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Tag header with icon
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: tagColor.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(LucideIcons.hash, color: tagColor, size: 20),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            tag.name,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            '${tag.noteCount} notes',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.6,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // Action buttons
-                _buildSheetAction(
-                  icon: LucideIcons.pencil,
-                  label: 'Rename tag',
-                  theme: theme,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showRenameSheet(tag);
-                  },
-                ),
-                const SizedBox(height: 8),
-                _buildSheetAction(
-                  icon: LucideIcons.trash2,
-                  label: 'Delete tag',
-                  theme: theme,
-                  isDestructive: true,
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showDeleteSheet(tag);
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSheetAction({
-    required IconData icon,
-    required String label,
-    required ThemeData theme,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    final color = isDestructive
-        ? theme.colorScheme.error
-        : theme.colorScheme.onSurface;
-
-    return Material(
-      color: Colors.transparent,
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(icon, size: 20, color: color.withValues(alpha: 0.8)),
-              const SizedBox(width: 14),
-              Text(
-                label,
-                style: theme.textTheme.bodyLarge?.copyWith(
-                  color: color,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              Icon(
-                LucideIcons.chevronRight,
-                size: 18,
-                color: color.withValues(alpha: 0.4),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showRenameSheet(Tag tag) {
-    final controller = TextEditingController(text: tag.name);
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final tagColor = parseTagColor(
-      tag.color,
-      fallback: theme.colorScheme.primary,
-    );
-    String? errorMessage;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isDark
-                    ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-                    : [Colors.white, const Color(0xFFF8F9FC)],
-              ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Handle bar
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.15,
-                          ),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Title
-                    Text(
-                      'Rename Tag',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Input field
-                    TextField(
-                      controller: controller,
-                      autofocus: true,
-                      textCapitalization: TextCapitalization.words,
-                      style: theme.textTheme.bodyLarge,
-                      onChanged: (_) {
-                        if (errorMessage != null) {
-                          setState(() => errorMessage = null);
-                        }
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Tag name',
-                        prefixIcon: Icon(
-                          LucideIcons.hash,
-                          color: errorMessage != null
-                              ? theme.colorScheme.error
-                              : tagColor,
-                        ),
-                        filled: true,
-                        fillColor: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.05,
-                        ),
-                        errorText: errorMessage,
-                        errorStyle: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: errorMessage != null
-                                ? theme.colorScheme.error
-                                : tagColor,
-                            width: 1.5,
-                          ),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: theme.colorScheme.error,
-                            width: 1.5,
-                          ),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: theme.colorScheme.error,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              side: BorderSide(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.2,
-                                ),
-                              ),
-                            ),
-                            child: const Text('Cancel'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () async {
-                              final newName = controller.text.trim();
-                              if (newName.isEmpty) return;
-
-                              // If name hasn't changed, just close
-                              if (newName == tag.name) {
-                                if (context.mounted) Navigator.pop(context);
-                                return;
-                              }
-
-                              try {
-                                await ref
-                                    .read(tagsControllerProvider.notifier)
-                                    .updateTag(tag.copyWith(name: newName));
-                                if (context.mounted) Navigator.pop(context);
-                              } catch (e) {
-                                setState(() {
-                                  errorMessage = e.toString().replaceFirst(
-                                    'Exception: ',
-                                    '',
-                                  );
-                                });
-                              }
-                            },
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text('Rename'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showDeleteSheet(Tag tag) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-                : [Colors.white, const Color(0xFFF8F9FC)],
-          ),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Handle bar
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Warning icon
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.error.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    LucideIcons.alertTriangle,
-                    color: theme.colorScheme.error,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Title
-                Text(
-                  'Delete Tag',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Message
-                Text(
-                  'Delete "${tag.name}"? This will remove it from all notes.',
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Buttons
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          side: BorderSide(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.2,
-                            ),
-                          ),
-                        ),
-                        child: const Text('Cancel'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () async {
-                          await ref
-                              .read(tagsControllerProvider.notifier)
-                              .deleteTag(tag.id);
-                          if (context.mounted) Navigator.pop(context);
-                        },
-                        style: FilledButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          backgroundColor: theme.colorScheme.error,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('Delete'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showCreateTagSheet() {
-    final controller = TextEditingController();
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    String? errorMessage;
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: isDark
-                    ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-                    : [Colors.white, const Color(0xFFF8F9FC)],
-              ),
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(28),
-              ),
-            ),
-            child: SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Handle bar
-                    Center(
-                      child: Container(
-                        width: 40,
-                        height: 4,
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.onSurface.withValues(
-                            alpha: 0.15,
-                          ),
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Title
-                    Text(
-                      'New Tag',
-                      style: theme.textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Create a tag to organize your notes',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.6,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Input field
-                    TextField(
-                      controller: controller,
-                      autofocus: true,
-                      textCapitalization: TextCapitalization.words,
-                      style: theme.textTheme.bodyLarge,
-                      onChanged: (_) {
-                        if (errorMessage != null) {
-                          setState(() => errorMessage = null);
-                        }
-                      },
-                      decoration: InputDecoration(
-                        hintText: 'Tag name',
-                        prefixIcon: Icon(
-                          LucideIcons.hash,
-                          color: errorMessage != null
-                              ? theme.colorScheme.error
-                              : theme.colorScheme.primary,
-                        ),
-                        filled: true,
-                        fillColor: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.05,
-                        ),
-                        errorText: errorMessage,
-                        errorStyle: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.error,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: errorMessage != null
-                                ? theme.colorScheme.error
-                                : theme.colorScheme.primary,
-                            width: 1.5,
-                          ),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: theme.colorScheme.error,
-                            width: 1.5,
-                          ),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide(
-                            color: theme.colorScheme.error,
-                            width: 1.5,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(context),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              side: BorderSide(
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.2,
-                                ),
-                              ),
-                            ),
-                            child: const Text('Cancel'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: FilledButton(
-                            onPressed: () async {
-                              final name = controller.text.trim();
-                              if (name.isEmpty) return;
-
-                              try {
-                                await ref
-                                    .read(tagsControllerProvider.notifier)
-                                    .createTag(name);
-                                if (context.mounted) Navigator.pop(context);
-                              } catch (e) {
-                                setState(() {
-                                  errorMessage = e.toString().replaceFirst(
-                                    'Exception: ',
-                                    '',
-                                  );
-                                });
-                              }
-                            },
-                            style: FilledButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: const Text('Create'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
+  Future<void> _showTagOptionsSheet(Tag tag) async {
+    final action = await TagOptionsSheet.show(context, tag);
+    if (!mounted) return;
+    switch (action) {
+      case TagSheetAction.rename:
+        TagEditSheet.show(context, tag: tag);
+      case TagSheetAction.delete:
+        TagDeleteSheet.show(context, tag);
+      case null:
+        break;
+    }
   }
 }
 
@@ -1173,6 +531,7 @@ class _TagItemWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dims = context.dims;
     return Container(
       margin: const EdgeInsets.only(bottom: 2),
       child: Material(
@@ -1183,7 +542,7 @@ class _TagItemWidget extends StatelessWidget {
           onLongPress: onLongPress,
           borderRadius: BorderRadius.circular(10),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: dims.drawerTagPadding,
             decoration: BoxDecoration(
               color: isSelected
                   ? tagColor.withValues(alpha: 0.12)
@@ -1192,8 +551,8 @@ class _TagItemWidget extends StatelessWidget {
             ),
             child: Row(
               children: [
-                Icon(LucideIcons.hash, size: 16, color: tagColor),
-                const SizedBox(width: 12),
+                Icon(LucideIcons.hash, size: AppIconSizes.sm, color: tagColor),
+                SizedBox(width: dims.sm),
                 Expanded(
                   child: Text(
                     tag.name,

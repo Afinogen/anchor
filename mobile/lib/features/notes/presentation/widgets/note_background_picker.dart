@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
+import '../../../../core/theme/context_extensions.dart';
+import '../../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../../core/theme/tokens/app_radius.dart';
 
 class NoteBackgroundPicker extends StatefulWidget {
   final String? selectedColor;
@@ -57,26 +60,15 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final dims = context.dims;
 
     return Padding(
       padding: EdgeInsets.only(bottom: keyboardHeight),
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-                : [Colors.white, const Color(0xFFF8F9FC)],
-          ),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
+          gradient: context.colorTokens.sheetGradient,
+          borderRadius: AppRadius.sheetTopBorder,
+          boxShadow: [context.colorTokens.sheetShadow],
         ),
         child: SafeArea(
           child: Column(
@@ -84,30 +76,35 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
             children: [
               // Handle bar
               Container(
-                margin: const EdgeInsets.only(top: 12),
+                margin: EdgeInsets.only(top: dims.sm),
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(2),
+                  borderRadius: AppRadius.handleBorder,
                 ),
               ),
 
               // Header
               Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 16, 24),
+                padding: EdgeInsets.fromLTRB(
+                  dims.xl,
+                  dims.lg,
+                  dims.md,
+                  dims.xl,
+                ),
                 child: Row(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: AppRadius.smBorder,
                       ),
                       child: Icon(
                         LucideIcons.palette,
                         color: theme.colorScheme.primary,
-                        size: 20,
+                        size: AppIconSizes.md,
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -137,9 +134,9 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                     FilledButton.tonal(
                       onPressed: () => Navigator.pop(context),
                       style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: dims.md,
+                          vertical: dims.xs,
                         ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
@@ -159,9 +156,9 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                     children: [
                       // 1. Colors Section
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 8,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: dims.xl,
+                          vertical: dims.xs,
                         ),
                         child: Text(
                           'Color',
@@ -175,7 +172,7 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                         height: 80,
                         child: ListView(
                           scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: EdgeInsets.symmetric(horizontal: dims.md),
                           physics: const BouncingScrollPhysics(),
                           children: [
                             // None / Default option
@@ -186,13 +183,13 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                               child: Icon(
                                 Icons.format_color_reset_outlined,
                                 color: theme.colorScheme.onSurfaceVariant,
-                                size: 24,
+                                size: AppIconSizes.lg,
                               ),
                               color: theme.colorScheme.surfaceContainerHighest,
                               hasBorder: true,
                             ),
 
-                            const SizedBox(width: 12),
+                            SizedBox(width: dims.sm),
 
                             // Solid Colors
                             ..._solidColors.map((style) {
@@ -201,7 +198,7 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                                   ? style.darkColor
                                   : style.lightColor;
                               return Padding(
-                                padding: const EdgeInsets.only(right: 12),
+                                padding: EdgeInsets.only(right: dims.sm),
                                 child: _buildOptionItem(
                                   context: context,
                                   isSelected: isSelected,
@@ -222,13 +219,13 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                         ),
                       ),
 
-                      const SizedBox(height: 16),
+                      SizedBox(height: dims.md),
 
                       // 2. Backgrounds Section
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 8,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: dims.xl,
+                          vertical: dims.xs,
                         ),
                         child: Text(
                           'Background',
@@ -242,12 +239,12 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                         height: 80,
                         child: ListView(
                           scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: EdgeInsets.symmetric(horizontal: dims.md),
                           physics: const BouncingScrollPhysics(),
                           children: _patterns.map((style) {
                             final isSelected = _selectedColor == style.id;
                             return Padding(
-                              padding: const EdgeInsets.only(right: 12),
+                              padding: EdgeInsets.only(right: dims.sm),
                               child: _buildBackgroundItem(
                                 context: context,
                                 style: style,
@@ -258,7 +255,7 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                           }).toList(),
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      SizedBox(height: dims.xxl),
                     ],
                   ),
                 ),
@@ -322,12 +319,12 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadius.mdBorder,
       child: Container(
         width: 60,
         height: 60,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.mdBorder,
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
@@ -345,13 +342,13 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
               : null,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.buttonBorder,
           child: NoteBackground(
             styleId: style.id,
             child: isSelected
                 ? Center(
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: EdgeInsets.all(context.dims.xxs),
                       decoration: const BoxDecoration(
                         color: Colors.white54,
                         shape: BoxShape.circle,
@@ -359,7 +356,7 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                       child: const Icon(
                         Icons.check,
                         color: Colors.black,
-                        size: 20,
+                        size: AppIconSizes.md,
                       ),
                     ),
                   )

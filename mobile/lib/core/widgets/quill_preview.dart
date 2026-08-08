@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../theme/context_extensions.dart';
+import '../theme/tokens/app_icon_sizes.dart';
 
 /// A single line in the preview with optional list/checklist state.
 class _PreviewLine {
@@ -42,6 +44,7 @@ class QuillPreview extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
+    final dims = context.dims;
     final lines = _parseQuillContentToPreviewLines(content);
 
     if (lines.isEmpty) {
@@ -50,7 +53,7 @@ class QuillPreview extends StatelessWidget {
 
     final effectiveStyle =
         style ??
-        GoogleFonts.dmSans(
+        theme.textTheme.bodyMedium!.copyWith(
           fontSize: 14,
           height: 1.5,
           color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
@@ -83,12 +86,12 @@ class QuillPreview extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(right: 8, top: 2),
+                  padding: EdgeInsets.only(right: dims.xs, top: 2),
                   child: Icon(
                     line.isChecked
                         ? LucideIcons.checkSquare
                         : LucideIcons.square,
-                    size: 16,
+                    size: AppIconSizes.sm,
                     color: line.isChecked
                         ? theme.colorScheme.primary
                         : theme.textTheme.bodyMedium?.color?.withValues(
@@ -135,7 +138,7 @@ class QuillPreview extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: dims.xxs),
                 Expanded(
                   child: Text(
                     lineText,
@@ -156,7 +159,7 @@ class QuillPreview extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(right: 8, top: 2),
+                  padding: EdgeInsets.only(right: dims.xs, top: 2),
                   child: Text('•', style: effectiveStyle),
                 ),
                 Expanded(

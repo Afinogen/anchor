@@ -7,6 +7,7 @@ import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
 import 'notes_controller.dart';
+import 'package:anchor/core/theme/context_extensions.dart';
 
 class TrashScreen extends ConsumerWidget {
   const TrashScreen({super.key});
@@ -114,7 +115,7 @@ class TrashScreen extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(LucideIcons.trash2, size: 64, color: theme.hintColor),
-                    const SizedBox(height: 16),
+                    SizedBox(height: context.dims.md),
                     Text(
                       'Trash is empty',
                       style: theme.textTheme.bodyLarge?.copyWith(
@@ -125,13 +126,14 @@ class TrashScreen extends ConsumerWidget {
                 ),
               );
             }
+            final dims = context.dims;
             return ListView.builder(
-              padding: const EdgeInsets.all(16),
+              padding: dims.screenInsets,
               itemCount: notes.length,
               itemBuilder: (context, index) {
                 final note = notes[index];
                 return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
+                  padding: EdgeInsets.only(bottom: dims.listItemSpacing),
                   child: NoteCard(
                     note: note,
                     datePrefix: 'Moved to trash',
