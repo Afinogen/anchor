@@ -1,6 +1,7 @@
 import { Controller, Get } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
+import { SYNC_PROTOCOLS } from '../sync/sync.constants';
 
 @Controller('api/health')
 export class HealthController {
@@ -24,6 +25,7 @@ export class HealthController {
       status: 'ok',
       app: 'anchor',
       version,
+      syncProtocols: SYNC_PROTOCOLS,
       timestamp: new Date().toISOString(),
     };
   }

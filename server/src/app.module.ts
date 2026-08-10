@@ -8,6 +8,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { NotesModule } from './notes/notes.module';
 import { TagsModule } from './tags/tags.module';
+import { SyncApiModule } from './sync/sync-api.module';
 import { TasksModule } from './tasks/tasks.module';
 import { HealthModule } from './health/health.module';
 import { AdminModule } from './admin/admin.module';
@@ -27,6 +28,7 @@ import { ImportExportModule } from './import-export/import-export.module';
     AuthModule,
     NotesModule,
     TagsModule,
+    SyncApiModule,
     TasksModule,
     HealthModule,
     AdminModule,

@@ -116,7 +116,6 @@ go in `test/` and are reused across specs.
 - `GET /api/notes/:id` - Get a specific note
 - `PATCH /api/notes/:id` - Update a note
 - `DELETE /api/notes/:id` - Delete a note (soft delete)
-- `POST /api/notes/sync` - Sync notes with client
 - `PATCH /api/notes/:id/restore` - Restore a note from trash
 - `DELETE /api/notes/:id/permanent` - Permanently delete a note
 - `POST /api/notes/bulk/delete` - Bulk delete notes
@@ -151,7 +150,11 @@ go in `test/` and are reused across specs.
 - `GET /api/tags/:id/notes` - Get all notes with a specific tag
 - `PATCH /api/tags/:id` - Update a tag
 - `DELETE /api/tags/:id` - Delete a tag
-- `POST /api/tags/sync` - Sync tags with client
+
+### Sync
+
+- `POST /api/sync` - Combined push + pull: applies client changes, returns the change feed past a cursor
+- `GET /api/sync/events` - SSE stream of `{ seq }` pokes telling clients when to pull
 
 ### Admin (requires admin privileges)
 

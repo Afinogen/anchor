@@ -12,7 +12,6 @@ import {
 import { NotesService } from '../services/notes.service';
 import { CreateNoteDto } from '../dto/create-note.dto';
 import { UpdateNoteDto } from '../dto/update-note.dto';
-import { SyncNotesDto } from '../dto/sync-notes.dto';
 import { BulkActionDto } from '../dto/bulk-action.dto';
 import { BulkPinDto } from '../dto/bulk-pin.dto';
 import { BulkTagsDto } from '../dto/bulk-tags.dto';
@@ -30,11 +29,6 @@ export class NotesController {
     @Body() createNoteDto: CreateNoteDto,
   ) {
     return this.notesService.create(userId, createNoteDto);
-  }
-
-  @Post('sync')
-  sync(@CurrentUser('id') userId: string, @Body() syncDto: SyncNotesDto) {
-    return this.notesService.sync(userId, syncDto);
   }
 
   @Get()

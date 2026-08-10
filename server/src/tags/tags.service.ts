@@ -6,15 +6,16 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
-import { SyncTagsDto } from './dto/sync-tags.dto';
-import {
-  getSyncUpdatedAtWindow,
-  withForcedSyncIds,
-} from '../sync/sync-window.util';
+import { SyncEmitterService, tagEmission } from '../sync/sync-emitter.service';
+import { SyncOp } from 'src/generated/prisma/enums';
+import { RETENTION_CHUNK_SIZE } from '../common/retention.constants';
 
 @Injectable()
 export class TagsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private syncEmitter: SyncEmitterService,
+  ) {}
 
   async create(userId: string, createTagDto: CreateTagDto) {
     // Check if tag with same name already exists for this user (not deleted)
@@ -30,23 +31,27 @@ export class TagsService {
       throw new ConflictException('A tag with this name already exists');
     }
 
-    return this.prisma.tag.create({
-      data: {
-        ...createTagDto,
-        userId,
-      },
-      include: {
-        _count: {
-          select: {
-            notes: {
-              where: {
-                state: 'active',
-                isArchived: false,
+    return this.prisma.$transaction(async (tx) => {
+      const tag = await tx.tag.create({
+        data: {
+          ...createTagDto,
+          userId,
+        },
+        include: {
+          _count: {
+            select: {
+              notes: {
+                where: {
+                  state: 'active',
+                  isArchived: false,
+                },
               },
             },
           },
         },
-      },
+      });
+      await this.syncEmitter.emit(tx, [tagEmission(userId, tag.id)]);
+      return tag;
     });
   }
 
@@ -97,14 +102,15 @@ export class TagsService {
   }
 
   async update(userId: string, id: string, updateTagDto: UpdateTagDto) {
-    await this.findOne(userId, id);
+    const prior = await this.findOne(userId, id);
+    const { baseVersion, ...tagData } = updateTagDto;
 
     // Check for name conflict if name is being updated
-    if (updateTagDto.name) {
+    if (tagData.name) {
       const existing = await this.prisma.tag.findFirst({
         where: {
           userId,
-          name: updateTagDto.name,
+          name: tagData.name,
           isDeleted: false,
           id: { not: id },
         },
@@ -115,32 +121,62 @@ export class TagsService {
       }
     }
 
-    return this.prisma.tag.update({
-      where: { id },
-      data: updateTagDto,
-      include: {
-        _count: {
-          select: {
-            notes: {
-              where: {
-                state: 'active',
-                isArchived: false,
+    const changed =
+      (tagData.name !== undefined && tagData.name !== prior.name) ||
+      (tagData.color !== undefined && tagData.color !== prior.color);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const current = await tx.tag.findUniqueOrThrow({ where: { id } });
+      if (baseVersion !== undefined && baseVersion !== current.version) {
+        return { conflict: true as const };
+      }
+
+      const tag = await tx.tag.update({
+        where: { id },
+        data: {
+          ...tagData,
+          ...(changed ? { version: { increment: 1 } } : {}),
+        },
+        include: {
+          _count: {
+            select: {
+              notes: {
+                where: {
+                  state: 'active',
+                  isArchived: false,
+                },
               },
             },
           },
         },
-      },
+      });
+      await this.syncEmitter.emit(tx, [tagEmission(userId, id)]);
+      return { conflict: false as const, tag };
     });
+
+    if (result.conflict) {
+      throw new ConflictException({
+        message: 'Tag was changed by someone else',
+        serverTag: await this.findOne(userId, id),
+      });
+    }
+
+    return result.tag;
   }
 
   async remove(userId: string, id: string) {
     await this.findOne(userId, id);
 
-    return this.prisma.tag.update({
-      where: { id },
-      data: {
-        isDeleted: true,
-      },
+    return this.prisma.$transaction(async (tx) => {
+      const tag = await tx.tag.update({
+        where: { id },
+        data: {
+          isDeleted: true,
+          version: { increment: 1 },
+        },
+      });
+      await this.syncEmitter.emit(tx, [tagEmission(userId, id, SyncOp.remove)]);
+      return tag;
     });
   }
 
@@ -171,170 +207,45 @@ export class TagsService {
     }));
   }
 
-  // Sync endpoint for tags
-  async sync(userId: string, syncDto: SyncTagsDto) {
-    const { lastSyncedAt, changes } = syncDto;
-    const incoming = await this.processIncomingSyncChanges(
-      userId,
-      changes || [],
-    );
-
-    const syncCutoff = new Date();
-    const forceServerIds = Array.from(incoming.forceServerTagIds);
-    const updatedAtWindow = getSyncUpdatedAtWindow(lastSyncedAt, syncCutoff);
-
-    // Get all tags modified after lastSyncedAt
-    const serverChanges = await this.prisma.tag.findMany({
-      where: {
-        userId,
-        ...withForcedSyncIds('updatedAt', updatedAtWindow, forceServerIds),
-      },
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        _count: {
-          select: {
-            notes: {
-              where: {
-                state: 'active',
-                isArchived: false,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    return {
-      serverChanges,
-      processedIds: incoming.processedIds,
-      syncedAt: syncCutoff.toISOString(),
-    };
-  }
-
-  private async processIncomingSyncChanges(
-    userId: string,
-    changes: SyncTagDto[],
-  ): Promise<IncomingTagSyncResult> {
-    const processedIds: string[] = [];
-    const forceServerTagIds = new Set<string>();
-
-    for (const change of changes) {
-      const existingTag = await this.prisma.tag.findUnique({
-        where: { id: change.id },
-      });
-
-      if (change.isDeleted) {
-        if (!existingTag || existingTag.userId !== userId) {
-          continue;
-        }
-
-        const result = await this.prisma.tag.updateMany({
-          where: { id: change.id, userId, updatedAt: existingTag.updatedAt },
-          data: { isDeleted: true },
-        });
-
-        if (result.count !== 1) {
-          forceServerTagIds.add(change.id);
-        }
-
-        processedIds.push(change.id);
-        continue;
-      }
-
-      if (!existingTag) {
-        const created = await this.createMissingSyncTag(userId, change);
-        if (created) {
-          processedIds.push(change.id);
-        }
-        continue;
-      }
-
-      if (existingTag.userId !== userId) {
-        continue;
-      }
-
-      const clientUpdatedAt = new Date(change.updatedAt || 0);
-      const serverUpdatedAt = existingTag.updatedAt;
-
-      if (clientUpdatedAt <= serverUpdatedAt) {
-        forceServerTagIds.add(change.id);
-        processedIds.push(change.id);
-        continue;
-      }
-
-      const didUpdate = await this.updateSyncTagIfUnchanged(
-        userId,
-        change,
-        serverUpdatedAt,
-      );
-
-      if (!didUpdate) {
-        forceServerTagIds.add(change.id);
-      }
-
-      processedIds.push(change.id);
-    }
-
-    return { processedIds, forceServerTagIds };
-  }
-
-  private async createMissingSyncTag(userId: string, change: SyncTagDto) {
-    try {
-      await this.prisma.tag.create({
-        data: {
-          id: change.id,
-          name: change.name,
-          color: change.color,
-          userId,
-        },
-      });
-      return true;
-    } catch {
-      // Might conflict with an existing tag name.
-      return false;
-    }
-  }
-
-  private async updateSyncTagIfUnchanged(
-    userId: string,
-    change: SyncTagDto,
-    serverUpdatedAt: Date,
-  ) {
-    try {
-      const result = await this.prisma.tag.updateMany({
-        where: { id: change.id, userId, updatedAt: serverUpdatedAt },
-        data: {
-          name: change.name,
-          color: change.color,
-        },
-      });
-
-      return result.count === 1;
-    } catch {
-      // Might conflict with an existing tag name.
-      return false;
-    }
-  }
-
   // Purge tombstones older than retention period (30 days)
   async purgeTombstones(retentionDays = 30) {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
-    const result = await this.prisma.tag.deleteMany({
-      where: {
-        isDeleted: true,
-        updatedAt: { lt: cutoffDate },
-      },
-    });
+    let purgedTagsCount = 0;
 
-    return { purgedTagsCount: result.count };
+    for (;;) {
+      const doomed = await this.prisma.tag.findMany({
+        where: {
+          isDeleted: true,
+          updatedAt: { lt: cutoffDate },
+        },
+        select: { id: true, userId: true },
+        take: RETENTION_CHUNK_SIZE,
+      });
+      if (doomed.length === 0) {
+        break;
+      }
+
+      const purged = await this.prisma.$transaction(async (tx) => {
+        const result = await tx.tag.deleteMany({
+          where: { id: { in: doomed.map((tag) => tag.id) } },
+        });
+
+        await this.syncEmitter.emit(
+          tx,
+          doomed.map((tag) => tagEmission(tag.userId, tag.id, SyncOp.remove)),
+        );
+
+        return result.count;
+      });
+
+      purgedTagsCount += purged;
+      if (purged === 0 || doomed.length < RETENTION_CHUNK_SIZE) {
+        break;
+      }
+    }
+
+    return { purgedTagsCount };
   }
 }
-
-interface IncomingTagSyncResult {
-  processedIds: string[];
-  forceServerTagIds: Set<string>;
-}
-
-type SyncTagDto = NonNullable<SyncTagsDto['changes']>[number];

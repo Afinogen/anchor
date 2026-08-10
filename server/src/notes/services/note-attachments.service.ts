@@ -8,6 +8,10 @@ import {
 import type { ConfigType } from '@nestjs/config';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NoteAccessService } from './note-access.service';
+import {
+  SyncEmitterService,
+  attachmentsEmissions,
+} from '../../sync/sync-emitter.service';
 import { NoteSharePermission } from 'src/generated/prisma/enums';
 import { StorageConfig } from '../../config/configuration';
 import { deleteFileIfExists } from '../../common/utils/file-system.util';
@@ -28,6 +32,7 @@ export class NoteAttachmentsService {
   constructor(
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
+    private syncEmitter: SyncEmitterService,
     @Inject(StorageConfig.KEY)
     private storageConfig: ConfigType<typeof StorageConfig>,
   ) {}
@@ -69,7 +74,7 @@ export class NoteAttachmentsService {
           data: { position: { increment: 1 } },
         });
 
-        return tx.noteAttachment.create({
+        const created = await tx.noteAttachment.create({
           data: {
             noteId,
             uploadedByUserId: userId,
@@ -81,12 +86,14 @@ export class NoteAttachmentsService {
             position: 0,
           },
         });
-      });
 
-      // Touch the note so it appears in the sync feed for other clients
-      await this.prisma.note.update({
-        where: { id: noteId },
-        data: { updatedAt: new Date() },
+        const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
+        await this.syncEmitter.emit(
+          tx,
+          attachmentsEmissions(recipients, noteId),
+        );
+
+        return created;
       });
 
       return toAttachmentResponse(attachment);
@@ -161,12 +168,11 @@ export class NoteAttachmentsService {
       );
     }
 
-    await this.prisma.noteAttachment.delete({ where: { id: attachmentId } });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.noteAttachment.delete({ where: { id: attachmentId } });
 
-    // Touch the note so it appears in the sync feed for other clients
-    await this.prisma.note.update({
-      where: { id: noteId },
-      data: { updatedAt: new Date() },
+      const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
+      await this.syncEmitter.emit(tx, attachmentsEmissions(recipients, noteId));
     });
 
     const filePath = this.attachmentPath(noteId, attachment.storedFilename);
@@ -200,19 +206,17 @@ export class NoteAttachmentsService {
       }
     }
 
-    await this.prisma.$transaction([
-      ...orderedIds.map((id, index) =>
-        this.prisma.noteAttachment.update({
+    await this.prisma.$transaction(async (tx) => {
+      for (const [index, id] of orderedIds.entries()) {
+        await tx.noteAttachment.update({
           where: { id },
           data: { position: index },
-        }),
-      ),
-      // Touch the note so it appears in the sync feed for other clients
-      this.prisma.note.update({
-        where: { id: noteId },
-        data: { updatedAt: new Date() },
-      }),
-    ]);
+        });
+      }
+
+      const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
+      await this.syncEmitter.emit(tx, attachmentsEmissions(recipients, noteId));
+    });
 
     return this.findAll(userId, noteId);
   }
