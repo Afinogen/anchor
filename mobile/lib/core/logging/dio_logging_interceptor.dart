@@ -12,9 +12,9 @@ const _tag = 'Dio';
 /// Headers that carry no debug signal
 const _boilerplateHeaders = <String>{'content-type', 'accept', 'authorization'};
 
-/// Paths excluded from logging, routine polls.
+/// Paths excluded from logging: routine polls and the long-lived event stream.
 /// Matched against [Uri.path] (no query string).
-const _skipPaths = <String>{'/api/health'};
+const _skipPaths = <String>{'/api/health', '/api/sync/events'};
 
 final _random = Random();
 

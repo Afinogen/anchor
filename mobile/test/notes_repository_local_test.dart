@@ -2,39 +2,24 @@ import 'package:anchor/core/database/app_database.dart';
 import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
 import 'package:anchor/features/notes/data/repository/notes_repository.dart';
 import 'package:anchor/features/tags/data/repository/tags_repository.dart';
-import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-
-class MockDio extends Mock implements Dio {}
-
-class MockSecureStorage extends Mock implements FlutterSecureStorage {}
 
 class MockAttachmentsRepo extends Mock implements NoteAttachmentsRepository {}
 
 /// Local query behavior of NotesRepository/TagsRepository against an
 /// in-memory Drift DB. No network involved.
 void main() {
-  const userId = 'user-1';
-
   late AppDatabase db;
   late TagsRepository tagsRepo;
   late NotesRepository repo;
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    tagsRepo = TagsRepository(db, MockDio(), MockSecureStorage(), userId);
-    repo = NotesRepository(
-      db,
-      MockDio(),
-      MockSecureStorage(),
-      tagsRepo,
-      MockAttachmentsRepo(),
-      userId,
-    );
+    tagsRepo = TagsRepository(db);
+    repo = NotesRepository(db, tagsRepo, MockAttachmentsRepo());
   });
 
   tearDown(() => db.close());

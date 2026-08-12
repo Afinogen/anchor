@@ -14,6 +14,7 @@ import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
 import 'package:anchor/features/notes/presentation/widgets/selection_app_bar_actions.dart';
 import 'package:anchor/features/notes/presentation/widgets/empty_states.dart';
 import 'package:anchor/features/notes/domain/note.dart';
+import 'package:anchor/features/sync/presentation/sync_warning.dart';
 import 'notes_controller.dart';
 import 'notes_view_options.dart';
 import 'widgets/view_options_sheet.dart';
@@ -230,6 +231,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const SyncWarning(),
                         SearchBar(
                           controller: _searchController,
                           elevation: WidgetStateProperty.all(0),
