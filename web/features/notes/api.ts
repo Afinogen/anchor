@@ -1,4 +1,6 @@
+import { getAccessToken } from "@/features/auth/store";
 import { api } from "@/lib/api/client";
+import type { SaveOutcome } from "./save-queue";
 import type {
   CreateNoteDto,
   Note,
@@ -33,11 +35,52 @@ export async function createNote(data: CreateNoteDto): Promise<Note> {
   return api.post("api/notes", { json: data }).json<Note>();
 }
 
-export async function updateNote(
+function isWorthAnotherTry(httpStatus: number): boolean {
+  return httpStatus >= 500 || httpStatus === 408 || httpStatus === 429;
+}
+
+export async function saveNote(
   id: string,
   data: UpdateNoteDto,
-): Promise<Note> {
-  return api.patch(`api/notes/${id}`, { json: data }).json<Note>();
+): Promise<SaveOutcome> {
+  const response = await api
+    .patch(`api/notes/${id}`, { json: data, throwHttpErrors: false })
+    .catch(() => null);
+
+  if (!response) {
+    return { status: "failed", httpStatus: null, retryable: true };
+  }
+
+  if (response.status === 409) {
+    const body = await response.json<{ serverNote: Note }>();
+    return { status: "conflict", serverNote: body.serverNote };
+  }
+
+  if (!response.ok) {
+    return {
+      status: "failed",
+      httpStatus: response.status,
+      retryable: isWorthAnotherTry(response.status),
+    };
+  }
+
+  return { status: "saved", note: await response.json<Note>() };
+}
+
+// Sent while the page is closing; it carries no base version, so the text on
+// screen wins.
+export function flushNoteUpdate(id: string, data: UpdateNoteDto): void {
+  const token = getAccessToken();
+
+  void fetch(`/api/notes/${id}`, {
+    method: "PATCH",
+    keepalive: true,
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: JSON.stringify(data),
+  }).catch(() => {});
 }
 
 export async function deleteNote(id: string): Promise<void> {

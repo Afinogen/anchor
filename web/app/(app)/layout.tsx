@@ -4,10 +4,12 @@ import type { ReactNode } from "react";
 import { Sidebar } from "@/components/layout";
 import { AuthGuard } from "@/features/auth";
 import { usePreferencesStore } from "@/features/preferences";
+import { useSync } from "@/features/sync";
 import { cn } from "@/lib/utils";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const { ui, setUIPreference } = usePreferencesStore();
+  useSync();
   const isCollapsed = ui.sidebarCollapsed;
   const toggleCollapsed = () =>
     setUIPreference("sidebarCollapsed", !isCollapsed);
@@ -20,7 +22,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           className={cn(
             "fixed inset-y-0 left-0 z-50 hidden border-r border-border lg:block",
             "transition-all duration-300 ease-in-out",
-            isCollapsed ? "w-[72px]" : "w-64",
+            isCollapsed ? "w-18" : "w-64",
           )}
         >
           <Sidebar
@@ -33,7 +35,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <main
           className={cn(
             "min-h-screen transition-all duration-300 ease-in-out",
-            isCollapsed ? "lg:pl-[72px]" : "lg:pl-64",
+            isCollapsed ? "lg:pl-18" : "lg:pl-64",
           )}
         >
           {children}
