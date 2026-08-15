@@ -277,7 +277,14 @@ class NoteAttachmentsRepository {
       );
     }
 
+    await _touchNote(noteId);
     scheduleAppSync(trigger: 'AttachmentsRepo.deleteAttachment');
+  }
+
+  Future<void> _touchNote(String noteId) async {
+    await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(noteId))).write(
+      NotesCompanion(updatedAt: drift.Value(DateTime.now().toUtc())),
+    );
   }
 
   /// Add attachment: copy to persistent storage, insert into DB
@@ -332,6 +339,8 @@ class NoteAttachmentsRepository {
                 ),
               ),
             );
+
+        await _touchNote(noteId);
       });
     } catch (e) {
       try {

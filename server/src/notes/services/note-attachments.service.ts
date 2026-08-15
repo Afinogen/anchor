@@ -6,11 +6,13 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
+import type { Prisma } from 'src/generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { NoteAccessService } from './note-access.service';
 import {
   SyncEmitterService,
   attachmentsEmissions,
+  noteEmissions,
 } from '../../sync/sync-emitter.service';
 import { NoteSharePermission } from 'src/generated/prisma/enums';
 import { StorageConfig } from '../../config/configuration';
@@ -39,6 +41,21 @@ export class NoteAttachmentsService {
 
   private attachmentDir(noteId: string): string {
     return path.join(this.storageConfig.attachmentsDir, noteId);
+  }
+
+  private async emitAttachmentChange(
+    tx: Prisma.TransactionClient,
+    noteId: string,
+  ): Promise<void> {
+    await tx.note.update({
+      where: { id: noteId },
+      data: { updatedAt: new Date() },
+    });
+    const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
+    await this.syncEmitter.emit(tx, [
+      ...noteEmissions(recipients, noteId),
+      ...attachmentsEmissions(recipients, noteId),
+    ]);
   }
 
   private attachmentPath(noteId: string, storedFilename: string): string {
@@ -87,11 +104,7 @@ export class NoteAttachmentsService {
           },
         });
 
-        const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
-        await this.syncEmitter.emit(
-          tx,
-          attachmentsEmissions(recipients, noteId),
-        );
+        await this.emitAttachmentChange(tx, noteId);
 
         return created;
       });
@@ -171,8 +184,7 @@ export class NoteAttachmentsService {
     await this.prisma.$transaction(async (tx) => {
       await tx.noteAttachment.delete({ where: { id: attachmentId } });
 
-      const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
-      await this.syncEmitter.emit(tx, attachmentsEmissions(recipients, noteId));
+      await this.emitAttachmentChange(tx, noteId);
     });
 
     const filePath = this.attachmentPath(noteId, attachment.storedFilename);
@@ -214,8 +226,7 @@ export class NoteAttachmentsService {
         });
       }
 
-      const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
-      await this.syncEmitter.emit(tx, attachmentsEmissions(recipients, noteId));
+      await this.emitAttachmentChange(tx, noteId);
     });
 
     return this.findAll(userId, noteId);
