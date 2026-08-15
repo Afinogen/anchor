@@ -303,28 +303,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
                     }
 
-                    // Apply sorting
-                    filteredNotes.sort((a, b) {
-                      // Pinned notes stay on top regardless of sort.
-                      if (a.isPinned != b.isPinned) {
-                        return a.isPinned ? -1 : 1;
-                      }
-
-                      int compare;
-                      switch (viewOptions.sortOption) {
-                        case SortOption.dateModified:
-                          compare = (a.updatedAt ?? DateTime(0)).compareTo(
-                            b.updatedAt ?? DateTime(0),
-                          );
-                          break;
-                        case SortOption.title:
-                          compare = a.title.toLowerCase().compareTo(
-                            b.title.toLowerCase(),
-                          );
-                          break;
-                      }
-                      return viewOptions.isAscending ? compare : -compare;
-                    });
+                    filteredNotes.sort(noteComparator(viewOptions));
 
                     return SliverPadding(
                       padding: dims.screenInsets,

@@ -75,6 +75,10 @@ class NotesRepository {
         mode: drift.OrderingMode.desc,
       ),
       drift.OrderingTerm(
+        expression: _db.notes.id,
+        mode: drift.OrderingMode.desc,
+      ),
+      drift.OrderingTerm(
         expression: _db.noteAttachments.position,
         mode: drift.OrderingMode.asc,
       ),
@@ -154,6 +158,10 @@ class NotesRepository {
           ..orderBy([
             drift.OrderingTerm(
               expression: _db.notes.updatedAt,
+              mode: drift.OrderingMode.desc,
+            ),
+            drift.OrderingTerm(
+              expression: _db.notes.id,
               mode: drift.OrderingMode.desc,
             ),
             drift.OrderingTerm(
@@ -240,6 +248,10 @@ class NotesRepository {
           ..orderBy([
             drift.OrderingTerm(
               expression: _db.notes.updatedAt,
+              mode: drift.OrderingMode.desc,
+            ),
+            drift.OrderingTerm(
+              expression: _db.notes.id,
               mode: drift.OrderingMode.desc,
             ),
             drift.OrderingTerm(

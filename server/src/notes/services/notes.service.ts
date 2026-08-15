@@ -27,6 +27,7 @@ import {
   NOTE_INCLUDE_TAGS,
   NOTE_INCLUDE_SHARES,
   NOTE_INCLUDE_ATTACHMENT_COUNT,
+  NOTE_LIST_ORDER,
   notePinInclude,
 } from '../constants/notes.constants';
 import { RETENTION_CHUNK_SIZE } from '../../common/retention.constants';
@@ -136,7 +137,7 @@ export class NotesService {
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
         ...notePinInclude(userId),
       },
-      orderBy: [{ updatedAt: 'desc' }],
+      orderBy: NOTE_LIST_ORDER,
       take: normalizedLimit,
     });
 
@@ -360,7 +361,7 @@ export class NotesService {
         userId,
         state: NoteState.trashed,
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: NOTE_LIST_ORDER,
       include: {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
@@ -379,7 +380,7 @@ export class NotesService {
         state: NoteState.active,
         isArchived: true,
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: NOTE_LIST_ORDER,
       include: {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,

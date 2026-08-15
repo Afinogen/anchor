@@ -108,6 +108,17 @@ void main() {
       expect(notes.map((n) => n.id), ['pinned-old', 'newest', 'old']);
     });
 
+    test('orders notes sharing a timestamp by id, descending', () async {
+      final sameMoment = DateTime.utc(2026, 7, 2);
+      for (final id in ['n-b', 'n-d', 'n-a', 'n-c']) {
+        await insertNote(id: id, updatedAt: sameMoment);
+      }
+
+      final notes = await repo.watchNotes().first;
+
+      expect(notes.map((n) => n.id), ['n-d', 'n-c', 'n-b', 'n-a']);
+    });
+
     test('filters by tag and collects all tagIds per note', () async {
       await insertTag('t-work');
       await insertTag('t-home');
@@ -191,6 +202,17 @@ void main() {
 
       expect(notes.map((n) => n.id), ['mine']);
     });
+
+    test('orders notes trashed together by id, descending', () async {
+      final sameMoment = DateTime.utc(2026, 7, 2);
+      for (final id in ['n-b', 'n-d', 'n-a', 'n-c']) {
+        await insertNote(id: id, state: 'trashed', updatedAt: sameMoment);
+      }
+
+      final notes = await repo.watchTrashedNotes().first;
+
+      expect(notes.map((n) => n.id), ['n-d', 'n-c', 'n-b', 'n-a']);
+    });
   });
 
   group('watchArchivedNotes', () {
@@ -206,6 +228,17 @@ void main() {
       final notes = await repo.watchArchivedNotes().first;
 
       expect(notes.map((n) => n.id), ['archived']);
+    });
+
+    test('orders notes archived together by id, descending', () async {
+      final sameMoment = DateTime.utc(2026, 7, 2);
+      for (final id in ['n-b', 'n-d', 'n-a', 'n-c']) {
+        await insertNote(id: id, isArchived: true, updatedAt: sameMoment);
+      }
+
+      final notes = await repo.watchArchivedNotes().first;
+
+      expect(notes.map((n) => n.id), ['n-d', 'n-c', 'n-b', 'n-a']);
     });
   });
 
