@@ -147,6 +147,40 @@ void main() {
     });
   });
 
+  group('watchNote', () {
+    test('re-emits when the stored note changes', () async {
+      await insertNote(id: 'n1', title: 'First');
+      final emitted = repo.watchNote('n1').take(2).toList();
+
+      await (db.update(db.notes)..where((tbl) => tbl.id.equals('n1'))).write(
+        const NotesCompanion(title: Value('Second')),
+      );
+
+      expect((await emitted).map((n) => n?.title), ['First', 'Second']);
+    });
+
+    test('carries the note tags', () async {
+      await insertNote(id: 'n1');
+      await insertTag('t-work');
+      await insertTag('t-home');
+      await linkTag('n1', 't-work');
+      await linkTag('n1', 't-home');
+
+      final note = await repo.watchNote('n1').first;
+
+      expect(note!.tagIds.toSet(), {'t-work', 't-home'});
+    });
+
+    test('emits null once the note is gone', () async {
+      await insertNote(id: 'n1');
+      final emitted = repo.watchNote('n1').take(2).toList();
+
+      await (db.delete(db.notes)..where((tbl) => tbl.id.equals('n1'))).go();
+
+      expect((await emitted).last, isNull);
+    });
+  });
+
   group('watchTrashedNotes', () {
     test('shows owned trashed notes but not shared ones', () async {
       await insertNote(id: 'mine', state: 'trashed');

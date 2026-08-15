@@ -306,6 +306,30 @@ class NotesRepository {
     return _mapToDomain(row, tagIds);
   }
 
+  /// One note and its tags, re-emitted whenever either changes.
+  Stream<domain.Note?> watchNote(String id) {
+    final query = _db.select(_db.notes).join([
+      drift.leftOuterJoin(
+        _db.noteTags,
+        _db.noteTags.noteId.equalsExp(_db.notes.id),
+      ),
+    ])..where(_db.notes.id.equals(id));
+
+    return query.watch().map((rows) {
+      if (rows.isEmpty) return null;
+
+      final tagIds = <String>[];
+      for (final row in rows) {
+        final tagId = row.readTableOrNull(_db.noteTags)?.tagId;
+        if (tagId != null && !tagIds.contains(tagId)) {
+          tagIds.add(tagId);
+        }
+      }
+
+      return _mapToDomain(rows.first.readTable(_db.notes), tagIds);
+    });
+  }
+
   Future<void> createNote(domain.Note note) async {
     await _db.transaction(() async {
       await _db

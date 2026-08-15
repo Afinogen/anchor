@@ -81,7 +81,6 @@ class SyncEvents {
         return;
       }
 
-      _attempt = 0;
       _resetWatchdog();
       AppLogger.instance.info(_tag, 'Push channel open');
 
@@ -96,6 +95,7 @@ class SyncEvents {
           .transform(const LineSplitter())
           .listen(
             (line) {
+              _attempt = 0;
               _resetWatchdog();
               if (line.startsWith('event:')) {
                 event = line.substring('event:'.length).trim();
