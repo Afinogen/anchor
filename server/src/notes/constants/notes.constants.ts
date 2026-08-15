@@ -66,6 +66,10 @@ export const NOTE_INCLUDE_SHARES = {
   },
 } as const;
 
+// Bulk action limits; the client splits a larger selection into batches.
+export const BULK_MAX_NOTE_IDS = 200;
+export const BULK_MAX_TAG_IDS = 50;
+
 // Attachment constants
 export const ATTACHMENT_MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 

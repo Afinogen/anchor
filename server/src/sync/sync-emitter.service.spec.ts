@@ -2,11 +2,22 @@ import type { Prisma } from 'src/generated/prisma/client';
 import { SyncEntityType, SyncOp } from 'src/generated/prisma/enums';
 import {
   SyncEmitterService,
-  SyncEmission,
   noteEmissions,
   pinEmission,
 } from './sync-emitter.service';
+import { CHANGELOG_UPSERT_CHUNK_SIZE } from './sync.constants';
 import { asSyncEvents, createMockSyncEvents } from '../../test/sync-mocks';
+
+interface UpsertedRow {
+  recipientUserId: string;
+  entityType: SyncEntityType;
+  entityId: string;
+  op: SyncOp;
+  seq: bigint;
+}
+
+// changeLogRow binds five values per row; updatedAt comes from the database.
+const VALUES_PER_ROW = 5;
 
 /**
  * Seq block allocation and assignment, per-call dedup, sorted lock order, and
@@ -17,17 +28,7 @@ describe('SyncEmitterService', () => {
   let service: SyncEmitterService;
   let syncEvents: ReturnType<typeof createMockSyncEvents>;
   let seqByUser: Map<string, bigint>;
-  let upserts: Array<{
-    where: {
-      recipientUserId_entityType_entityId: {
-        recipientUserId: string;
-        entityType: SyncEntityType;
-        entityId: string;
-      };
-    };
-    create: SyncEmission & { seq: bigint };
-    update: { op: SyncOp; seq: bigint };
-  }>;
+  let upserted: UpsertedRow[];
 
   const queryRaw = jest.fn(
     (_strings: TemplateStringsArray, uid: string, n: number) => {
@@ -37,23 +38,34 @@ describe('SyncEmitterService', () => {
     },
   );
 
-  const changeLogUpsert = jest.fn((args: (typeof upserts)[number]) => {
-    upserts.push(args);
-    return Promise.resolve({});
+  const executeRaw = jest.fn((query: Prisma.Sql) => {
+    for (let i = 0; i < query.values.length; i += VALUES_PER_ROW) {
+      const [recipientUserId, entityType, entityId, op, seq] =
+        query.values.slice(i, i + VALUES_PER_ROW);
+      upserted.push({
+        recipientUserId: recipientUserId as string,
+        entityType: entityType as SyncEntityType,
+        entityId: entityId as string,
+        op: op as SyncOp,
+        seq: BigInt(seq as string),
+      });
+    }
+    return Promise.resolve(upserted.length);
   });
 
   const changeLogDeleteMany = jest.fn().mockResolvedValue({ count: 0 });
 
   const tx = {
     $queryRaw: queryRaw,
-    changeLog: { upsert: changeLogUpsert, deleteMany: changeLogDeleteMany },
+    $executeRaw: executeRaw,
+    changeLog: { deleteMany: changeLogDeleteMany },
   } as unknown as Prisma.TransactionClient;
 
   beforeEach(() => {
     syncEvents = createMockSyncEvents();
     service = new SyncEmitterService(asSyncEvents(syncEvents));
     seqByUser = new Map();
-    upserts = [];
+    upserted = [];
     jest.clearAllMocks();
   });
 
@@ -66,7 +78,29 @@ describe('SyncEmitterService', () => {
 
     expect(recipients).toEqual(['user-a']);
     expect(queryRaw).toHaveBeenCalledTimes(1);
-    expect(upserts.map((u) => u.create.seq)).toEqual([1n, 2n, 3n]);
+    expect(upserted.map((row) => row.seq)).toEqual([1n, 2n, 3n]);
+  });
+
+  it('writes the whole batch in one statement', async () => {
+    await service.emit(tx, [
+      ...noteEmissions(['user-a', 'user-b'], 'note-1'),
+      ...noteEmissions(['user-a', 'user-b'], 'note-2'),
+    ]);
+
+    expect(executeRaw).toHaveBeenCalledTimes(1);
+    expect(upserted).toHaveLength(4);
+  });
+
+  it('splits an oversized batch into chunked statements', async () => {
+    const emissions = Array.from(
+      { length: CHANGELOG_UPSERT_CHUNK_SIZE + 1 },
+      (_, index) => noteEmissions(['user-a'], `note-${index}`)[0],
+    );
+
+    await service.emit(tx, emissions);
+
+    expect(executeRaw).toHaveBeenCalledTimes(2);
+    expect(upserted).toHaveLength(CHANGELOG_UPSERT_CHUNK_SIZE + 1);
   });
 
   it('dedupes same-entity emissions within a call, keeping the last op', async () => {
@@ -75,8 +109,8 @@ describe('SyncEmitterService', () => {
       ...noteEmissions(['user-a'], 'note-1', SyncOp.remove),
     ]);
 
-    expect(upserts).toHaveLength(1);
-    expect(upserts[0].create.op).toBe(SyncOp.remove);
+    expect(upserted).toHaveLength(1);
+    expect(upserted[0].op).toBe(SyncOp.remove);
   });
 
   it('takes recipient seq blocks in sorted order for a stable lock order', async () => {
@@ -95,11 +129,12 @@ describe('SyncEmitterService', () => {
     await service.emit(tx, noteEmissions(['user-a'], 'note-1'));
     await service.emit(tx, noteEmissions(['user-a'], 'note-1'));
 
-    expect(upserts[1].update.seq).toBe(2n);
-    expect(upserts[1].where.recipientUserId_entityType_entityId).toEqual({
+    expect(upserted[1]).toEqual({
       recipientUserId: 'user-a',
       entityType: SyncEntityType.note,
       entityId: 'note-1',
+      op: SyncOp.upsert,
+      seq: 2n,
     });
   });
 
@@ -118,9 +153,7 @@ describe('SyncEmitterService', () => {
         entityType: { in: [SyncEntityType.pin, SyncEntityType.attachments] },
       },
     });
-    const ops = new Map(
-      upserts.map((u) => [u.create.recipientUserId, u.create.op]),
-    );
+    const ops = new Map(upserted.map((row) => [row.recipientUserId, row.op]));
     expect(ops.get('user-b')).toBe(SyncOp.remove);
     expect(ops.get('user-a')).toBe(SyncOp.upsert);
     // One emit call: both recipients' blocks allocated in the same sorted pass.
@@ -130,12 +163,28 @@ describe('SyncEmitterService', () => {
     ]);
   });
 
+  it('removeNote takes the seq lock before deleting index rows', async () => {
+    await service.removeNote(tx, ['user-a'], 'note-1');
+
+    expect(queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      changeLogDeleteMany.mock.invocationCallOrder[0],
+    );
+  });
+
+  it('removeNotes takes the seq lock before deleting index rows', async () => {
+    await service.removeNotes(tx, new Map([['note-1', ['user-a']]]));
+
+    expect(queryRaw.mock.invocationCallOrder[0]).toBeLessThan(
+      changeLogDeleteMany.mock.invocationCallOrder[0],
+    );
+  });
+
   it('emits nothing and touches no locks for an empty emission list', async () => {
     const recipients = await service.emit(tx, []);
 
     expect(recipients).toEqual([]);
     expect(queryRaw).not.toHaveBeenCalled();
-    expect(changeLogUpsert).not.toHaveBeenCalled();
+    expect(executeRaw).not.toHaveBeenCalled();
   });
 
   it("schedules a poke with each recipient's last allocated seq", async () => {

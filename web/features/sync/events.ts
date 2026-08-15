@@ -66,7 +66,6 @@ export function connectSyncEvents(options: SyncEventsOptions): SyncEventStream {
         const { done, value } = await reader.read();
         if (done) return;
 
-        // A connection that never carries anything keeps backing off.
         attempt = 0;
         clearTimeout(watchdog);
         watchdog = setTimeout(() => controller?.abort(), heartbeatMs);

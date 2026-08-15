@@ -53,9 +53,7 @@ export class SyncApplyService {
     // Repeats of the same entity coalesce to the last one.
     const deduped = new Map<string, SyncChange>();
     for (const change of changes) {
-      const key = `${change.type}:${change.id}`;
-      deduped.delete(key);
-      deduped.set(key, change);
+      deduped.set(`${change.type}:${change.id}`, change);
     }
 
     const results: SyncApplyResult[] = [];

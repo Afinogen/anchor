@@ -115,38 +115,60 @@ export async function unarchiveNote(id: string): Promise<Note> {
     .json<Note>();
 }
 
+const BULK_NOTE_IDS_PER_REQUEST = 200;
+
+async function inBulkBatches(
+  noteIds: string[],
+  send: (batch: string[]) => Promise<{ count: number }>,
+): Promise<{ count: number }> {
+  let count = 0;
+  for (let i = 0; i < noteIds.length; i += BULK_NOTE_IDS_PER_REQUEST) {
+    const result = await send(noteIds.slice(i, i + BULK_NOTE_IDS_PER_REQUEST));
+    count += result.count;
+  }
+  return { count };
+}
+
 export async function bulkDeleteNotes(
   noteIds: string[],
 ): Promise<{ count: number }> {
-  return api
-    .post("api/notes/bulk/delete", { json: { noteIds } })
-    .json<{ count: number }>();
+  return inBulkBatches(noteIds, (batch) =>
+    api
+      .post("api/notes/bulk/delete", { json: { noteIds: batch } })
+      .json<{ count: number }>(),
+  );
 }
 
 export async function bulkArchiveNotes(
   noteIds: string[],
 ): Promise<{ count: number }> {
-  return api
-    .post("api/notes/bulk/archive", { json: { noteIds } })
-    .json<{ count: number }>();
+  return inBulkBatches(noteIds, (batch) =>
+    api
+      .post("api/notes/bulk/archive", { json: { noteIds: batch } })
+      .json<{ count: number }>(),
+  );
 }
 
 export async function bulkPinNotes(
   noteIds: string[],
   isPinned: boolean,
 ): Promise<{ count: number }> {
-  return api
-    .post("api/notes/bulk/pin", { json: { noteIds, isPinned } })
-    .json<{ count: number }>();
+  return inBulkBatches(noteIds, (batch) =>
+    api
+      .post("api/notes/bulk/pin", { json: { noteIds: batch, isPinned } })
+      .json<{ count: number }>(),
+  );
 }
 
 export async function bulkAddTagsToNotes(
   noteIds: string[],
   tagIds: string[],
 ): Promise<{ count: number }> {
-  return api
-    .post("api/notes/bulk/tags", { json: { noteIds, tagIds } })
-    .json<{ count: number }>();
+  return inBulkBatches(noteIds, (batch) =>
+    api
+      .post("api/notes/bulk/tags", { json: { noteIds: batch, tagIds } })
+      .json<{ count: number }>(),
+  );
 }
 
 // Sharing APIs

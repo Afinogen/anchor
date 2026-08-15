@@ -16,26 +16,42 @@ export class SyncMaintenanceService {
   // pruned removal gets resetRequired instead of keeping a deleted entity.
   async pruneChangeLog(retentionDays = CHANGELOG_REMOVE_RETENTION_DAYS) {
     const cutoff = daysAgo(retentionDays);
-    const rows = await this.prisma.$queryRaw<{ count: bigint }[]>`
-      WITH doomed AS (
-        DELETE FROM "ChangeLog"
-        WHERE "op" = 'remove' AND "updatedAt" < ${cutoff}
-        RETURNING "recipientUserId", "seq"
-      ),
-      advanced AS (
-        UPDATE "SyncState" s
-        SET "prunedThroughSeq" = GREATEST(s."prunedThroughSeq", d."maxSeq")
-        FROM (
-          SELECT "recipientUserId", MAX("seq") AS "maxSeq"
-          FROM doomed
-          GROUP BY "recipientUserId"
-        ) d
-        WHERE s."userId" = d."recipientUserId"
-        RETURNING s."userId"
-      )
-      SELECT count(*)::bigint AS count FROM doomed`;
+    const recipients = await this.prisma.$queryRaw<
+      { recipientUserId: string }[]
+    >`
+      SELECT DISTINCT "recipientUserId" FROM "ChangeLog"
+      WHERE "op" = 'remove' AND "updatedAt" < ${cutoff}`;
 
-    return { prunedChangeLogCount: Number(rows[0].count) };
+    let prunedChangeLogCount = 0;
+    for (const { recipientUserId } of recipients) {
+      prunedChangeLogCount += await this.prisma.$transaction(async (tx) => {
+        // A zero-length block consumes no seq; it takes the SyncState row lock.
+        await tx.$queryRaw`SELECT next_sync_seq(${recipientUserId}::text, 0::int)`;
+
+        const rows = await tx.$queryRaw<
+          { count: bigint; maxSeq: bigint | null }[]
+        >`
+          WITH doomed AS (
+            DELETE FROM "ChangeLog"
+            WHERE "recipientUserId" = ${recipientUserId}
+              AND "op" = 'remove'
+              AND "updatedAt" < ${cutoff}
+            RETURNING "seq"
+          )
+          SELECT count(*)::bigint AS "count", MAX("seq") AS "maxSeq" FROM doomed`;
+
+        const { count, maxSeq } = rows[0];
+        if (maxSeq !== null) {
+          await tx.$executeRaw`
+            UPDATE "SyncState"
+            SET "prunedThroughSeq" = GREATEST("prunedThroughSeq", ${maxSeq.toString()}::bigint)
+            WHERE "userId" = ${recipientUserId}`;
+        }
+        return Number(count);
+      });
+    }
+
+    return { prunedChangeLogCount };
   }
 
   async pruneNoteRevisions(
