@@ -57,6 +57,11 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(tags, tags.localRev);
         await m.createTable(syncState);
         await m.createTable(syncSweep);
+
+        await (update(notes)..where(
+              (tbl) => tbl.isSynced.equals(false) & tbl.isPinned.equals(true),
+            ))
+            .write(const NotesCompanion(isPinSynced: Value(false)));
       }
     },
   );
