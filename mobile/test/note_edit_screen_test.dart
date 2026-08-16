@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:anchor/core/network/connectivity_provider.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/core/providers/active_user_id_provider.dart';
@@ -53,6 +55,9 @@ void main() {
 
     when(() => notesRepo.createNote(any())).thenAnswer((_) async {});
     when(() => notesRepo.updateNote(any())).thenAnswer((_) async {});
+    when(
+      () => notesRepo.watchNote(any()),
+    ).thenAnswer((_) => const Stream<Note?>.empty());
     when(
       () => tagsRepo.watchTags(),
     ).thenAnswer((_) => Stream.value(const <Tag>[]));
@@ -198,6 +203,72 @@ void main() {
 
     // Drain the success snackbar's display timer.
     await tester.pump(const Duration(seconds: 10));
+  });
+
+  testWidgets('a note changed elsewhere replaces what is on screen', (
+    tester,
+  ) async {
+    const note = Note(
+      id: 'n1',
+      title: 'Mine',
+      content: '{"ops":[{"insert":"mine\\n"}]}',
+    );
+    final stored = StreamController<Note?>();
+    when(() => notesRepo.watchNote('n1')).thenAnswer((_) => stored.stream);
+
+    await pumpScreen(tester, note: note);
+    expect(find.text('mine', findRichText: true), findsOneWidget);
+
+    stored.add(
+      const Note(
+        id: 'n1',
+        title: 'Theirs',
+        content: '{"ops":[{"insert":"theirs\\n"}]}',
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('theirs', findRichText: true), findsOneWidget);
+    expect(find.text('mine', findRichText: true), findsNothing);
+    verifyNever(() => notesRepo.updateNote(any()));
+
+    await stored.close();
+  });
+
+  testWidgets('an unsaved edit outlives a note changed elsewhere', (
+    tester,
+  ) async {
+    const note = Note(
+      id: 'n1',
+      title: 'T',
+      content: '{"ops":[{"insert":"hi\\n"}]}',
+    );
+    final stored = StreamController<Note?>();
+    when(() => notesRepo.watchNote('n1')).thenAnswer((_) => stored.stream);
+
+    await pumpScreen(tester, note: note);
+    editorController(tester).replaceText(0, 0, 'x', null);
+    await tester.pump();
+
+    stored.add(
+      const Note(
+        id: 'n1',
+        title: 'T',
+        content: '{"ops":[{"insert":"theirs\\n"}]}',
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('xhi', findRichText: true), findsOneWidget);
+    expect(find.text('theirs', findRichText: true), findsNothing);
+
+    await tester.pump(const Duration(seconds: 3));
+    final saved =
+        verify(() => notesRepo.updateNote(captureAny())).captured.single
+            as Note;
+    expect(saved.content, contains('xhi'));
+
+    await stored.close();
   });
 
   testWidgets('editing an existing note autosaves an update', (tester) async {

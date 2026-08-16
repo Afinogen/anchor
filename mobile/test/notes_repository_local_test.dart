@@ -2,39 +2,24 @@ import 'package:anchor/core/database/app_database.dart';
 import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
 import 'package:anchor/features/notes/data/repository/notes_repository.dart';
 import 'package:anchor/features/tags/data/repository/tags_repository.dart';
-import 'package:dio/dio.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-
-class MockDio extends Mock implements Dio {}
-
-class MockSecureStorage extends Mock implements FlutterSecureStorage {}
 
 class MockAttachmentsRepo extends Mock implements NoteAttachmentsRepository {}
 
 /// Local query behavior of NotesRepository/TagsRepository against an
 /// in-memory Drift DB. No network involved.
 void main() {
-  const userId = 'user-1';
-
   late AppDatabase db;
   late TagsRepository tagsRepo;
   late NotesRepository repo;
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
-    tagsRepo = TagsRepository(db, MockDio(), MockSecureStorage(), userId);
-    repo = NotesRepository(
-      db,
-      MockDio(),
-      MockSecureStorage(),
-      tagsRepo,
-      MockAttachmentsRepo(),
-      userId,
-    );
+    tagsRepo = TagsRepository(db);
+    repo = NotesRepository(db, tagsRepo, MockAttachmentsRepo());
   });
 
   tearDown(() => db.close());
@@ -123,6 +108,17 @@ void main() {
       expect(notes.map((n) => n.id), ['pinned-old', 'newest', 'old']);
     });
 
+    test('orders notes sharing a timestamp by id, descending', () async {
+      final sameMoment = DateTime.utc(2026, 7, 2);
+      for (final id in ['n-b', 'n-d', 'n-a', 'n-c']) {
+        await insertNote(id: id, updatedAt: sameMoment);
+      }
+
+      final notes = await repo.watchNotes().first;
+
+      expect(notes.map((n) => n.id), ['n-d', 'n-c', 'n-b', 'n-a']);
+    });
+
     test('filters by tag and collects all tagIds per note', () async {
       await insertTag('t-work');
       await insertTag('t-home');
@@ -162,6 +158,40 @@ void main() {
     });
   });
 
+  group('watchNote', () {
+    test('re-emits when the stored note changes', () async {
+      await insertNote(id: 'n1', title: 'First');
+      final emitted = repo.watchNote('n1').take(2).toList();
+
+      await (db.update(db.notes)..where((tbl) => tbl.id.equals('n1'))).write(
+        const NotesCompanion(title: Value('Second')),
+      );
+
+      expect((await emitted).map((n) => n?.title), ['First', 'Second']);
+    });
+
+    test('carries the note tags', () async {
+      await insertNote(id: 'n1');
+      await insertTag('t-work');
+      await insertTag('t-home');
+      await linkTag('n1', 't-work');
+      await linkTag('n1', 't-home');
+
+      final note = await repo.watchNote('n1').first;
+
+      expect(note!.tagIds.toSet(), {'t-work', 't-home'});
+    });
+
+    test('emits null once the note is gone', () async {
+      await insertNote(id: 'n1');
+      final emitted = repo.watchNote('n1').take(2).toList();
+
+      await (db.delete(db.notes)..where((tbl) => tbl.id.equals('n1'))).go();
+
+      expect((await emitted).last, isNull);
+    });
+  });
+
   group('watchTrashedNotes', () {
     test('shows owned trashed notes but not shared ones', () async {
       await insertNote(id: 'mine', state: 'trashed');
@@ -171,6 +201,17 @@ void main() {
       final notes = await repo.watchTrashedNotes().first;
 
       expect(notes.map((n) => n.id), ['mine']);
+    });
+
+    test('orders notes trashed together by id, descending', () async {
+      final sameMoment = DateTime.utc(2026, 7, 2);
+      for (final id in ['n-b', 'n-d', 'n-a', 'n-c']) {
+        await insertNote(id: id, state: 'trashed', updatedAt: sameMoment);
+      }
+
+      final notes = await repo.watchTrashedNotes().first;
+
+      expect(notes.map((n) => n.id), ['n-d', 'n-c', 'n-b', 'n-a']);
     });
   });
 
@@ -187,6 +228,17 @@ void main() {
       final notes = await repo.watchArchivedNotes().first;
 
       expect(notes.map((n) => n.id), ['archived']);
+    });
+
+    test('orders notes archived together by id, descending', () async {
+      final sameMoment = DateTime.utc(2026, 7, 2);
+      for (final id in ['n-b', 'n-d', 'n-a', 'n-c']) {
+        await insertNote(id: id, isArchived: true, updatedAt: sameMoment);
+      }
+
+      final notes = await repo.watchArchivedNotes().first;
+
+      expect(notes.map((n) => n.id), ['n-d', 'n-c', 'n-b', 'n-a']);
     });
   });
 

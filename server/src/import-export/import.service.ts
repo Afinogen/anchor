@@ -16,6 +16,14 @@ import {
   writeAttachmentFile,
 } from '../notes/utils/attachment-storage.util';
 import { toAttachmentResponse } from '../notes/dto/attachment-response.dto';
+import {
+  SyncEmitterService,
+  SyncEmission,
+  noteEmissions,
+  pinEmission,
+  tagEmission,
+  attachmentsEmissions,
+} from '../sync/sync-emitter.service';
 import { IMPORT_ALLOWED_BACKGROUNDS } from './constants/import.constants';
 import {
   ImportNoteItemDto,
@@ -40,6 +48,7 @@ export class ImportService {
   constructor(
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
+    private syncEmitter: SyncEmitterService,
     @Inject(StorageConfig.KEY)
     private storageConfig: ConfigType<typeof StorageConfig>,
   ) {}
@@ -79,6 +88,30 @@ export class ImportService {
           tagResolution.idByName,
         ),
       );
+    }
+
+    // Notes are committed one by one above, so their index rows land together
+    // in a single trailing transaction.
+    const emissions: SyncEmission[] = tagResolution.createdIds.map((tagId) =>
+      tagEmission(userId, tagId),
+    );
+    results.forEach((result, index) => {
+      if (
+        result.status === 'failed' ||
+        result.status === 'skipped' ||
+        !result.noteId
+      ) {
+        return;
+      }
+      emissions.push(...noteEmissions([userId], result.noteId));
+      if (dto.notes[index].isPinned === true) {
+        emissions.push(pinEmission(userId, result.noteId, true));
+      }
+    });
+    if (emissions.length) {
+      await this.prisma.$transaction(async (tx) => {
+        await this.syncEmitter.emit(tx, emissions);
+      });
     }
 
     return {
@@ -122,7 +155,7 @@ export class ImportService {
       .filter((id): id is string => Boolean(id));
 
     const isTrashed = item.isTrashed === true;
-    // Preserve the backup's modified time; the syncedAt trigger handles sync visibility and the trash purge window.
+    // Timestamps come from the backup; stateChangedAt starts fresh.
     const createdAt = item.createdAt
       ? truncateToSeconds(item.createdAt)
       : undefined;
@@ -228,6 +261,7 @@ export class ImportService {
     palette: { name: string; color?: string }[],
   ): Promise<{
     idByName: Map<string, string>;
+    createdIds: string[];
     created: number;
     reused: number;
   }> {
@@ -238,7 +272,7 @@ export class ImportService {
     // "Tag" and "tag" to coexist, so import must not merge them.
     const names = [...new Set([...tagNames, ...palette.map((t) => t.name)])];
     if (!names.length) {
-      return { idByName: new Map(), created: 0, reused: 0 };
+      return { idByName: new Map(), createdIds: [], created: 0, reused: 0 };
     }
 
     const existing = await this.prisma.tag.findMany({
@@ -264,9 +298,13 @@ export class ImportService {
       where: { userId, name: { in: names }, isDeleted: false },
       select: { id: true, name: true },
     });
+    const missingNames = new Set(missing);
 
     return {
       idByName: new Map(all.map((tag) => [tag.name, tag.id])),
+      createdIds: all
+        .filter((tag) => missingNames.has(tag.name))
+        .map((tag) => tag.id),
       created: missing.length,
       reused: existing.length,
     };
@@ -297,18 +335,27 @@ export class ImportService {
         file.originalname,
         file.buffer,
       );
+      const { storedFilename } = stored;
 
-      const attachment = await this.prisma.noteAttachment.create({
-        data: {
-          noteId,
-          uploadedByUserId: userId,
-          type: attachmentTypeForMime(file.mimetype),
-          originalFilename: file.originalname,
-          storedFilename: stored.storedFilename,
-          mimeType: file.mimetype,
-          fileSize: file.size,
-          position,
-        },
+      const attachment = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.noteAttachment.create({
+          data: {
+            noteId,
+            uploadedByUserId: userId,
+            type: attachmentTypeForMime(file.mimetype),
+            originalFilename: file.originalname,
+            storedFilename,
+            mimeType: file.mimetype,
+            fileSize: file.size,
+            position,
+          },
+        });
+        const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
+        await this.syncEmitter.emit(
+          tx,
+          attachmentsEmissions(recipients, noteId),
+        );
+        return created;
       });
 
       return toAttachmentResponse(attachment);

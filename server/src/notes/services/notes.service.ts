@@ -1,24 +1,36 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateNoteDto } from '../dto/create-note.dto';
 import { UpdateNoteDto } from '../dto/update-note.dto';
-import { SyncNoteDto, SyncNotesDto } from '../dto/sync-notes.dto';
 import { NoteState, NoteSharePermission } from 'src/generated/prisma/enums';
-import type { Note, Prisma } from 'src/generated/prisma/client';
+import type { Prisma } from 'src/generated/prisma/client';
 import { NoteAccessService } from './note-access.service';
 import { NoteAttachmentsService } from './note-attachments.service';
 import { transformNote } from '../utils/note-transformer.util';
+import { ownedTagIds, reconcileUserTags } from '../utils/note-tags.util';
 import {
-  getSyncUpdatedAtWindow,
-  withForcedSyncIds,
-} from '../../sync/sync-window.util';
+  guardedNoteFieldsChanged,
+  noteContentChanged,
+} from '../utils/note-versioning.util';
+import {
+  SyncEmitterService,
+  noteEmissions,
+  pinEmission,
+} from '../../sync/sync-emitter.service';
+import { NoteRevisionsService } from '../../sync/note-revisions.service';
 import {
   ERROR_MESSAGES,
   NOTE_INCLUDE_TAGS,
   NOTE_INCLUDE_SHARES,
   NOTE_INCLUDE_ATTACHMENT_COUNT,
+  NOTE_LIST_ORDER,
   notePinInclude,
 } from '../constants/notes.constants';
+import { RETENTION_CHUNK_SIZE } from '../../common/retention.constants';
 
 @Injectable()
 export class NotesService {
@@ -26,27 +38,39 @@ export class NotesService {
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
     private noteAttachmentsService: NoteAttachmentsService,
+    private syncEmitter: SyncEmitterService,
+    private noteRevisions: NoteRevisionsService,
   ) {}
 
   async create(userId: string, createNoteDto: CreateNoteDto) {
     const { tagIds, isPinned, ...noteData } = createNoteDto;
     const validTagIds = await this.filterOwnedTagIds(userId, tagIds);
 
-    const note = await this.prisma.note.create({
-      data: {
-        ...noteData,
-        state: NoteState.active,
-        userId,
-        tags: validTagIds.length
-          ? {
-              connect: validTagIds.map((id) => ({ id })),
-            }
-          : undefined,
-      },
-      include: NOTE_INCLUDE_TAGS,
-    });
+    const note = await this.prisma.$transaction(async (tx) => {
+      const created = await tx.note.create({
+        data: {
+          ...noteData,
+          state: NoteState.active,
+          userId,
+          tags: validTagIds.length
+            ? {
+                connect: validTagIds.map((id) => ({ id })),
+              }
+            : undefined,
+        },
+        include: NOTE_INCLUDE_TAGS,
+      });
 
-    await this.setNotePin(userId, note.id, isPinned);
+      await this.setNotePin(tx, userId, created.id, isPinned);
+      await this.syncEmitter.emit(tx, [
+        ...noteEmissions([userId], created.id),
+        ...(isPinned !== undefined
+          ? [pinEmission(userId, created.id, isPinned)]
+          : []),
+      ]);
+
+      return created;
+    });
 
     return transformNote(
       { ...note, pins: isPinned ? [{ userId }] : [] },
@@ -113,7 +137,7 @@ export class NotesService {
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
         ...notePinInclude(userId),
       },
-      orderBy: [{ updatedAt: 'desc' }],
+      orderBy: NOTE_LIST_ORDER,
       take: normalizedLimit,
     });
 
@@ -156,36 +180,120 @@ export class NotesService {
       NoteSharePermission.editor,
     );
 
-    const { tagIds, isPinned, ...noteData } = updateNoteDto;
+    const { tagIds, isPinned, baseVersion, ...noteData } = updateNoteDto;
 
-    // Apply the pin first so the include below reflects the new state.
-    await this.setNotePin(userId, id, isPinned);
+    const outcome = await this.prisma.$transaction(async (tx) => {
+      const prior = await tx.note.findUniqueOrThrow({ where: { id } });
+      if (prior.state === NoteState.deleted) {
+        return { gone: true as const };
+      }
 
-    const note = await this.prisma.$transaction(async (tx) => {
-      await tx.note.update({ where: { id }, data: noteData });
+      if (baseVersion !== undefined && baseVersion !== prior.version) {
+        return { conflict: true as const };
+      }
+
+      // Apply the pin first so the include below reflects the new state.
+      await this.setNotePin(tx, userId, id, isPinned);
+
+      if (noteContentChanged(prior, noteData)) {
+        await this.noteRevisions.recordEdit(tx, prior, userId);
+      }
+      await tx.note.update({
+        where: { id },
+        data: {
+          ...noteData,
+          ...(guardedNoteFieldsChanged(prior, noteData)
+            ? { version: { increment: 1 } }
+            : {}),
+        },
+      });
 
       // Only update the caller's own tags so other users' tags aren't removed.
       if (tagIds !== undefined) {
-        await this.reconcileUserTags(tx, id, userId, tagIds);
+        await reconcileUserTags(tx, id, userId, tagIds);
       }
 
-      return tx.note.findUniqueOrThrow({
+      const recipients = await this.syncEmitter.noteRecipients(tx, id);
+      await this.syncEmitter.emit(tx, [
+        ...noteEmissions(recipients, id),
+        ...(isPinned !== undefined ? [pinEmission(userId, id, isPinned)] : []),
+      ]);
+
+      const note = await tx.note.findUniqueOrThrow({
         where: { id },
         include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
       });
+      return { conflict: false as const, note };
     });
 
-    return transformNote(note, userId);
+    if ('gone' in outcome) {
+      throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
+    }
+    if (outcome.conflict) {
+      throw await this.noteVersionConflict(userId, id, updateNoteDto);
+    }
+
+    return transformNote(outcome.note, userId);
+  }
+
+  // The losing payload is kept as a conflict revision; the 409 carries the
+  // full server copy back.
+  private async noteVersionConflict(
+    userId: string,
+    id: string,
+    dto: UpdateNoteDto,
+  ) {
+    const server = await this.prisma.note.findUniqueOrThrow({
+      where: { id },
+      include: {
+        ...NOTE_INCLUDE_TAGS,
+        ...NOTE_INCLUDE_SHARES,
+        ...NOTE_INCLUDE_ATTACHMENT_COUNT,
+        ...notePinInclude(userId),
+      },
+    });
+
+    if (dto.title !== undefined || dto.content !== undefined) {
+      await this.noteRevisions.recordConflict(
+        this.prisma,
+        {
+          noteId: id,
+          title: dto.title ?? server.title,
+          content: dto.content !== undefined ? dto.content : server.content,
+          baseVersion: dto.baseVersion,
+        },
+        userId,
+      );
+    }
+
+    return new ConflictException({
+      message: 'Note was changed by someone else',
+      serverNote: transformNote(server, userId),
+    });
   }
 
   // Soft delete - moves note to trash (owner only)
   async remove(userId: string, id: string) {
     await this.noteAccessService.verifyNoteOwnership(userId, id);
 
-    const note = await this.prisma.note.update({
-      where: { id },
-      data: { state: NoteState.trashed },
-      include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+    const note = await this.prisma.$transaction(async (tx) => {
+      const prior = await tx.note.findUniqueOrThrow({ where: { id } });
+      if (prior.state === NoteState.deleted) {
+        throw new NotFoundException(ERROR_MESSAGES.NOTE_NOT_FOUND);
+      }
+      const updated = await tx.note.update({
+        where: { id },
+        data: {
+          state: NoteState.trashed,
+          ...(prior.state !== NoteState.trashed
+            ? { version: { increment: 1 }, stateChangedAt: new Date() }
+            : {}),
+        },
+        include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+      });
+      const recipients = await this.syncEmitter.noteRecipients(tx, id);
+      await this.syncEmitter.emit(tx, noteEmissions(recipients, id));
+      return updated;
     });
 
     return transformNote(note, userId);
@@ -203,10 +311,19 @@ export class NotesService {
       throw new NotFoundException('Note is not in trash');
     }
 
-    const restoredNote = await this.prisma.note.update({
-      where: { id },
-      data: { state: NoteState.active },
-      include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+    const restoredNote = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.note.update({
+        where: { id },
+        data: {
+          state: NoteState.active,
+          version: { increment: 1 },
+          stateChangedAt: new Date(),
+        },
+        include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+      });
+      const recipients = await this.syncEmitter.noteRecipients(tx, id);
+      await this.syncEmitter.emit(tx, noteEmissions(recipients, id));
+      return updated;
     });
 
     return transformNote(restoredNote, userId);
@@ -216,10 +333,22 @@ export class NotesService {
   async permanentDelete(userId: string, id: string) {
     await this.noteAccessService.verifyNoteOwnership(userId, id);
 
-    const note = await this.prisma.note.update({
-      where: { id },
-      data: { state: NoteState.deleted },
-      include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+    const note = await this.prisma.$transaction(async (tx) => {
+      const prior = await tx.note.findUniqueOrThrow({ where: { id } });
+      // Resolve recipients before anything changes; they all get the remove.
+      const recipients = await this.syncEmitter.noteRecipients(tx, id);
+      const updated = await tx.note.update({
+        where: { id },
+        data: {
+          state: NoteState.deleted,
+          ...(prior.state !== NoteState.deleted
+            ? { version: { increment: 1 }, stateChangedAt: new Date() }
+            : {}),
+        },
+        include: { ...NOTE_INCLUDE_TAGS, ...notePinInclude(userId) },
+      });
+      await this.syncEmitter.removeNote(tx, recipients, id);
+      return updated;
     });
 
     return transformNote(note, userId);
@@ -232,7 +361,7 @@ export class NotesService {
         userId,
         state: NoteState.trashed,
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: NOTE_LIST_ORDER,
       include: {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
@@ -251,7 +380,7 @@ export class NotesService {
         state: NoteState.active,
         isArchived: true,
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: NOTE_LIST_ORDER,
       include: {
         ...NOTE_INCLUDE_TAGS,
         ...NOTE_INCLUDE_ATTACHMENT_COUNT,
@@ -268,15 +397,48 @@ export class NotesService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
-    const result = await this.prisma.note.updateMany({
-      where: {
-        state: NoteState.trashed,
-        syncedAt: { lt: cutoffDate },
-      },
-      data: { state: NoteState.deleted },
-    });
+    let convertedCount = 0;
 
-    return { convertedCount: result.count };
+    for (;;) {
+      const expired = await this.prisma.note.findMany({
+        where: {
+          state: NoteState.trashed,
+          stateChangedAt: { lt: cutoffDate },
+        },
+        select: { id: true },
+        take: RETENTION_CHUNK_SIZE,
+      });
+      if (expired.length === 0) {
+        break;
+      }
+
+      const ids = expired.map((note) => note.id);
+      const converted = await this.prisma.$transaction(async (tx) => {
+        const result = await tx.note.updateMany({
+          where: { id: { in: ids } },
+          data: {
+            state: NoteState.deleted,
+            version: { increment: 1 },
+            stateChangedAt: new Date(),
+          },
+        });
+
+        const recipientsByNote = await this.syncEmitter.notesRecipients(
+          tx,
+          ids,
+        );
+        await this.syncEmitter.removeNotes(tx, recipientsByNote);
+
+        return result.count;
+      });
+
+      convertedCount += converted;
+      if (converted === 0 || expired.length < RETENTION_CHUNK_SIZE) {
+        break;
+      }
+    }
+
+    return { convertedCount };
   }
 
   // Purge tombstones older than retention period (30 days)
@@ -284,29 +446,36 @@ export class NotesService {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
 
-    // 1. Find notes to be purged before deleting
-    const notesToPurge = await this.prisma.note.findMany({
-      where: {
-        state: NoteState.deleted,
-        syncedAt: { lt: cutoffDate },
-      },
-      select: { id: true },
-    });
+    let purgedNotesCount = 0;
 
-    // 2. Delete attachment files from disk for each note
-    for (const note of notesToPurge) {
-      await this.noteAttachmentsService.deleteAllForNote(note.id);
+    for (;;) {
+      // Attachment files go first: the DB cascade drops their rows.
+      const doomed = await this.prisma.note.findMany({
+        where: {
+          state: NoteState.deleted,
+          stateChangedAt: { lt: cutoffDate },
+        },
+        select: { id: true },
+        take: RETENTION_CHUNK_SIZE,
+      });
+      if (doomed.length === 0) {
+        break;
+      }
+
+      for (const note of doomed) {
+        await this.noteAttachmentsService.deleteAllForNote(note.id);
+      }
+
+      const purged = await this.prisma.note.deleteMany({
+        where: { id: { in: doomed.map((note) => note.id) } },
+      });
+
+      purgedNotesCount += purged.count;
+      if (purged.count === 0 || doomed.length < RETENTION_CHUNK_SIZE) {
+        break;
+      }
     }
 
-    // 3. Purge deleted notes (DB cascade removes NoteAttachment rows)
-    const deletedNotes = await this.prisma.note.deleteMany({
-      where: {
-        state: NoteState.deleted,
-        syncedAt: { lt: cutoffDate },
-      },
-    });
-
-    // 4. Purge deleted shares
     const deletedShares = await this.prisma.noteShare.deleteMany({
       where: {
         isDeleted: true,
@@ -315,7 +484,7 @@ export class NotesService {
     });
 
     return {
-      purgedNotesCount: deletedNotes.count,
+      purgedNotesCount,
       purgedSharesCount: deletedShares.count,
     };
   }
@@ -327,6 +496,7 @@ export class NotesService {
       where: {
         id: { in: noteIds },
         userId,
+        state: { not: NoteState.deleted },
       },
     });
 
@@ -336,12 +506,28 @@ export class NotesService {
       );
     }
 
-    await this.prisma.note.updateMany({
-      where: {
-        id: { in: noteIds },
-        userId,
-      },
-      data: { state: NoteState.trashed },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.note.updateMany({
+        where: {
+          id: { in: noteIds },
+          userId,
+        },
+        data: {
+          state: NoteState.trashed,
+          version: { increment: 1 },
+          stateChangedAt: new Date(),
+        },
+      });
+      const recipientsByNote = await this.syncEmitter.notesRecipients(
+        tx,
+        noteIds,
+      );
+      await this.syncEmitter.emit(
+        tx,
+        noteIds.flatMap((id) =>
+          noteEmissions(recipientsByNote.get(id) ?? [], id),
+        ),
+      );
     });
 
     return { count: noteIds.length };
@@ -354,6 +540,7 @@ export class NotesService {
       where: {
         id: { in: noteIds },
         userId,
+        state: { not: NoteState.deleted },
       },
     });
 
@@ -363,12 +550,24 @@ export class NotesService {
       );
     }
 
-    await this.prisma.note.updateMany({
-      where: {
-        id: { in: noteIds },
-        userId,
-      },
-      data: { isArchived: true },
+    await this.prisma.$transaction(async (tx) => {
+      await tx.note.updateMany({
+        where: {
+          id: { in: noteIds },
+          userId,
+        },
+        data: { isArchived: true, version: { increment: 1 } },
+      });
+      const recipientsByNote = await this.syncEmitter.notesRecipients(
+        tx,
+        noteIds,
+      );
+      await this.syncEmitter.emit(
+        tx,
+        noteIds.flatMap((id) =>
+          noteEmissions(recipientsByNote.get(id) ?? [], id),
+        ),
+      );
     });
 
     return { count: noteIds.length };
@@ -380,6 +579,7 @@ export class NotesService {
     const accessibleNotes = await this.prisma.note.findMany({
       where: {
         id: { in: noteIds },
+        state: { not: NoteState.deleted },
         OR: [
           { userId },
           {
@@ -397,16 +597,22 @@ export class NotesService {
       return { count: 0 };
     }
 
-    if (isPinned) {
-      await this.prisma.notePin.createMany({
-        data: accessibleIds.map((noteId) => ({ userId, noteId })),
-        skipDuplicates: true,
-      });
-    } else {
-      await this.prisma.notePin.deleteMany({
-        where: { userId, noteId: { in: accessibleIds } },
-      });
-    }
+    await this.prisma.$transaction(async (tx) => {
+      if (isPinned) {
+        await tx.notePin.createMany({
+          data: accessibleIds.map((noteId) => ({ userId, noteId })),
+          skipDuplicates: true,
+        });
+      } else {
+        await tx.notePin.deleteMany({
+          where: { userId, noteId: { in: accessibleIds } },
+        });
+      }
+      await this.syncEmitter.emit(
+        tx,
+        accessibleIds.map((noteId) => pinEmission(userId, noteId, isPinned)),
+      );
+    });
 
     return { count: accessibleIds.length };
   }
@@ -418,6 +624,7 @@ export class NotesService {
       where: {
         id: { in: noteIds },
         userId,
+        state: { not: NoteState.deleted },
       },
       select: { id: true },
     });
@@ -440,314 +647,37 @@ export class NotesService {
     }
 
     // `connect` is idempotent, so each note keeps its existing tags (merge).
-    // Each update bumps syncedAt (via the DB trigger) so sync clients learn about the change.
-    await this.prisma.$transaction(
-      noteIds.map((id) =>
-        this.prisma.note.update({
+    await this.prisma.$transaction(async (tx) => {
+      for (const id of noteIds) {
+        await tx.note.update({
           where: { id },
           data: {
             tags: { connect: validTagIds.map((tagId) => ({ id: tagId })) },
           },
-        }),
-      ),
-    );
+        });
+      }
+      const recipientsByNote = await this.syncEmitter.notesRecipients(
+        tx,
+        noteIds,
+      );
+      await this.syncEmitter.emit(
+        tx,
+        noteIds.flatMap((id) =>
+          noteEmissions(recipientsByNote.get(id) ?? [], id),
+        ),
+      );
+    });
 
     return { count: noteIds.length };
   }
 
-  // Sync endpoint - handles bi-directional sync with conflict resolution
-  async sync(userId: string, syncDto: SyncNotesDto) {
-    const { lastSyncedAt, changes } = syncDto;
-    const incoming = await this.processIncomingSyncChanges(
-      userId,
-      changes || [],
-    );
-
-    const syncCutoff = new Date();
-    const forceServerIds = Array.from(incoming.forceServerNoteIds);
-    const syncWindow = getSyncUpdatedAtWindow(lastSyncedAt, syncCutoff);
-
-    const ownNotes = await this.findOwnSyncNotes(
-      userId,
-      syncWindow,
-      forceServerIds,
-    );
-    const sharedShares = await this.findSharedSyncShares(
-      userId,
-      lastSyncedAt,
-      syncCutoff,
-      syncWindow,
-      forceServerIds,
-    );
-
-    // Transform own notes
-    const transformedOwnNotes = ownNotes.map((note) =>
-      transformNote(note, userId),
-    );
-
-    const revokedSharedNoteIds = sharedShares
-      .filter((share) => share.isDeleted)
-      .map((share) => share.noteId);
-
-    // Transform shared notes (active shares only)
-    const transformedSharedNotes = sharedShares
-      .filter((share) => !share.isDeleted)
-      .map((share) => transformNote(share.note, userId));
-
-    const serverChanges = [...transformedOwnNotes, ...transformedSharedNotes];
-
-    return {
-      serverChanges,
-      revokedSharedNoteIds,
-      processedIds: incoming.processedIds,
-      conflicts: incoming.conflicts,
-      syncedAt: syncCutoff.toISOString(),
-    };
-  }
-
-  private async processIncomingSyncChanges(
-    userId: string,
-    changes: SyncNoteDto[],
-  ): Promise<IncomingNoteSyncResult> {
-    const result: IncomingNoteSyncResult = {
-      processedIds: [],
-      conflicts: [],
-      forceServerNoteIds: new Set<string>(),
-    };
-
-    for (const change of changes) {
-      const existingNote = await this.prisma.note.findUnique({
-        where: { id: change.id },
-      });
-
-      if (!existingNote) {
-        await this.createMissingSyncNote(userId, change);
-        result.processedIds.push(change.id);
-        continue;
-      }
-
-      await this.processExistingSyncNote(userId, change, existingNote, result);
-    }
-
-    return result;
-  }
-
-  private async createMissingSyncNote(userId: string, change: SyncNoteDto) {
-    const validTagIds = await this.filterOwnedTagIds(userId, change.tagIds);
-
-    await this.prisma.note.create({
-      data: {
-        id: change.id,
-        title: change.title,
-        content: change.content,
-        isArchived: change.isArchived ?? false,
-        background: change.background,
-        state: (change.state as NoteState) ?? NoteState.active,
-        userId,
-        tags: validTagIds.length
-          ? {
-              connect: validTagIds.map((id) => ({ id })),
-            }
-          : undefined,
-      },
-    });
-
-    await this.setNotePin(userId, change.id, change.isPinned);
-  }
-
-  // Only tags the caller owns (and hasn't deleted) may be attached; unknown
-  // or foreign ids are dropped instead of failing the whole request.
   private async filterOwnedTagIds(userId: string, tagIds?: string[]) {
-    if (!tagIds?.length) {
-      return [];
-    }
-    const tags = await this.prisma.tag.findMany({
-      where: { id: { in: tagIds }, userId, isDeleted: false },
-      select: { id: true },
-    });
-    return tags.map((tag) => tag.id);
-  }
-
-  private async processExistingSyncNote(
-    userId: string,
-    change: SyncNoteDto,
-    existingNote: Note,
-    result: IncomingNoteSyncResult,
-  ) {
-    const access = await this.noteAccessService.hasNoteAccess(
-      userId,
-      change.id,
-      NoteSharePermission.editor,
-    );
-
-    if (!access.hasAccess) {
-      const readAccess = await this.noteAccessService.hasNoteAccess(
-        userId,
-        change.id,
-      );
-      if (readAccess.hasAccess) {
-        await this.setNotePin(userId, change.id, change.isPinned);
-        result.forceServerNoteIds.add(change.id);
-        result.conflicts.push({ noteId: change.id, resolution: 'server' });
-        result.processedIds.push(change.id);
-      }
-      return;
-    }
-
-    // Pin state is per-user and conflict-free
-    await this.setNotePin(userId, change.id, change.isPinned);
-
-    const clientUpdatedAt = new Date(change.updatedAt);
-    const serverUpdatedAt = existingNote.updatedAt;
-
-    if (clientUpdatedAt <= serverUpdatedAt) {
-      result.forceServerNoteIds.add(change.id);
-      result.conflicts.push({ noteId: change.id, resolution: 'server' });
-      result.processedIds.push(change.id);
-      return;
-    }
-
-    const didUpdate = await this.updateSyncNoteIfUnchanged(
-      userId,
-      change,
-      existingNote,
-      access.isOwner,
-    );
-
-    if (didUpdate) {
-      result.conflicts.push({ noteId: change.id, resolution: 'client' });
-    } else {
-      result.forceServerNoteIds.add(change.id);
-      result.conflicts.push({ noteId: change.id, resolution: 'server' });
-    }
-    result.processedIds.push(change.id);
-  }
-
-  private async updateSyncNoteIfUnchanged(
-    userId: string,
-    change: SyncNoteDto,
-    existingNote: Note,
-    isOwner: boolean,
-  ) {
-    const updateData: Prisma.NoteUpdateInput = {
-      title: change.title,
-      content: change.content,
-      background: change.background,
-    };
-
-    if (isOwner) {
-      updateData.isArchived = change.isArchived;
-      updateData.state = (change.state as NoteState) ?? existingNote.state;
-    }
-
-    return this.prisma.$transaction(async (tx) => {
-      const result = await tx.note.updateMany({
-        where: { id: change.id, updatedAt: existingNote.updatedAt },
-        data: updateData,
-      });
-
-      if (result.count !== 1) {
-        return false;
-      }
-
-      // Only update the caller's own tags so other users' tags aren't removed.
-      if (change.tagIds !== undefined) {
-        await this.reconcileUserTags(tx, change.id, userId, change.tagIds);
-      }
-
-      return true;
-    });
-  }
-
-  // Sync the caller's own tags on a note to `desiredTagIds`, leaving other
-  // users' tags untouched. Only tags the caller owns (and hasn't deleted).
-  private async reconcileUserTags(
-    tx: Prisma.TransactionClient,
-    noteId: string,
-    userId: string,
-    desiredTagIds: string[],
-  ) {
-    const ownableTags = await tx.tag.findMany({
-      where: { id: { in: desiredTagIds }, userId, isDeleted: false },
-      select: { id: true },
-    });
-    const desired = new Set(ownableTags.map((t) => t.id));
-
-    const attached = await tx.tag.findMany({
-      where: { userId, notes: { some: { id: noteId } } },
-      select: { id: true },
-    });
-    const current = new Set(attached.map((t) => t.id));
-
-    const toConnect = [...desired].filter((id) => !current.has(id));
-    const toDisconnect = [...current].filter((id) => !desired.has(id));
-
-    if (toConnect.length === 0 && toDisconnect.length === 0) {
-      return;
-    }
-
-    await tx.note.update({
-      where: { id: noteId },
-      data: {
-        tags: {
-          connect: toConnect.map((id) => ({ id })),
-          disconnect: toDisconnect.map((id) => ({ id })),
-        },
-      },
-    });
-  }
-
-  private findOwnSyncNotes(
-    userId: string,
-    syncWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
-    forceServerIds: string[],
-  ) {
-    return this.prisma.note.findMany({
-      where: {
-        userId,
-        ...withForcedSyncIds('syncedAt', syncWindow, forceServerIds),
-      },
-      include: {
-        ...NOTE_INCLUDE_TAGS,
-        ...NOTE_INCLUDE_SHARES,
-        ...NOTE_INCLUDE_ATTACHMENT_COUNT,
-        ...notePinInclude(userId),
-      },
-    });
-  }
-
-  private findSharedSyncShares(
-    userId: string,
-    lastSyncedAt: string | undefined,
-    syncCutoff: Date,
-    syncWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
-    forceServerIds: string[],
-  ) {
-    return this.prisma.noteShare.findMany({
-      where: {
-        sharedWithUserId: userId,
-        ...buildSharedSyncWhere(
-          lastSyncedAt,
-          syncCutoff,
-          syncWindow,
-          forceServerIds,
-        ),
-      },
-      include: {
-        note: {
-          include: {
-            ...NOTE_INCLUDE_TAGS,
-            ...NOTE_INCLUDE_SHARES,
-            ...NOTE_INCLUDE_ATTACHMENT_COUNT,
-            ...notePinInclude(userId),
-          },
-        },
-      },
-    });
+    return ownedTagIds(this.prisma, userId, tagIds);
   }
 
   // undefined leaves the pin untouched; true pins, false unpins (per user).
   private async setNotePin(
+    tx: Prisma.TransactionClient,
     userId: string,
     noteId: string,
     isPinned: boolean | undefined,
@@ -756,58 +686,16 @@ export class NotesService {
       return;
     }
     if (isPinned) {
-      await this.prisma.notePin.upsert({
+      await tx.notePin.upsert({
         where: { userId_noteId: { userId, noteId } },
         create: { userId, noteId },
         update: {},
       });
     } else {
-      await this.prisma.notePin.deleteMany({ where: { userId, noteId } });
+      await tx.notePin.deleteMany({ where: { userId, noteId } });
     }
   }
 }
-
-type SyncConflict = { noteId: string; resolution: 'server' | 'client' };
-
-interface IncomingNoteSyncResult {
-  processedIds: string[];
-  conflicts: SyncConflict[];
-  forceServerNoteIds: Set<string>;
-}
-
-// Exported for tests.
-export const buildSharedSyncWhere = (
-  lastSyncedAt: string | undefined,
-  syncCutoff: Date,
-  syncWindow: ReturnType<typeof getSyncUpdatedAtWindow>,
-  forceServerIds: string[],
-) => {
-  if (lastSyncedAt) {
-    return {
-      OR: [
-        // Share row filters on updatedAt (never backdated); the note on its syncedAt watermark.
-        { updatedAt: syncWindow },
-        { isDeleted: false, note: { syncedAt: syncWindow } },
-        ...activeForcedNoteIds(forceServerIds),
-      ],
-    };
-  }
-
-  const initialActiveShares = {
-    isDeleted: false,
-    updatedAt: { lte: syncCutoff },
-    note: { syncedAt: { lte: syncCutoff } },
-  };
-
-  return forceServerIds.length
-    ? { OR: [initialActiveShares, ...activeForcedNoteIds(forceServerIds)] }
-    : initialActiveShares;
-};
-
-const activeForcedNoteIds = (forceServerIds: string[]) =>
-  forceServerIds.length
-    ? [{ isDeleted: false, noteId: { in: forceServerIds } }]
-    : [];
 
 const clampLimit = (limit?: number) => {
   if (typeof limit !== 'number' || Number.isNaN(limit)) {

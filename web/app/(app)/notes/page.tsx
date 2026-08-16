@@ -38,6 +38,7 @@ import {
   bulkArchiveNotes,
   bulkDeleteNotes,
   bulkPinNotes,
+  compareNotes,
   deltaToFullPlainText,
   getNotes,
   NoteCard,
@@ -141,37 +142,15 @@ export default function NotesPage() {
   const unpinnedNotes = filteredNotes.filter((note) => !note.isPinned);
 
   // Sort pinned and unpinned separately
-  const sortedPinnedNotes = useMemo(() => {
-    return [...pinnedNotes].sort((a, b) => {
-      let comparison = 0;
-      if (sortBy === "title") {
-        comparison = a.title.localeCompare(b.title);
-      } else if (sortBy === "updatedAt") {
-        comparison =
-          new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-      } else if (sortBy === "createdAt") {
-        comparison =
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      }
-      return sortOrder === "asc" ? comparison : -comparison;
-    });
-  }, [pinnedNotes, sortBy, sortOrder]);
+  const sortedPinnedNotes = useMemo(
+    () => [...pinnedNotes].sort(compareNotes(sortBy, sortOrder)),
+    [pinnedNotes, sortBy, sortOrder],
+  );
 
-  const sortedUnpinnedNotes = useMemo(() => {
-    return [...unpinnedNotes].sort((a, b) => {
-      let comparison = 0;
-      if (sortBy === "title") {
-        comparison = a.title.localeCompare(b.title);
-      } else if (sortBy === "updatedAt") {
-        comparison =
-          new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-      } else if (sortBy === "createdAt") {
-        comparison =
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-      }
-      return sortOrder === "asc" ? comparison : -comparison;
-    });
-  }, [unpinnedNotes, sortBy, sortOrder]);
+  const sortedUnpinnedNotes = useMemo(
+    () => [...unpinnedNotes].sort(compareNotes(sortBy, sortOrder)),
+    [unpinnedNotes, sortBy, sortOrder],
+  );
 
   // Get selected tag
   const selectedTag = tagIdParam
@@ -693,7 +672,7 @@ export default function NotesPage() {
               {sortedPinnedNotes.length > 0 && (
                 <section className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+                    <div className="h-px flex-1 bg-linear-to-r from-transparent via-border to-transparent" />
                     <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/30 border border-border/40">
                       <Pin className="h-3 w-3" />
                       <span>Pinned</span>
@@ -701,7 +680,7 @@ export default function NotesPage() {
                         ({sortedPinnedNotes.length})
                       </span>
                     </h2>
-                    <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+                    <div className="h-px flex-1 bg-linear-to-r from-transparent via-border to-transparent" />
                   </div>
                   {renderNotesGrid(sortedPinnedNotes, 0)}
                 </section>
@@ -712,14 +691,14 @@ export default function NotesPage() {
                 <section className="space-y-4">
                   {sortedPinnedNotes.length > 0 && (
                     <div className="flex items-center gap-3">
-                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+                      <div className="h-px flex-1 bg-linear-to-r from-transparent via-border to-transparent" />
                       <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2 px-3 py-1.5 rounded-full bg-muted/30 border border-border/40">
                         <span>All Notes</span>
                         <span className="text-muted-foreground/60">
                           ({sortedUnpinnedNotes.length})
                         </span>
                       </h2>
-                      <div className="h-px flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+                      <div className="h-px flex-1 bg-linear-to-r from-transparent via-border to-transparent" />
                     </div>
                   )}
                   {renderNotesGrid(

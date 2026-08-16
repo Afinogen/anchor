@@ -14,6 +14,7 @@ import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
 import 'package:anchor/features/notes/presentation/widgets/selection_app_bar_actions.dart';
 import 'package:anchor/features/notes/presentation/widgets/empty_states.dart';
 import 'package:anchor/features/notes/domain/note.dart';
+import 'package:anchor/features/sync/presentation/sync_warning.dart';
 import 'notes_controller.dart';
 import 'notes_view_options.dart';
 import 'widgets/view_options_sheet.dart';
@@ -230,6 +231,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const SyncWarning(),
                         SearchBar(
                           controller: _searchController,
                           elevation: WidgetStateProperty.all(0),
@@ -301,28 +303,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
                     }
 
-                    // Apply sorting
-                    filteredNotes.sort((a, b) {
-                      // Pinned notes stay on top regardless of sort.
-                      if (a.isPinned != b.isPinned) {
-                        return a.isPinned ? -1 : 1;
-                      }
-
-                      int compare;
-                      switch (viewOptions.sortOption) {
-                        case SortOption.dateModified:
-                          compare = (a.updatedAt ?? DateTime(0)).compareTo(
-                            b.updatedAt ?? DateTime(0),
-                          );
-                          break;
-                        case SortOption.title:
-                          compare = a.title.toLowerCase().compareTo(
-                            b.title.toLowerCase(),
-                          );
-                          break;
-                      }
-                      return viewOptions.isAscending ? compare : -compare;
-                    });
+                    filteredNotes.sort(noteComparator(viewOptions));
 
                     return SliverPadding(
                       padding: dims.screenInsets,

@@ -9,9 +9,15 @@ import { NoteAttachmentsService } from './services/note-attachments.service';
 import { NoteAttachmentsController } from './controllers/note-attachments.controller';
 import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
+import { SyncModule } from '../sync/sync.module';
 
 @Module({
-  imports: [UsersModule, AuthModule, MulterModule.register({ dest: '/tmp' })],
+  imports: [
+    UsersModule,
+    AuthModule,
+    MulterModule.register({ dest: '/tmp' }),
+    SyncModule,
+  ],
   controllers: [
     NotesController,
     NoteSharesController,

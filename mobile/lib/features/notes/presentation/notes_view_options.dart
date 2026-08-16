@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import 'package:anchor/features/notes/domain/note.dart';
+
 enum ViewType { grid, list }
 
 enum SortOption { dateModified, title }
@@ -28,6 +30,27 @@ class NotesViewOptions {
       isAscending: isAscending ?? this.isAscending,
     );
   }
+}
+
+/// Pinned notes stay on top, then the chosen sort, then the id.
+int Function(Note, Note) noteComparator(NotesViewOptions options) {
+  return (a, b) {
+    if (a.isPinned != b.isPinned) {
+      return a.isPinned ? -1 : 1;
+    }
+
+    final int compare = switch (options.sortOption) {
+      SortOption.dateModified => (a.updatedAt ?? DateTime(0)).compareTo(
+        b.updatedAt ?? DateTime(0),
+      ),
+      SortOption.title => a.title.toLowerCase().compareTo(
+        b.title.toLowerCase(),
+      ),
+    };
+
+    final ordered = options.isAscending ? compare : -compare;
+    return ordered != 0 ? ordered : b.id.compareTo(a.id);
+  };
 }
 
 class NotesViewOptionsNotifier extends AsyncNotifier<NotesViewOptions> {

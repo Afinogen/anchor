@@ -63,13 +63,23 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   Timer? _autoSaveTimer;
+  StreamSubscription<Note?>? _noteWatch;
   bool _hasUnsavedChanges = false;
+  bool _isSaving = false;
   String _lastTitleText = '';
+
+  String get _editorContent =>
+      _editorKey.currentState?.getContent() ?? _initialContent ?? '';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    final watchedId = widget.note?.id ?? widget.noteId;
+    if (watchedId != null) {
+      _watchNote(watchedId);
+    }
 
     if (widget.note != null) {
       _isNew = false;
@@ -110,6 +120,64 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         _isEditing = newEditingState;
       });
     }
+  }
+
+  void _watchNote(String id) {
+    _noteWatch?.cancel();
+    _noteWatch = ref
+        .read(notesRepositoryProvider)
+        .watchNote(id)
+        .listen(_onStoredNoteChanged);
+  }
+
+  /// The stored note changed under us. It replaces what is on screen unless
+  /// there is an unsaved edit, which stays and goes up on the next save.
+  void _onStoredNoteChanged(Note? note) {
+    if (!mounted) return;
+
+    if (note == null) {
+      _handleNoteGone();
+      return;
+    }
+
+    final adopt = !_hasUnsavedChanges && !_isSaving && !_matchesEditor(note);
+
+    setState(() {
+      _existingNote = note;
+      _isLoaded = true;
+      if (!adopt) return;
+
+      if (_titleController.text != note.title) {
+        _lastTitleText = note.title;
+        _titleController.text = note.title;
+      }
+      _initialContent = note.content;
+      _isPinned = note.isPinned;
+      _isArchived = note.isArchived;
+      _selectedTagIds = List.from(note.tagIds);
+      _selectedBackground = note.background;
+      if (!note.isActive || !note.canEdit) {
+        _isEditing = false;
+      }
+    });
+  }
+
+  bool _matchesEditor(Note note) =>
+      note.title == _titleController.text.trim() &&
+      (note.content ?? '') == _editorContent &&
+      note.isPinned == _isPinned &&
+      note.isArchived == _isArchived &&
+      note.background == _selectedBackground &&
+      _listEquals(note.tagIds, _selectedTagIds);
+
+  /// Deleted for good elsewhere, or a share that was revoked.
+  void _handleNoteGone() {
+    if (_isNew || _isDeleted) return;
+
+    _isDeleted = true;
+    _autoSaveTimer?.cancel();
+    AppSnackbar.showError(context, message: 'This note is no longer available');
+    _popOrExit();
   }
 
   Future<void> _loadNote() async {
@@ -168,7 +236,12 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   Future<void> _savePendingChanges() async {
     // Cleared before saving so edits made during the await stay flagged.
     _hasUnsavedChanges = false;
-    await _saveNote();
+    _isSaving = true;
+    try {
+      await _saveNote();
+    } finally {
+      _isSaving = false;
+    }
   }
 
   /// Leaves the editor: pops when there is a screen beneath, or exits the
@@ -381,6 +454,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _autoSaveTimer?.cancel();
+    unawaited(_noteWatch?.cancel());
     _titleController.removeListener(_onTitleChanged);
     _titleController.dispose();
     _titleFocusNode.removeListener(_updateEditingState);
@@ -413,6 +487,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         _isNew = false;
         _existingNote = newNote;
       });
+      _watchNote(newNote.id);
     }
     return newNote.id;
   }

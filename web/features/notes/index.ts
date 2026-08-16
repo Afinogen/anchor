@@ -6,5 +6,7 @@ export * from "./hooks";
 export * from "./link-utils";
 export * from "./quill";
 export * from "./quill-checklist";
+export * from "./save-queue";
+export * from "./sort";
 export * from "./types";
 export * from "./undo-shortcuts";

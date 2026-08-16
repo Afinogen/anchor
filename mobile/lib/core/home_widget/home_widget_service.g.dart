@@ -56,7 +56,7 @@ final class HomeWidgetSyncProvider
   }
 }
 
-String _$homeWidgetSyncHash() => r'a0392e16c23cbe3b3e5dec2dd66b7603dd89e2f4';
+String _$homeWidgetSyncHash() => r'fd8f2d7b3e744fabe7a58dae7d51eb7cba40b1d8';
 
 /// Mirrors the active notes list into the Android home-screen widget.
 ///
@@ -83,18 +83,27 @@ abstract class _$HomeWidgetSync extends $Notifier<void> {
   }
 }
 
-/// Routes home-screen widget taps into the app:
+/// Routes home-screen widget taps into the app while it is running:
 /// `anchorwidget://note/new`, `anchorwidget://note/<id>`, `anchorwidget://open`.
+///
+/// Cold-start taps never reach this handler; [initializeApp] turns them into
+/// the app's initial route before the first frame.
 
 @ProviderFor(HomeWidgetLaunchHandler)
 const homeWidgetLaunchHandlerProvider = HomeWidgetLaunchHandlerProvider._();
 
-/// Routes home-screen widget taps into the app:
+/// Routes home-screen widget taps into the app while it is running:
 /// `anchorwidget://note/new`, `anchorwidget://note/<id>`, `anchorwidget://open`.
+///
+/// Cold-start taps never reach this handler; [initializeApp] turns them into
+/// the app's initial route before the first frame.
 final class HomeWidgetLaunchHandlerProvider
     extends $NotifierProvider<HomeWidgetLaunchHandler, void> {
-  /// Routes home-screen widget taps into the app:
+  /// Routes home-screen widget taps into the app while it is running:
   /// `anchorwidget://note/new`, `anchorwidget://note/<id>`, `anchorwidget://open`.
+  ///
+  /// Cold-start taps never reach this handler; [initializeApp] turns them into
+  /// the app's initial route before the first frame.
   const HomeWidgetLaunchHandlerProvider._()
     : super(
         from: null,
@@ -123,10 +132,13 @@ final class HomeWidgetLaunchHandlerProvider
 }
 
 String _$homeWidgetLaunchHandlerHash() =>
-    r'94cdd7af3d258eef3c9900608810d22b1ac0ede3';
+    r'3a604ab1a7e6034da87fcda23bca98cd74ca6fb3';
 
-/// Routes home-screen widget taps into the app:
+/// Routes home-screen widget taps into the app while it is running:
 /// `anchorwidget://note/new`, `anchorwidget://note/<id>`, `anchorwidget://open`.
+///
+/// Cold-start taps never reach this handler; [initializeApp] turns them into
+/// the app's initial route before the first frame.
 
 abstract class _$HomeWidgetLaunchHandler extends $Notifier<void> {
   void build();

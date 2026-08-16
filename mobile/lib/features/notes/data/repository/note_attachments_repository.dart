@@ -48,59 +48,35 @@ class NoteAttachmentsRepository {
         .map((rows) => rows.map(_mapToDomain).toList());
   }
 
-  /// Fetch attachments for a batch of notes from the server and update local DB.
-  Future<void> fetchAttachmentsForNotes(List<String> noteIds) async {
-    for (final noteId in noteIds) {
-      try {
-        await fetchAttachments(noteId);
-      } catch (e, stack) {
-        AppLogger.instance.error(
-          'Attachments',
-          'Failed to fetch attachments for $noteId',
-          error: e,
-          stackTrace: stack,
-        );
-      }
-    }
-  }
-
-  /// Fetch attachments from server and update local DB
-  Future<List<domain.NoteAttachment>> fetchAttachments(String noteId) async {
-    final response = await _dio.get('/api/notes/$noteId/attachments');
-    final items = (response.data as List)
-        .map((e) => domain.NoteAttachment.fromJson(e as Map<String, dynamic>))
-        .toList();
-
-    // Find orphaned files (attachments that are no longer in the server list)
+  /// Replaces a note's attachment list with the server's, leaving anything
+  /// pending alone. Returns cached files the caller should delete once saved.
+  Future<List<String>> applyServerAttachments(
+    String noteId,
+    List<domain.NoteAttachment> items,
+  ) async {
     final orphanedPaths = <String>[];
 
     await _db.transaction(() async {
-      // Remove attachments not in server list
       final serverIds = items.map((a) => a.id).toSet();
       final localRows = await (_db.select(
         _db.noteAttachments,
       )..where((tbl) => tbl.noteId.equals(noteId))).get();
 
       for (final row in localRows) {
-        if (row.syncStatus ==
-            domain.AttachmentSyncStatus.pendingUpload.dbValue) {
+        if (row.syncStatus != domain.AttachmentSyncStatus.synced.dbValue) {
           continue;
         }
-        if (row.syncStatus ==
-            domain.AttachmentSyncStatus.pendingDelete.dbValue) {
+        if (serverIds.contains(row.serverAttachmentId ?? row.id)) {
           continue;
         }
-        if (!serverIds.contains(row.serverAttachmentId ?? row.id)) {
-          if (row.localPath != null) {
-            orphanedPaths.add(row.localPath!);
-          }
-          await (_db.delete(
-            _db.noteAttachments,
-          )..where((tbl) => tbl.id.equals(row.id))).go();
+        if (row.localPath != null) {
+          orphanedPaths.add(row.localPath!);
         }
+        await (_db.delete(
+          _db.noteAttachments,
+        )..where((tbl) => tbl.id.equals(row.id))).go();
       }
 
-      // Upsert server attachments
       for (final attachment in items) {
         final existing =
             await (_db.select(_db.noteAttachments)
@@ -117,7 +93,7 @@ class NoteAttachmentsRepository {
             .insertOnConflictUpdate(
               NoteAttachmentsCompanion.insert(
                 id: attachment.id,
-                noteId: attachment.noteId,
+                noteId: noteId,
                 type: attachment.type.name,
                 originalFilename: attachment.originalFilename,
                 mimeType: attachment.mimeType,
@@ -134,35 +110,23 @@ class NoteAttachmentsRepository {
       }
     });
 
-    // Delete orphaned files after the transaction has committed
-    for (final p in orphanedPaths) {
+    return orphanedPaths;
+  }
+
+  /// Deletes cached files by path, ignoring the ones already gone.
+  Future<void> deleteFiles(Iterable<String> paths) async {
+    for (final filePath in paths) {
       try {
-        await File(p).delete();
+        await File(filePath).delete();
       } catch (e, stack) {
         AppLogger.instance.error(
           'Attachments',
-          'Failed to delete orphaned file $p',
+          'Failed to delete orphaned file $filePath',
           error: e,
           stackTrace: stack,
         );
       }
     }
-
-    return items;
-  }
-
-  /// Returns true if the note has any attachments with unsynced status
-  Future<bool> hasPendingAttachmentsForNote(String noteId) async {
-    final rows =
-        await (_db.select(_db.noteAttachments)..where(
-              (tbl) =>
-                  tbl.noteId.equals(noteId) &
-                  tbl.syncStatus
-                      .equals(domain.AttachmentSyncStatus.synced.dbValue)
-                      .not(),
-            ))
-            .get();
-    return rows.isNotEmpty;
   }
 
   /// Download attachment file and cache locally.
@@ -313,8 +277,14 @@ class NoteAttachmentsRepository {
       );
     }
 
-    await _markNoteUnsynced(noteId);
+    await _touchNote(noteId);
     scheduleAppSync(trigger: 'AttachmentsRepo.deleteAttachment');
+  }
+
+  Future<void> _touchNote(String noteId) async {
+    await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(noteId))).write(
+      NotesCompanion(updatedAt: drift.Value(DateTime.now().toUtc())),
+    );
   }
 
   /// Add attachment: copy to persistent storage, insert into DB
@@ -369,6 +339,8 @@ class NoteAttachmentsRepository {
                 ),
               ),
             );
+
+        await _touchNote(noteId);
       });
     } catch (e) {
       try {
@@ -384,20 +356,8 @@ class NoteAttachmentsRepository {
       rethrow;
     }
 
-    await _markNoteUnsynced(noteId);
     scheduleAppSync(trigger: 'AttachmentsRepo.addAttachment');
     return localId;
-  }
-
-  // Bumps updatedAt so the re-upload beats the server's sub-second-precision
-  // stamp; reusing the truncated value would trip a false server-overrode warn.
-  Future<void> _markNoteUnsynced(String noteId) async {
-    await (_db.update(_db.notes)..where((tbl) => tbl.id.equals(noteId))).write(
-      NotesCompanion(
-        isSynced: const drift.Value(false),
-        updatedAt: drift.Value(DateTime.now().toUtc()),
-      ),
-    );
   }
 
   /// Sync pending uploads and deletes with server

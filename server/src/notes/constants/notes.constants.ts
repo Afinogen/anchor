@@ -3,6 +3,8 @@
  * Centralized query patterns, user selections, and error messages
  */
 
+import type { Prisma } from 'src/generated/prisma/client';
+
 // Standard user fields for queries
 export const USER_SELECT_FIELDS = {
   id: true,
@@ -65,6 +67,15 @@ export const NOTE_INCLUDE_SHARES = {
     },
   },
 } as const;
+
+export const NOTE_LIST_ORDER = [
+  { updatedAt: 'desc' },
+  { id: 'desc' },
+] as const satisfies Prisma.NoteOrderByWithRelationInput[];
+
+// Bulk action limits; the client splits a larger selection into batches.
+export const BULK_MAX_NOTE_IDS = 200;
+export const BULK_MAX_TAG_IDS = 50;
 
 // Attachment constants
 export const ATTACHMENT_MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB

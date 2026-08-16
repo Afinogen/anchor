@@ -39,6 +39,7 @@ export interface Note {
   isArchived: boolean;
   background?: string | null;
   state: NoteState;
+  version: number;
   createdAt: string;
   updatedAt: string;
   userId: string;
@@ -79,4 +80,5 @@ export interface UpdateNoteDto {
   isArchived?: boolean;
   background?: string | null;
   tagIds?: string[];
+  baseVersion?: number;
 }

@@ -11,6 +11,7 @@ export interface NoteAccessResult {
   hasAccess: boolean;
   isOwner: boolean;
   permission?: NoteSharePermission | 'owner';
+  state?: NoteState;
 }
 
 @Injectable()
@@ -35,7 +36,12 @@ export class NoteAccessService {
 
     // Check if user is owner
     if (note.userId === userId) {
-      return { hasAccess: true, isOwner: true, permission: 'owner' };
+      return {
+        hasAccess: true,
+        isOwner: true,
+        permission: 'owner',
+        state: note.state,
+      };
     }
 
     // Check if user has share access
@@ -61,6 +67,7 @@ export class NoteAccessService {
             hasAccess: false,
             isOwner: false,
             permission: share.permission,
+            state: note.state,
           };
         }
       }
@@ -71,6 +78,7 @@ export class NoteAccessService {
       hasAccess: true,
       isOwner: false,
       permission: share.permission,
+      state: note.state,
     };
   }
 

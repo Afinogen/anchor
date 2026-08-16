@@ -11,7 +11,6 @@ import {
 import { TagsService } from './tags.service';
 import { CreateTagDto } from './dto/create-tag.dto';
 import { UpdateTagDto } from './dto/update-tag.dto';
-import { SyncTagsDto } from './dto/sync-tags.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -26,11 +25,6 @@ export class TagsController {
     @Body() createTagDto: CreateTagDto,
   ) {
     return this.tagsService.create(userId, createTagDto);
-  }
-
-  @Post('sync')
-  sync(@CurrentUser('id') userId: string, @Body() syncDto: SyncTagsDto) {
-    return this.tagsService.sync(userId, syncDto);
   }
 
   @Get()
