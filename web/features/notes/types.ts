@@ -57,6 +57,35 @@ export interface Note {
   imagePreviewIds?: string[];
 }
 
+// "conflict" holds content the server turned down, which never reached the note.
+export type NoteRevisionCause = "edit" | "conflict" | "restore";
+
+export interface NoteRevisionAuthor {
+  id: string;
+  name: string;
+  email: string;
+  profileImage?: string | null;
+}
+
+export interface NoteRevisionSummary {
+  id: string;
+  noteId: string;
+  version: number;
+  title: string;
+  cause: NoteRevisionCause;
+  createdAt: string;
+  author: NoteRevisionAuthor | null;
+}
+
+export interface NoteRevision extends NoteRevisionSummary {
+  content: string | null;
+}
+
+export interface NoteRevisionPage {
+  revisions: NoteRevisionSummary[];
+  nextCursor: string | null;
+}
+
 export interface UserSearchResult {
   id: string;
   name: string;

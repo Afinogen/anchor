@@ -5,6 +5,8 @@ import type {
   CreateNoteDto,
   Note,
   NoteAttachment,
+  NoteRevision,
+  NoteRevisionPage,
   NoteShare,
   NoteSharePermission,
   UpdateNoteDto,
@@ -169,6 +171,35 @@ export async function bulkAddTagsToNotes(
       .post("api/notes/bulk/tags", { json: { noteIds: batch, tagIds } })
       .json<{ count: number }>(),
   );
+}
+
+export async function getNoteRevisions(
+  noteId: string,
+  cursor?: string,
+): Promise<NoteRevisionPage> {
+  return api
+    .get(`api/notes/${noteId}/revisions`, {
+      searchParams: cursor ? { cursor } : {},
+    })
+    .json<NoteRevisionPage>();
+}
+
+export async function getNoteRevision(
+  noteId: string,
+  revisionId: string,
+): Promise<NoteRevision> {
+  return api
+    .get(`api/notes/${noteId}/revisions/${revisionId}`)
+    .json<NoteRevision>();
+}
+
+export async function restoreNoteRevision(
+  noteId: string,
+  revisionId: string,
+): Promise<Note> {
+  return api
+    .post(`api/notes/${noteId}/revisions/${revisionId}/restore`)
+    .json<Note>();
 }
 
 // Sharing APIs

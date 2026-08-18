@@ -2,6 +2,8 @@ export * from "./api";
 export * from "./backgrounds";
 export * from "./components";
 export * from "./constants";
+export * from "./diff";
+export * from "./history";
 export * from "./hooks";
 export * from "./link-utils";
 export * from "./quill";

@@ -7,6 +7,8 @@ import { NoteSharesController } from './controllers/note-shares.controller';
 import { NoteAccessService } from './services/note-access.service';
 import { NoteAttachmentsService } from './services/note-attachments.service';
 import { NoteAttachmentsController } from './controllers/note-attachments.controller';
+import { NoteHistoryService } from './services/note-history.service';
+import { NoteRevisionsController } from './controllers/note-revisions.controller';
 import { UsersModule } from '../users/users.module';
 import { AuthModule } from '../auth/auth.module';
 import { SyncModule } from '../sync/sync.module';
@@ -22,18 +24,21 @@ import { SyncModule } from '../sync/sync.module';
     NotesController,
     NoteSharesController,
     NoteAttachmentsController,
+    NoteRevisionsController,
   ],
   providers: [
     NotesService,
     NoteSharesService,
     NoteAccessService,
     NoteAttachmentsService,
+    NoteHistoryService,
   ],
   exports: [
     NotesService,
     NoteSharesService,
     NoteAccessService,
     NoteAttachmentsService,
+    NoteHistoryService,
   ],
 })
 export class NotesModule {}

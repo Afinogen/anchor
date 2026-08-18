@@ -77,6 +77,10 @@ export const NOTE_LIST_ORDER = [
 export const BULK_MAX_NOTE_IDS = 200;
 export const BULK_MAX_TAG_IDS = 50;
 
+// A note's edit history is paged; the client asks for more with the cursor.
+export const DEFAULT_REVISION_PAGE_SIZE = 30;
+export const MAX_REVISION_PAGE_SIZE = 100;
+
 // Attachment constants
 export const ATTACHMENT_MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
@@ -99,6 +103,7 @@ export const ATTACHMENT_ALLOWED_MIME_TYPES = new Set([
 // Error messages
 export const ERROR_MESSAGES = {
   NOTE_NOT_FOUND: 'Note not found',
+  REVISION_NOT_FOUND: 'Revision not found',
   USER_NOT_FOUND: 'User not found',
   SHARE_NOT_FOUND: 'Share not found',
   ONLY_OWNER_CAN_SHARE: 'Only note owner can share notes',

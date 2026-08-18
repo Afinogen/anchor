@@ -10,6 +10,9 @@ export const MAX_SYNC_LIMIT = 500;
 export const DEFAULT_SYNC_LIMIT = 200;
 export const MAX_SYNC_CHANGES = 200;
 
+// Bounds how many recorded versions ride on one note change.
+export const MAX_SYNC_NOTE_REVISIONS = 20;
+
 export const CHANGELOG_REMOVE_RETENTION_DAYS = 90;
 
 export const CHANGELOG_UPSERT_CHUNK_SIZE = 500;

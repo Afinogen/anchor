@@ -26,7 +26,7 @@ import {
   pinEmission,
   tagEmission,
 } from './sync-emitter.service';
-import { NoteRevisionsService } from './note-revisions.service';
+import { NoteRevisionsService, revisionsCover } from './note-revisions.service';
 import type {
   SyncChange,
   SyncNoteChangeDto,
@@ -161,8 +161,19 @@ export class SyncApplyService {
         return { kind: 'conflict' as const };
       }
 
-      if (noteContentChanged(prior, noteData)) {
+      if (
+        noteContentChanged(prior, noteData) &&
+        !revisionsCover(change.revisions, prior)
+      ) {
         await this.noteRevisions.recordEdit(tx, prior, userId);
+      }
+      if (change.revisions?.length) {
+        await this.noteRevisions.recordClient(
+          tx,
+          change.id,
+          change.revisions,
+          userId,
+        );
       }
       if (change.tagIds !== undefined) {
         await reconcileUserTags(tx, change.id, userId, change.tagIds);
@@ -212,6 +223,15 @@ export class SyncApplyService {
         },
         select: { state: true, version: true },
       });
+
+      if (change.revisions?.length) {
+        await this.noteRevisions.recordClient(
+          tx,
+          change.id,
+          change.revisions,
+          userId,
+        );
+      }
 
       if (created.state === NoteState.deleted) {
         await this.syncEmitter.removeNote(tx, [userId], change.id);

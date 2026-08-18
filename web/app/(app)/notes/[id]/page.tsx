@@ -27,6 +27,7 @@ import {
   NoteBackground,
   NoteEditorContent,
   NoteEditorHeader,
+  NoteHistorySheet,
   noteDraftsEqual,
   noteToDraft,
   PermanentDeleteDialog,
@@ -114,6 +115,7 @@ export default function NoteEditorPage() {
   const [permanentDeleteDialogOpen, setPermanentDeleteDialogOpen] =
     useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   const restoreFocusFrameRef = useRef<number | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
@@ -699,6 +701,15 @@ export default function NoteEditorPage() {
     router.back();
   };
 
+  const openHistory = () => {
+    save();
+    setHistoryOpen(true);
+  };
+
+  const handleRestored = (restored: Note) => {
+    applyServerNote(restored);
+  };
+
   const togglePin = () => {
     setIsPinned((prev) => !prev);
   };
@@ -744,6 +755,7 @@ export default function NoteEditorPage() {
         onRestoreClick={() => setRestoreDialogOpen(true)}
         onPermanentDeleteClick={() => setPermanentDeleteDialogOpen(true)}
         onShareClick={!isNew ? () => setShareDialogOpen(true) : undefined}
+        onHistoryClick={!isNew && !isViewer ? openHistory : undefined}
         restorePending={restoreMutation.isPending}
         permanentDeletePending={permanentDeleteMutation.isPending}
       />
@@ -820,6 +832,18 @@ export default function NoteEditorPage() {
           open={shareDialogOpen}
           onOpenChange={setShareDialogOpen}
           noteId={noteId}
+        />
+      )}
+
+      {!isNew && (
+        <NoteHistorySheet
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          noteId={noteId}
+          note={note}
+          currentUserId={user?.id ?? null}
+          isSaving={isSaving || hasUnsavedChanges}
+          onRestored={handleRestored}
         />
       )}
 

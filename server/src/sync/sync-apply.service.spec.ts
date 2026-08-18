@@ -316,6 +316,144 @@ describe('SyncApplyService', () => {
       );
     });
 
+    it("keeps the client's own revisions instead of recording one here", async () => {
+      noteExists = true;
+      priorNote = makePrior();
+      hasNoteAccess.mockResolvedValue({
+        hasAccess: true,
+        isOwner: true,
+        permission: 'owner',
+      });
+      const recorded = [
+        {
+          id: 'r1',
+          version: 5,
+          title: 'server title',
+          content: 'server content',
+          cause: 'edit',
+          createdAt: '2026-08-01T10:00:00.000Z',
+        },
+      ];
+
+      const results = await service.apply(USER, [
+        noteChange({
+          title: 'new title',
+          content: 'new body',
+          baseVersion: 5,
+          revisions: recorded,
+        }),
+      ]);
+
+      expect(results[0]).toMatchObject({ status: 'applied', version: 6 });
+      expect(revisions.recordClient).toHaveBeenCalledWith(
+        prisma,
+        'n1',
+        recorded,
+        USER,
+      );
+      expect(revisions.recordEdit).not.toHaveBeenCalled();
+    });
+
+    it('records the copy a rebased push overwrites, next to the client revisions', async () => {
+      noteExists = true;
+      priorNote = makePrior({
+        title: 'other device title',
+        content: 'other device content',
+      });
+      hasNoteAccess.mockResolvedValue({
+        hasAccess: true,
+        isOwner: true,
+        permission: 'owner',
+      });
+      const recorded = [
+        {
+          id: 'r1',
+          version: 4,
+          title: 'server title',
+          content: 'server content',
+          cause: 'edit',
+          createdAt: '2026-08-01T10:00:00.000Z',
+        },
+      ];
+
+      const results = await service.apply(USER, [
+        noteChange({
+          title: 'new title',
+          content: 'new body',
+          baseVersion: 5,
+          revisions: recorded,
+        }),
+      ]);
+
+      expect(results[0]).toMatchObject({ status: 'applied', version: 6 });
+      expect(revisions.recordEdit).toHaveBeenCalledWith(
+        prisma,
+        priorNote,
+        USER,
+      );
+      expect(revisions.recordClient).toHaveBeenCalledWith(
+        prisma,
+        'n1',
+        recorded,
+        USER,
+      );
+    });
+
+    it('keeps revisions recorded before a note first reached the server', async () => {
+      createdNote = { state: NoteState.active, version: 1 };
+      const recorded = [
+        {
+          id: 'r1',
+          version: 0,
+          title: 'draft',
+          content: 'first pass',
+          cause: 'edit',
+          createdAt: '2026-08-01T10:00:00.000Z',
+        },
+      ];
+
+      const results = await service.apply(USER, [
+        noteChange({ revisions: recorded }),
+      ]);
+
+      expect(results[0]).toMatchObject({ status: 'applied', version: 1 });
+      expect(revisions.recordClient).toHaveBeenCalledWith(
+        prisma,
+        'n1',
+        recorded,
+        USER,
+      );
+    });
+
+    it('holds back the revisions of a rejected push', async () => {
+      noteExists = true;
+      priorNote = makePrior();
+      fullNote = makeFullNote();
+      hasNoteAccess.mockResolvedValue({
+        hasAccess: true,
+        isOwner: true,
+        permission: 'owner',
+      });
+
+      const results = await service.apply(USER, [
+        noteChange({
+          baseVersion: 3,
+          revisions: [
+            {
+              id: 'r1',
+              title: 'server title',
+              content: 'server content',
+              cause: 'edit',
+              createdAt: '2026-08-01T10:00:00.000Z',
+            },
+          ],
+        }),
+      ]);
+
+      expect(results[0].status).toBe('conflict');
+      expect(revisions.recordClient).not.toHaveBeenCalled();
+    });
+
     it('skips the version bump and revision when nothing guarded changed', async () => {
       noteExists = true;
       priorNote = makePrior();

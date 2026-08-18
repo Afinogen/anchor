@@ -34,7 +34,9 @@ export const asSyncEvents = (mock: MockSyncEvents) =>
 export function createMockNoteRevisions() {
   return {
     recordEdit: jest.fn().mockResolvedValue(undefined),
+    recordClient: jest.fn().mockResolvedValue(undefined),
     recordConflict: jest.fn().mockResolvedValue(undefined),
+    recordRestore: jest.fn().mockResolvedValue(undefined),
   };
 }
 

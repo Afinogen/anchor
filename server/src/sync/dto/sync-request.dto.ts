@@ -2,6 +2,7 @@ import {
   ArrayMaxSize,
   IsArray,
   IsBoolean,
+  IsDateString,
   IsIn,
   IsInt,
   IsOptional,
@@ -15,6 +16,7 @@ import { Type } from 'class-transformer';
 import {
   MAX_SYNC_CHANGES,
   MAX_SYNC_LIMIT,
+  MAX_SYNC_NOTE_REVISIONS,
   MIN_SYNC_LIMIT,
 } from '../sync.constants';
 
@@ -31,6 +33,30 @@ export class SyncChangeBaseDto {
 
   @IsString()
   id: string;
+}
+
+// What the note said before the client changed it, recorded on the device.
+export class SyncNoteRevisionDto {
+  @IsString()
+  id: string;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  version?: number;
+
+  @IsString()
+  title: string;
+
+  @IsString()
+  @IsOptional()
+  content?: string;
+
+  @IsIn(['edit', 'restore'])
+  cause: 'edit' | 'restore';
+
+  @IsDateString()
+  createdAt: string;
 }
 
 // Pushes carry the client's whole coalesced row; pins travel as their own
@@ -68,6 +94,13 @@ export class SyncNoteChangeDto extends SyncChangeBaseDto {
   @IsString({ each: true })
   @IsOptional()
   tagIds?: string[];
+
+  @IsArray()
+  @ArrayMaxSize(MAX_SYNC_NOTE_REVISIONS)
+  @ValidateNested({ each: true })
+  @Type(() => SyncNoteRevisionDto)
+  @IsOptional()
+  revisions?: SyncNoteRevisionDto[];
 }
 
 export class SyncTagChangeDto extends SyncChangeBaseDto {

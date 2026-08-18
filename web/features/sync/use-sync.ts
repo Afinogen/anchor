@@ -6,7 +6,13 @@ import { getAccessToken, useAuthStore } from "@/features/auth";
 import { refreshAccessToken } from "@/lib/api/client";
 import { connectSyncEvents } from "./events";
 
-const syncedQueryKeys = [["notes"], ["tags"], ["attachments"], ["note-shares"]];
+const syncedQueryKeys = [
+  ["notes"],
+  ["tags"],
+  ["attachments"],
+  ["note-shares"],
+  ["note-revisions"],
+];
 
 const pushDebounceMs = 300;
 
