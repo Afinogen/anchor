@@ -5,6 +5,31 @@ import '../../notes/domain/note_attachment.dart' as domain;
 
 const int syncProtocol = 3;
 const int maxChangesPerRequest = 200;
+const int maxRevisionsPerNote = 20;
+const int maxRequestBytes = 8 * 1024 * 1024;
+
+/// Ids, flags and field names around the text of one change.
+const int _changeOverheadBytes = 256;
+
+/// The leading items that fit [maxRequestBytes] on top of [used]; the first
+/// always goes.
+List<T> takeUnderBudget<T>(
+  Iterable<T> items,
+  int Function(T item) sizeOf, {
+  int used = 0,
+}) {
+  final taken = <T>[];
+  var bytes = used;
+
+  for (final item in items) {
+    final size = sizeOf(item);
+    if (taken.isNotEmpty && bytes + size > maxRequestBytes) break;
+    taken.add(item);
+    bytes += size;
+  }
+
+  return taken;
+}
 
 const String syncPath = '/api/sync';
 const String syncEventsPath = '/api/sync/events';
@@ -16,7 +41,40 @@ sealed class SyncChange {
 
   String get type;
 
+  int get approximateBytes;
+
   Map<String, dynamic> toJson();
+}
+
+/// What the note said before this device changed it.
+class SyncNoteRevision {
+  const SyncNoteRevision({
+    required this.id,
+    required this.version,
+    required this.title,
+    required this.content,
+    required this.cause,
+    required this.createdAt,
+  });
+
+  final String id;
+  final int version;
+  final String title;
+  final String? content;
+  final String cause;
+  final DateTime createdAt;
+
+  int get approximateBytes =>
+      title.length + (content?.length ?? 0) + _changeOverheadBytes;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'version': version,
+    'title': title,
+    'content': content,
+    'cause': cause,
+    'createdAt': createdAt.toUtc().toIso8601String(),
+  };
 }
 
 /// Leaving [baseVersion] out asks the server to create the note.
@@ -31,6 +89,8 @@ class SyncNoteChange extends SyncChange {
     required this.background,
     required this.state,
     required this.tagIds,
+    this.revisions = const [],
+    this.isRevisionsOnly = false,
   });
 
   final int localRev;
@@ -41,9 +101,23 @@ class SyncNoteChange extends SyncChange {
   final String? background;
   final String state;
   final List<String> tagIds;
+  final List<SyncNoteRevision> revisions;
+
+  /// True when the row itself is already synced and this change only carries
+  /// recorded versions.
+  final bool isRevisionsOnly;
 
   @override
   String get type => 'note';
+
+  @override
+  int get approximateBytes => [
+    title.length,
+    content?.length ?? 0,
+    for (final tagId in tagIds) tagId.length,
+    for (final revision in revisions) revision.approximateBytes,
+    _changeOverheadBytes,
+  ].reduce((total, bytes) => total + bytes);
 
   @override
   Map<String, dynamic> toJson() => {
@@ -56,6 +130,9 @@ class SyncNoteChange extends SyncChange {
     'background': background,
     'state': state,
     'tagIds': tagIds,
+    if (revisions.isNotEmpty)
+      'revisions': [for (final revision in revisions) revision.toJson()],
+    if (isRevisionsOnly) 'revisionsOnly': true,
   };
 }
 
@@ -79,6 +156,10 @@ class SyncTagChange extends SyncChange {
   String get type => 'tag';
 
   @override
+  int get approximateBytes =>
+      name.length + (color?.length ?? 0) + _changeOverheadBytes;
+
+  @override
   Map<String, dynamic> toJson() => {
     'type': type,
     'id': id,
@@ -97,6 +178,9 @@ class SyncPinChange extends SyncChange {
 
   @override
   String get type => 'pin';
+
+  @override
+  int get approximateBytes => _changeOverheadBytes;
 
   @override
   Map<String, dynamic> toJson() => {

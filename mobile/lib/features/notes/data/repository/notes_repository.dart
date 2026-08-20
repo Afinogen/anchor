@@ -10,7 +10,9 @@ import '../../../../core/network/sync_requester.dart';
 import '../../../tags/data/repository/tags_repository.dart';
 import '../../domain/note.dart' as domain;
 import '../../domain/note_attachment.dart' as domain;
+import '../../domain/note_revision.dart';
 import 'note_attachments_repository.dart';
+import 'note_revisions_store.dart';
 
 part 'notes_repository.g.dart';
 
@@ -19,7 +21,8 @@ NotesRepository notesRepository(Ref ref) {
   final db = ref.watch(appDatabaseProvider);
   final tagsRepo = ref.watch(tagsRepositoryProvider);
   final attachmentsRepo = ref.watch(noteAttachmentsRepositoryProvider);
-  return NotesRepository(db, tagsRepo, attachmentsRepo);
+  final revisions = ref.watch(noteRevisionsStoreProvider);
+  return NotesRepository(db, tagsRepo, attachmentsRepo, revisions);
 }
 
 /// Notes on the device. Nothing here talks to the server.
@@ -27,8 +30,14 @@ class NotesRepository {
   final AppDatabase _db;
   final TagsRepository _tagsRepo;
   final NoteAttachmentsRepository _attachmentsRepo;
+  final NoteRevisionsStore _revisions;
 
-  NotesRepository(this._db, this._tagsRepo, this._attachmentsRepo);
+  NotesRepository(
+    this._db,
+    this._tagsRepo,
+    this._attachmentsRepo,
+    this._revisions,
+  );
 
   drift.Expression<int> get _nextRev =>
       _db.notes.localRev + const drift.Constant(1);
@@ -380,6 +389,10 @@ class NotesRepository {
       final prior = await _noteRow(note.id);
       if (prior == null) return;
 
+      if (prior.title != note.title || prior.content != note.content) {
+        await _revisions.record(prior);
+      }
+
       await (_db.update(
         _db.notes,
       )..where((tbl) => tbl.id.equals(note.id))).write(
@@ -408,6 +421,38 @@ class NotesRepository {
     );
 
     scheduleAppSync(trigger: 'NotesRepo.updateNote');
+  }
+
+  /// Puts an earlier version back on the note. What it says now is kept as a
+  /// version of its own.
+  Future<void> restoreVersion(String noteId, NoteRevision revision) async {
+    await _db.transaction(() async {
+      final prior = await _noteRow(noteId);
+      if (prior == null) return;
+      if (prior.title == revision.title && prior.content == revision.content) {
+        return;
+      }
+
+      await _revisions.record(prior, cause: RevisionCause.restore);
+      await (_db.update(
+        _db.notes,
+      )..where((tbl) => tbl.id.equals(noteId))).write(
+        NotesCompanion(
+          title: drift.Value(revision.title),
+          content: drift.Value(revision.content),
+          updatedAt: drift.Value(DateTime.now().toUtc()),
+          isSynced: const drift.Value(false),
+          localRev: drift.Value(prior.localRev + 1),
+        ),
+      );
+    });
+
+    AppLogger.instance.info(
+      'Notes',
+      'restoreVersion id=$noteId revision=${revision.id}',
+    );
+
+    scheduleAppSync(trigger: 'NotesRepo.restoreVersion');
   }
 
   // Soft delete - moves note to trash
@@ -504,6 +549,7 @@ class NotesRepository {
   // Marked deleted here; the row goes once the server has been told.
   Future<void> permanentDelete(String id) async {
     await _attachmentsRepo.deleteAllLocalForNote(id);
+    await _revisions.deleteForNote(id);
     await _writeState(ids: [id], state: 'deleted');
     await (_db.delete(
       _db.noteTags,

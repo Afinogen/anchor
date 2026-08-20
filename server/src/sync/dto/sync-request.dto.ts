@@ -101,6 +101,11 @@ export class SyncNoteChangeDto extends SyncChangeBaseDto {
   @Type(() => SyncNoteRevisionDto)
   @IsOptional()
   revisions?: SyncNoteRevisionDto[];
+
+  // The note itself is clean; only the recorded revisions need to land.
+  @IsBoolean()
+  @IsOptional()
+  revisionsOnly?: boolean;
 }
 
 export class SyncTagChangeDto extends SyncChangeBaseDto {

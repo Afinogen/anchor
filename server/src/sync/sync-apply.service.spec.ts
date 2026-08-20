@@ -142,6 +142,14 @@ describe('SyncApplyService', () => {
       ...overrides,
     }) as unknown as SyncChange;
 
+  const clientRevision = (id: string) => ({
+    id,
+    title: 'earlier title',
+    content: 'earlier content',
+    cause: 'edit' as const,
+    createdAt: '2026-08-01T10:00:00.000Z',
+  });
+
   beforeEach(() => {
     emitter = createMockSyncEmitter();
     revisions = createMockNoteRevisions();
@@ -549,6 +557,110 @@ describe('SyncApplyService', () => {
         { type: 'note', id: 'n1', status: 'applied', version: 6 },
       ]);
       expect(revisions.recordConflict).not.toHaveBeenCalled();
+    });
+
+    it('a redelivered ack still keeps the revisions it carried', async () => {
+      noteExists = true;
+      priorNote = makePrior({ version: 6 });
+      fullNote = makeFullNote({ version: 6, title: 'client title' });
+      hasNoteAccess.mockResolvedValue({
+        hasAccess: true,
+        isOwner: true,
+        permission: 'owner',
+      });
+
+      const results = await service.apply(USER, [
+        noteChange({
+          baseVersion: 5,
+          content: 'server content',
+          revisions: [clientRevision('r1')],
+        }),
+      ]);
+
+      expect(results[0]).toMatchObject({ status: 'applied', version: 6 });
+      expect(revisions.recordClient).toHaveBeenCalledWith(
+        prisma,
+        'n1',
+        [expect.objectContaining({ id: 'r1' })],
+        USER,
+      );
+      expect(emitter.emit).toHaveBeenCalled();
+    });
+
+    it("a viewer's matching redelivery is acked without keeping revisions", async () => {
+      noteExists = true;
+      fullNote = makeFullNote({ title: 'client title' });
+      hasNoteAccess.mockResolvedValue({
+        hasAccess: false,
+        isOwner: false,
+        permission: NoteSharePermission.viewer,
+      });
+
+      const results = await service.apply(USER, [
+        noteChange({
+          baseVersion: 5,
+          content: 'server content',
+          revisions: [clientRevision('r1')],
+        }),
+      ]);
+
+      expect(results[0]).toMatchObject({ status: 'applied', version: 5 });
+      expect(revisions.recordClient).not.toHaveBeenCalled();
+    });
+
+    it('keeps a revisions-only push without touching the note, even on a stale base', async () => {
+      noteExists = true;
+      priorNote = makePrior({ version: 8 });
+      hasNoteAccess.mockResolvedValue({
+        hasAccess: true,
+        isOwner: true,
+        permission: 'owner',
+      });
+
+      const results = await service.apply(USER, [
+        noteChange({
+          baseVersion: 5,
+          revisionsOnly: true,
+          revisions: [clientRevision('r1')],
+        }),
+      ]);
+
+      expect(results).toEqual([
+        { type: 'note', id: 'n1', status: 'applied', version: 8 },
+      ]);
+      expect(revisions.recordClient).toHaveBeenCalledWith(
+        prisma,
+        'n1',
+        [expect.objectContaining({ id: 'r1' })],
+        USER,
+      );
+      expect(revisions.recordConflict).not.toHaveBeenCalled();
+      expect(noteUpdateMany).not.toHaveBeenCalled();
+      expect(emitter.emit).toHaveBeenCalled();
+    });
+
+    it("a demoted viewer's revisions-only push is acked and dropped", async () => {
+      noteExists = true;
+      priorNote = makePrior();
+      hasNoteAccess.mockResolvedValue({
+        hasAccess: false,
+        isOwner: false,
+        permission: NoteSharePermission.viewer,
+      });
+
+      const results = await service.apply(USER, [
+        noteChange({
+          baseVersion: 5,
+          revisionsOnly: true,
+          revisions: [clientRevision('r1')],
+        }),
+      ]);
+
+      expect(results).toEqual([
+        { type: 'note', id: 'n1', status: 'applied', version: 5 },
+      ]);
+      expect(revisions.recordClient).not.toHaveBeenCalled();
+      expect(emitter.emit).not.toHaveBeenCalled();
     });
 
     it('returns a retryable failure without dropping the rest of the batch', async () => {

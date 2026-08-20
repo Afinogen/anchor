@@ -14,6 +14,9 @@ class NoteOptionsSheet extends StatelessWidget {
   final VoidCallback onArchiveTap;
   final VoidCallback onDeleteTap;
 
+  /// Null hides the option, for notes that have no history to read.
+  final VoidCallback? onHistoryTap;
+
   const NoteOptionsSheet({
     super.key,
     required this.isReadOnly,
@@ -24,6 +27,7 @@ class NoteOptionsSheet extends StatelessWidget {
     required this.onAttachmentTap,
     required this.onArchiveTap,
     required this.onDeleteTap,
+    this.onHistoryTap,
   });
 
   @override
@@ -123,6 +127,16 @@ class NoteOptionsSheet extends StatelessWidget {
                         onTap: () {
                           Navigator.pop(context);
                           onAttachmentTap();
+                        },
+                      ),
+
+                    if (onHistoryTap != null)
+                      _GridOptionTile(
+                        icon: LucideIcons.history,
+                        title: 'History',
+                        onTap: () {
+                          Navigator.pop(context);
+                          onHistoryTap!();
                         },
                       ),
 

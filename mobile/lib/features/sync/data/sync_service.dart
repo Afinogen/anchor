@@ -7,7 +7,9 @@ import '../../../core/database/app_database.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/network/dio_provider.dart';
 import '../../notes/data/repository/note_attachments_repository.dart';
+import '../../notes/data/repository/note_revisions_store.dart';
 import '../../notes/domain/note_attachment.dart' as domain;
+import '../../notes/domain/note_revision.dart';
 import 'sync_api.dart';
 
 part 'sync_service.g.dart';
@@ -25,7 +27,8 @@ SyncService syncService(Ref ref) {
   final db = ref.watch(appDatabaseProvider);
   final dio = ref.watch(dioProvider);
   final attachments = ref.watch(noteAttachmentsRepositoryProvider);
-  return SyncService(db, SyncApi(dio), attachments);
+  final revisions = ref.watch(noteRevisionsStoreProvider);
+  return SyncService(db, SyncApi(dio), attachments, revisions);
 }
 
 /// Sends up everything that changed on this device, brings down everything that
@@ -34,11 +37,12 @@ SyncService syncService(Ref ref) {
 /// Nothing here compares timestamps: every change says which server version it
 /// was written against, and the server takes it or rejects it.
 class SyncService {
-  SyncService(this._db, this._api, this._attachments);
+  SyncService(this._db, this._api, this._attachments, this._revisions);
 
   final AppDatabase _db;
   final SyncApi _api;
   final NoteAttachmentsRepository _attachments;
+  final NoteRevisionsStore _revisions;
 
   Future<void> run() async {
     final start = DateTime.now();
@@ -54,7 +58,10 @@ class SyncService {
 
     for (var request = 0; request < _maxRequestsPerCycle; request++) {
       final cursor = await _prepareCursor();
-      final batch = pending.take(maxChangesPerRequest).toList();
+      final batch = takeUnderBudget(
+        pending.take(maxChangesPerRequest),
+        (change) => change.approximateBytes,
+      );
       final response = await _api.sync(cursor: cursor, changes: batch);
 
       final rebased = await _applyResponse(response, batch);
@@ -134,6 +141,15 @@ class SyncService {
       changes.add(await _noteChangeOf(note));
     }
 
+    // A clean note can still hold recorded versions the server has not seen.
+    final dirtyNoteIds = {for (final note in notes) note.id};
+    for (final noteId in await _revisions.noteIdsWithPending()) {
+      if (dirtyNoteIds.contains(noteId)) continue;
+      final row = await _noteRow(noteId);
+      if (row == null || !row.isSynced) continue;
+      changes.add(await _noteChangeOf(row, isRevisionsOnly: true));
+    }
+
     final pins = await (_db.select(
       _db.notes,
     )..where((tbl) => tbl.isPinSynced.equals(false))).get();
@@ -144,12 +160,35 @@ class SyncService {
     return changes;
   }
 
-  Future<SyncNoteChange> _noteChangeOf(Note note) async {
+  Future<SyncNoteChange> _noteChangeOf(
+    Note note, {
+    bool isRevisionsOnly = false,
+  }) async {
     final tagIds =
         await (_db.select(_db.noteTags)
               ..where((tbl) => tbl.noteId.equals(note.id)))
             .map((row) => row.tagId)
             .get();
+    final recorded = await _revisions.pending(
+      note.id,
+      limit: maxRevisionsPerNote,
+    );
+
+    final revisions = takeUnderBudget(
+      [
+        for (final revision in recorded)
+          SyncNoteRevision(
+            id: revision.id,
+            version: revision.version,
+            title: revision.title,
+            content: revision.content,
+            cause: revision.cause.name,
+            createdAt: revision.createdAt,
+          ),
+      ],
+      (revision) => revision.approximateBytes,
+      used: note.title.length + (note.content?.length ?? 0),
+    );
 
     return SyncNoteChange(
       id: note.id,
@@ -161,6 +200,8 @@ class SyncService {
       background: note.background,
       state: note.state,
       tagIds: tagIds,
+      revisions: revisions,
+      isRevisionsOnly: isRevisionsOnly,
     );
   }
 
@@ -236,15 +277,30 @@ class SyncService {
           await _dropNote(result.id, filesToClean);
           return;
         }
+        await _revisions.markSynced(
+          change.revisions.map((revision) => revision.id),
+        );
         final row = await _noteRow(result.id);
         if (row == null) return;
-        await _writeNote(
-          result.id,
-          NotesCompanion(
-            version: Value(result.version),
-            isSynced: Value(row.localRev == change.localRev),
-          ),
-        );
+        // A revisions-only ack names a version this row's text may not hold
+        // yet; only the feed moves the note.
+        if (!change.isRevisionsOnly) {
+          await _writeNote(
+            result.id,
+            NotesCompanion(
+              version: Value(result.version),
+              isSynced: Value(row.localRev == change.localRev),
+            ),
+          );
+        }
+        // Versions that did not fit this push go again.
+        if (row.localRev == change.localRev &&
+            (await _revisions.pending(result.id, limit: 1)).isNotEmpty) {
+          final fresh = await _noteRow(result.id);
+          if (fresh != null) {
+            rebased.add(await _noteChangeOf(fresh, isRevisionsOnly: true));
+          }
+        }
 
       case SyncStatus.conflict:
         final server = result.serverNote;
@@ -253,12 +309,24 @@ class SyncService {
           await _dropNote(result.id, filesToClean);
           return;
         }
+        await _revisions.markStale(result.id);
         if (!server.canEdit) {
+          final prior = await _noteRow(result.id);
+          if (prior != null &&
+              !prior.isSynced &&
+              (prior.title != server.title ||
+                  prior.content != server.content)) {
+            // Local-only: the server refuses history from a viewer.
+            await _revisions.record(
+              prior,
+              cause: RevisionCause.conflict,
+              synced: true,
+            );
+          }
           await _upsertServerNote(server, force: true);
           return;
         }
-        // Re-send the local text on top of the server's version. The copy the
-        // server rejected is already in the note's history.
+        // Re-send the local text on top of the server's version.
         await _writeNote(
           result.id,
           _sharingOf(server).copyWith(
@@ -359,7 +427,9 @@ class SyncService {
         }
         await _clearSweep(SyncEntityType.note, entry.entityId);
         final note = entry.note;
-        if (note != null) await _upsertServerNote(note);
+        if (note == null) return;
+        await _upsertServerNote(note);
+        await _revisions.markStale(entry.entityId);
 
       case SyncEntityType.tag:
         if (entry.isRemove) {
@@ -497,6 +567,7 @@ class SyncService {
 
   Future<void> _dropNote(String id, Set<String> filesToClean) async {
     await _dropAttachments(id);
+    await _revisions.deleteForNote(id);
     await (_db.delete(
       _db.noteTags,
     )..where((tbl) => tbl.noteId.equals(id))).go();

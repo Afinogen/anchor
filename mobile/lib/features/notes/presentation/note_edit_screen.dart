@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:anchor/core/logging/app_logger.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/core/providers/active_user_id_provider.dart';
+import 'package:anchor/core/router/app_routes.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/rich_text_editor.dart';
@@ -434,8 +435,20 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         onAttachmentTap: _showAttachmentSheet,
         onArchiveTap: _toggleArchived,
         onDeleteTap: _deleteNote,
+        onHistoryTap: !_isNew && !_isReadOnly ? _openHistory : null,
       ),
     );
+  }
+
+  /// Sends what is typed so far before showing the versions.
+  Future<void> _openHistory() async {
+    final noteId = widget.noteId ?? _existingNote?.id;
+    if (noteId == null) return;
+
+    _autoSaveTimer?.cancel();
+    await _savePendingChanges();
+    if (!mounted) return;
+    context.push('/note/$noteId/${AppRoutes.noteHistory}');
   }
 
   Future<void> _reloadNoteShareInfo() async {

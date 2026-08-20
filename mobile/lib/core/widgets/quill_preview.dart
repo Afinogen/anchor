@@ -64,19 +64,15 @@ class QuillPreview extends StatelessWidget {
         .take(maxLines)
         .toList();
 
-    // Ordered counters per nesting level: deeper levels reset when the list
-    // returns to a shallower one; a level's own count continues across
-    // nested runs, matching the editor's numbering.
-    final orderedCounters = <int, int>{};
+    final orderedMarkers = OrderedMarkerCounter();
     final children = <Widget>[];
 
     for (final line in displayLines) {
       final lineText = line.text.trim();
-      if (line.listType == null) {
-        orderedCounters.clear();
-      } else {
-        orderedCounters.removeWhere((level, _) => level > line.indent);
-      }
+      final marker = orderedMarkers.markerFor(
+        listType: line.listType,
+        indent: line.indent,
+      );
 
       if (line.isChecklist) {
         children.add(
@@ -121,8 +117,6 @@ class QuillPreview extends StatelessWidget {
           ),
         );
       } else if (line.isOrderedList) {
-        final count = (orderedCounters[line.indent] ?? 0) + 1;
-        orderedCounters[line.indent] = count;
         children.add(
           Padding(
             padding: EdgeInsets.only(bottom: 2, left: line.indent * 12.0),
@@ -132,7 +126,7 @@ class QuillPreview extends StatelessWidget {
                 SizedBox(
                   width: 20,
                   child: Text(
-                    _orderedMarker(count, line.indent),
+                    marker!,
                     style: effectiveStyle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -197,9 +191,30 @@ class QuillPreview extends StatelessWidget {
   }
 }
 
+/// Numbering state for ordered list lines. Feed every line through in order:
+/// deeper levels reset when the list returns to a shallower one, and a
+/// level's own count continues across nested runs, matching the editor.
+class OrderedMarkerCounter {
+  final _countByLevel = <int, int>{};
+
+  /// The marker for an ordered line, null for any other.
+  String? markerFor({required String? listType, required int indent}) {
+    if (listType == null) {
+      _countByLevel.clear();
+      return null;
+    }
+    _countByLevel.removeWhere((level, _) => level > indent);
+    if (listType != 'ordered') return null;
+
+    final count = (_countByLevel[indent] ?? 0) + 1;
+    _countByLevel[indent] = count;
+    return orderedListMarker(count, indent);
+  }
+}
+
 /// Marker for an ordered item, cycling number styles by depth like the
 /// editor: 1. at the top level, then a., then i.
-String _orderedMarker(int count, int indent) {
+String orderedListMarker(int count, int indent) {
   return switch (indent % 3) {
     1 => '${_alpha(count)}.',
     2 => '${_roman(count)}.',

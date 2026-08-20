@@ -117,8 +117,16 @@ export class SyncApplyService {
       if (access.permission !== NoteSharePermission.viewer) {
         return { ...base, status: 'denied' };
       }
+      // Viewers can't write history; ack so the client stops resending.
+      if (change.revisionsOnly) {
+        return this.ackRevisionsOnly(userId, change, { record: false });
+      }
       // Viewers can't win content writes; preserve what they typed anyway.
-      return this.noteConflict(userId, change);
+      return this.noteConflict(userId, change, { canWriteHistory: false });
+    }
+
+    if (change.revisionsOnly) {
+      return this.ackRevisionsOnly(userId, change, { record: true });
     }
 
     const outcome = await this.prisma.$transaction(async (tx) => {
@@ -196,9 +204,45 @@ export class SyncApplyService {
       return { ...base, status: 'denied' };
     }
     if (outcome.kind === 'conflict') {
-      return this.noteConflict(userId, change);
+      return this.noteConflict(userId, change, { canWriteHistory: true });
     }
     return { ...base, status: 'applied', version: outcome.version };
+  }
+
+  // A push that carries only recorded history: nothing on the note to apply,
+  // no conflict possible, ack at whatever version the server holds.
+  private async ackRevisionsOnly(
+    userId: string,
+    change: SyncNoteChangeDto,
+    { record }: { record: boolean },
+  ): Promise<SyncApplyResult> {
+    const base = { type: 'note' as const, id: change.id };
+    const note = await this.prisma.note.findUnique({
+      where: { id: change.id },
+    });
+    if (!note) {
+      return { ...base, status: 'denied' };
+    }
+    if (record) {
+      await this.keepClientRevisions(userId, change);
+    }
+    return { ...base, status: 'applied', version: note.version };
+  }
+
+  // Stores the revisions a change carried and tells other devices their read
+  // of this note's history is behind.
+  private async keepClientRevisions(
+    userId: string,
+    change: SyncNoteChangeDto,
+  ): Promise<void> {
+    const revisions = change.revisions;
+    if (!revisions?.length) return;
+
+    await this.prisma.$transaction(async (tx) => {
+      await this.noteRevisions.recordClient(tx, change.id, revisions, userId);
+      const recipients = await this.syncEmitter.noteRecipients(tx, change.id);
+      await this.syncEmitter.emit(tx, noteEmissions(recipients, change.id));
+    });
   }
 
   private async createNote(
@@ -248,6 +292,7 @@ export class SyncApplyService {
   private async noteConflict(
     userId: string,
     change: SyncNoteChangeDto,
+    { canWriteHistory }: { canWriteHistory: boolean },
   ): Promise<SyncApplyResult> {
     const note = await this.prisma.note.findUnique({
       where: { id: change.id },
@@ -263,8 +308,12 @@ export class SyncApplyService {
     }
 
     // A redelivered push whose payload already landed: ack it instead of
-    // conflicting the client against its own content.
+    // conflicting the client against its own content. The ack stops the
+    // client resending, so carried revisions land here.
     if (noteAlreadyMatches(note, userId, change)) {
+      if (canWriteHistory) {
+        await this.keepClientRevisions(userId, change);
+      }
       return {
         type: 'note',
         id: change.id,

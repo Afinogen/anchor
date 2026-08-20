@@ -8,14 +8,9 @@ part of 'sync_compatibility.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Whether this app and the configured server speak the same sync protocol.
-/// Kept for the life of the app and re-read when the server changes.
 
 @ProviderFor(syncCompatibility)
 const syncCompatibilityProvider = SyncCompatibilityProvider._();
-
-/// Whether this app and the configured server speak the same sync protocol.
-/// Kept for the life of the app and re-read when the server changes.
 
 final class SyncCompatibilityProvider
     extends
@@ -27,8 +22,6 @@ final class SyncCompatibilityProvider
     with
         $FutureModifier<SyncCompatibility>,
         $FutureProvider<SyncCompatibility> {
-  /// Whether this app and the configured server speak the same sync protocol.
-  /// Kept for the life of the app and re-read when the server changes.
   const SyncCompatibilityProvider._()
     : super(
         from: null,

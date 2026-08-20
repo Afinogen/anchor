@@ -6,6 +6,8 @@ import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/notes/data/local/notes_table.dart';
 import '../../features/notes/data/local/attachments_table.dart';
+import '../../features/notes/data/local/note_history_state_table.dart';
+import '../../features/notes/data/local/note_revisions_table.dart';
 import '../../features/sync/data/local/sync_tables.dart';
 import '../../features/tags/data/local/tags_table.dart';
 import '../providers/active_user_id_provider.dart';
@@ -13,7 +15,16 @@ import '../providers/active_user_id_provider.dart';
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Notes, Tags, NoteTags, NoteAttachments, SyncState, SyncSweep],
+  tables: [
+    Notes,
+    Tags,
+    NoteTags,
+    NoteAttachments,
+    NoteRevisions,
+    NoteHistoryState,
+    SyncState,
+    SyncSweep,
+  ],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase(String userId) : super(_openConnection(userId));
@@ -22,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 8;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -62,6 +73,11 @@ class AppDatabase extends _$AppDatabase {
               (tbl) => tbl.isSynced.equals(false) & tbl.isPinned.equals(true),
             ))
             .write(const NotesCompanion(isPinSynced: Value(false)));
+      }
+      if (from < 9) {
+        await m.createTable(noteRevisions);
+        await m.createTable(noteHistoryState);
+        await m.createIndex(noteRevisionsNoteCreated);
       }
     },
   );

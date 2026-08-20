@@ -82,7 +82,7 @@ final class SyncManagerProvider extends $NotifierProvider<SyncManager, bool> {
   }
 }
 
-String _$syncManagerHash() => r'd1c64de42261a673b6da0c7d648cebee06879598';
+String _$syncManagerHash() => r'7a3e97e9c6457e182f400d5fc0efd3bf4e3be3ec';
 
 abstract class _$SyncManager extends $Notifier<bool> {
   bool build();
@@ -103,16 +103,11 @@ abstract class _$SyncManager extends $Notifier<bool> {
   }
 }
 
-/// Reactive online status — rebuilds when connectivity changes.
-
 @ProviderFor(isOnline)
 const isOnlineProvider = IsOnlineProvider._();
 
-/// Reactive online status — rebuilds when connectivity changes.
-
 final class IsOnlineProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
-  /// Reactive online status — rebuilds when connectivity changes.
   const IsOnlineProvider._()
     : super(
         from: null,

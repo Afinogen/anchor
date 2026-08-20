@@ -64,6 +64,11 @@ abstract class SharedByUser with _$SharedByUser {
       _$SharedByUserFromJson(json);
 }
 
+/// The display-only 'Untitled' placeholder; a blank title stays blank in
+/// storage.
+String displayTitleOf(String title) =>
+    title.trim().isEmpty ? 'Untitled' : title;
+
 @freezed
 abstract class Note with _$Note {
   const Note._();
@@ -94,7 +99,7 @@ abstract class Note with _$Note {
   factory Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);
 
   /// Title for display; blank stored titles fall back to the 'Untitled' placeholder.
-  String get displayTitle => title.trim().isEmpty ? 'Untitled' : title;
+  String get displayTitle => displayTitleOf(title);
 
   bool get isActive => state == NoteState.active;
   bool get isTrashed => state == NoteState.trashed;
