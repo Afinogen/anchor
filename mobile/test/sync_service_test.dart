@@ -1,5 +1,7 @@
 import 'package:anchor/core/database/app_database.dart';
+import 'package:anchor/features/auth/domain/user.dart';
 import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
+import 'package:anchor/features/notes/data/repository/note_revisions_store.dart';
 import 'package:anchor/features/sync/data/sync_api.dart';
 import 'package:anchor/features/sync/data/sync_service.dart';
 import 'package:dio/dio.dart';
@@ -45,7 +47,15 @@ void main() {
       () => attachments.applyServerAttachments(any(), any()),
     ).thenAnswer((_) async => <String>[]);
 
-    service = SyncService(db, SyncApi(dio), attachments);
+    service = SyncService(
+      db,
+      SyncApi(dio),
+      attachments,
+      NoteRevisionsStore(
+        db,
+        () => const User(id: 'user-1', email: 'me@example.com', name: 'Me'),
+      ),
+    );
   });
 
   tearDown(() => db.close());
@@ -236,6 +246,226 @@ void main() {
     },
   );
 
+  Future<void> insertRevision({
+    required String id,
+    String noteId = 'n1',
+    String title = 'Earlier title',
+    String? content = 'earlier content',
+    String cause = 'edit',
+    bool isSynced = false,
+    DateTime? createdAt,
+  }) {
+    return db
+        .into(db.noteRevisions)
+        .insert(
+          NoteRevisionsCompanion.insert(
+            id: id,
+            noteId: noteId,
+            title: title,
+            content: Value(content),
+            cause: Value(cause),
+            createdAt: (createdAt ?? DateTime.utc(2026, 8, 15, 8))
+                .millisecondsSinceEpoch,
+            isSynced: Value(isSynced),
+          ),
+        );
+  }
+
+  Future<NoteRevisionRow?> revision(String id) => (db.select(
+    db.noteRevisions,
+  )..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+
+  test('carries the versions recorded on the device', () async {
+    await insertNote(id: 'n1', title: 'Edited', version: 4);
+    await insertRevision(id: 'r1');
+    stub([
+      response(
+        results: [
+          {'type': 'note', 'id': 'n1', 'status': 'applied', 'version': 5},
+        ],
+      ),
+    ]);
+
+    await service.run();
+
+    final sent = (changesOf(0).single['revisions'] as List).single;
+    expect(sent, {
+      'id': 'r1',
+      'version': 0,
+      'title': 'Earlier title',
+      'content': 'earlier content',
+      'cause': 'edit',
+      'createdAt': '2026-08-15T08:00:00.000Z',
+    });
+    expect((await revision('r1'))!.isSynced, isTrue);
+  });
+
+  test(
+    'a rejected push keeps its recorded versions for the next try',
+    () async {
+      await insertNote(id: 'n1', title: 'Edited', version: 4);
+      await insertRevision(id: 'r1');
+      stub([
+        response(
+          results: [
+            {
+              'type': 'note',
+              'id': 'n1',
+              'status': 'conflict',
+              'serverCopy': serverNoteJson('n1', version: 6),
+            },
+          ],
+        ),
+      ]);
+
+      await service.run();
+
+      expect((changesOf(1).single['revisions'] as List).single['id'], 'r1');
+      expect((await revision('r1'))!.isSynced, isFalse);
+    },
+  );
+
+  test('more recorded versions than fit one push all go up', () async {
+    await insertNote(id: 'n1', title: 'Edited', version: 4);
+    for (var i = 0; i < 25; i++) {
+      await insertRevision(
+        id: 'r$i',
+        createdAt: DateTime.utc(2026, 8, 15, 8).add(Duration(minutes: i)),
+      );
+    }
+    stub([
+      response(
+        results: [
+          {'type': 'note', 'id': 'n1', 'status': 'applied', 'version': 5},
+        ],
+        nextCursor: 'cursor-1',
+      ),
+      response(
+        results: [
+          {'type': 'note', 'id': 'n1', 'status': 'applied', 'version': 5},
+        ],
+        nextCursor: 'cursor-2',
+      ),
+    ]);
+
+    await service.run();
+
+    expect(changesOf(0).single['revisions'], hasLength(20));
+    final followUp = changesOf(1).single;
+    expect(followUp['baseVersion'], 5);
+    expect((followUp['revisions'] as List).map((json) => (json as Map)['id']), [
+      'r20',
+      'r21',
+      'r22',
+      'r23',
+      'r24',
+    ]);
+    expect((await revision('r24'))!.isSynced, isTrue);
+    expect((await note('n1'))!.isSynced, isTrue);
+  });
+
+  test('more text than fits one request is spread over several', () async {
+    final big = 'x' * (3 * 1024 * 1024);
+    for (var n = 0; n < 3; n++) {
+      await insertNote(id: 'n$n', content: big, version: 4);
+    }
+    stub([
+      response(
+        results: [
+          for (var n = 0; n < 2; n++)
+            {'type': 'note', 'id': 'n$n', 'status': 'applied', 'version': 5},
+        ],
+        nextCursor: 'cursor-1',
+      ),
+      response(
+        results: [
+          {'type': 'note', 'id': 'n2', 'status': 'applied', 'version': 5},
+        ],
+        nextCursor: 'cursor-2',
+      ),
+    ]);
+
+    await service.run();
+
+    expect(changesOf(0).map((change) => change['id']), ['n0', 'n1']);
+    expect(changesOf(1).map((change) => change['id']), ['n2']);
+    for (var n = 0; n < 3; n++) {
+      expect((await note('n$n'))!.isSynced, isTrue);
+    }
+  });
+
+  test('a note too big on its own still goes, versions after it', () async {
+    await insertNote(id: 'n1', content: 'x' * maxRequestBytes, version: 4);
+    await insertRevision(id: 'r1');
+    await insertRevision(id: 'r2', createdAt: DateTime.utc(2026, 8, 15, 9));
+    stub([
+      response(
+        results: [
+          {'type': 'note', 'id': 'n1', 'status': 'applied', 'version': 5},
+        ],
+        nextCursor: 'cursor-1',
+      ),
+      response(
+        results: [
+          {'type': 'note', 'id': 'n1', 'status': 'applied', 'version': 5},
+        ],
+        nextCursor: 'cursor-2',
+      ),
+    ]);
+
+    await service.run();
+
+    expect((changesOf(0).single['revisions'] as List).single['id'], 'r1');
+    final followUp = changesOf(1).single;
+    expect(followUp['id'], 'n1');
+    expect((followUp['revisions'] as List).single['id'], 'r2');
+    expect((await revision('r2'))!.isSynced, isTrue);
+  });
+
+  test('a clean note sends its versions marked as such, and the ack leaves '
+      'the row alone', () async {
+    await insertNote(id: 'n1', isSynced: true, version: 4);
+    await insertRevision(id: 'r1');
+    stub([
+      response(
+        results: [
+          {'type': 'note', 'id': 'n1', 'status': 'applied', 'version': 6},
+        ],
+      ),
+    ]);
+
+    await service.run();
+
+    final change = changesOf(0).single;
+    expect(change['revisionsOnly'], isTrue);
+    expect(change['baseVersion'], 4);
+    expect((change['revisions'] as List).single['id'], 'r1');
+    expect((await revision('r1'))!.isSynced, isTrue);
+
+    // The ack names a version this row's text does not hold yet; only the
+    // feed moves the note.
+    final row = await note('n1');
+    expect(row!.version, 4);
+    expect(row.title, 'Local title');
+    expect(row.isSynced, isTrue);
+    expect(requests, hasLength(1));
+  });
+
+  test('a note changed elsewhere has its history read again', () async {
+    await insertNote(id: 'n1', isSynced: true, version: 4);
+    await db
+        .into(db.noteHistoryState)
+        .insert(NoteHistoryStateCompanion.insert(noteId: 'n1'));
+    stub([
+      response(entries: [noteEntry(serverNoteJson('n1', version: 5))]),
+    ]);
+
+    await service.run();
+
+    final position = await NoteRevisionsStore(db, () => null).position('n1');
+    expect(position.isComplete, isFalse);
+  });
+
   test('a note created offline goes up without a base version', () async {
     await insertNote(id: 'n1', title: 'Brand new');
     stub([
@@ -284,8 +514,9 @@ void main() {
     expect(row.isSynced, isTrue);
   });
 
-  test('a rejected push on a read-only note adopts the server copy', () async {
-    await insertNote(id: 'n1', title: 'Mine', version: 3, permission: 'viewer');
+  test('a read-only conflict adopts the server copy and keeps the overwritten '
+      'text as a version', () async {
+    await insertNote(id: 'n1', title: 'Mine', version: 3);
     stub([
       response(
         results: [
@@ -311,6 +542,13 @@ void main() {
     expect(row.version, 7);
     expect(row.isSynced, isTrue);
     expect(requests, hasLength(1));
+
+    final kept = await (db.select(
+      db.noteRevisions,
+    )..where((tbl) => tbl.noteId.equals('n1'))).getSingle();
+    expect(kept.title, 'Mine');
+    expect(kept.cause, 'conflict');
+    expect(kept.isSynced, isTrue);
   });
 
   test('a denied push drops the note instead of recreating it', () async {

@@ -1,6 +1,10 @@
 import 'package:anchor/core/database/app_database.dart';
+import 'package:anchor/features/auth/domain/user.dart';
 import 'package:anchor/features/notes/data/repository/note_attachments_repository.dart';
+import 'package:anchor/features/notes/data/repository/note_revisions_store.dart';
 import 'package:anchor/features/notes/data/repository/notes_repository.dart';
+import 'package:anchor/features/notes/domain/note.dart' as domain;
+import 'package:anchor/features/notes/domain/note_revision.dart';
 import 'package:anchor/features/tags/data/repository/tags_repository.dart';
 import 'package:drift/drift.dart' hide isNull, isNotNull;
 import 'package:drift/native.dart';
@@ -14,12 +18,22 @@ class MockAttachmentsRepo extends Mock implements NoteAttachmentsRepository {}
 void main() {
   late AppDatabase db;
   late TagsRepository tagsRepo;
+  late NoteRevisionsStore revisions;
+  late MockAttachmentsRepo attachments;
   late NotesRepository repo;
+
+  const author = User(id: 'user-1', email: 'me@example.com', name: 'Me');
 
   setUp(() {
     db = AppDatabase.forTesting(NativeDatabase.memory());
     tagsRepo = TagsRepository(db);
-    repo = NotesRepository(db, tagsRepo, MockAttachmentsRepo());
+    revisions = NoteRevisionsStore(db, () => author);
+    attachments = MockAttachmentsRepo();
+    repo = NotesRepository(db, tagsRepo, attachments, revisions);
+
+    when(
+      () => attachments.deleteAllLocalForNote(any()),
+    ).thenAnswer((_) async {});
   });
 
   tearDown(() => db.close());
@@ -264,6 +278,86 @@ void main() {
       );
 
       expect(await tagsRepo.watchTagsForNote('n1').first, isEmpty);
+    });
+  });
+
+  group('history', () {
+    Future<domain.Note> stored(String id) async => (await repo.getNote(id))!;
+
+    test('an edit keeps what the note said before it', () async {
+      await insertNote(id: 'n1', title: 'Groceries');
+      await repo.updateNote((await stored('n1')).copyWith(content: 'milk'));
+
+      final kept = await revisions.watch('n1').first;
+
+      expect(kept, hasLength(1));
+      expect(kept.single.title, 'Groceries');
+      expect(kept.single.content, isNull);
+      expect(kept.single.cause, RevisionCause.edit);
+      expect(kept.single.author?.id, 'user-1');
+    });
+
+    test('a change that leaves the text alone keeps no version', () async {
+      await insertNote(id: 'n1', title: 'Groceries');
+      await repo.updateNote((await stored('n1')).copyWith(isArchived: true));
+
+      expect(await revisions.watch('n1').first, isEmpty);
+    });
+
+    test('successive edits fold into the version already kept', () async {
+      await insertNote(id: 'n1', title: 'Groceries');
+      await repo.updateNote((await stored('n1')).copyWith(content: 'milk'));
+      await repo.updateNote(
+        (await stored('n1')).copyWith(content: 'milk, eggs'),
+      );
+
+      final kept = await revisions.watch('n1').first;
+
+      expect(kept, hasLength(1));
+      expect(kept.single.content, isNull);
+    });
+
+    test('restoring swaps the text and keeps what it replaced', () async {
+      await insertNote(id: 'n1', title: 'Groceries');
+      await repo.updateNote((await stored('n1')).copyWith(content: 'milk'));
+      final earlier = (await revisions.watch('n1').first).single;
+
+      await repo.restoreVersion('n1', earlier);
+
+      final note = await stored('n1');
+      expect(note.content, isNull);
+      expect(note.isSynced, isFalse);
+
+      final kept = await revisions.watch('n1').first;
+      expect(kept.first.cause, RevisionCause.restore);
+      expect(kept.first.content, 'milk');
+    });
+
+    test('a version waiting to go up is not pruned away', () async {
+      await insertNote(id: 'n1', title: 'Groceries');
+      await repo.updateNote((await stored('n1')).copyWith(content: 'milk'));
+      await (db.update(db.noteRevisions)).write(
+        NoteRevisionsCompanion(
+          createdAt: Value(
+            DateTime.now()
+                .subtract(const Duration(days: 200))
+                .millisecondsSinceEpoch,
+          ),
+        ),
+      );
+
+      await revisions.prune('n1');
+
+      expect(await revisions.watch('n1').first, hasLength(1));
+    });
+
+    test('permanently deleting a note takes its history with it', () async {
+      await insertNote(id: 'n1', title: 'Groceries');
+      await repo.updateNote((await stored('n1')).copyWith(content: 'milk'));
+
+      await repo.permanentDelete('n1');
+
+      expect(await revisions.watch('n1').first, isEmpty);
     });
   });
 }
