@@ -66,7 +66,11 @@ class _NoteAttachmentsGalleryState
         final audios = attachments.where((a) => a.isAudio).toList();
 
         return Padding(
-          padding: EdgeInsets.fromLTRB(dims.xl, dims.md, dims.xl, dims.xs),
+          padding: EdgeInsets.only(
+            left: dims.editorPadding.left,
+            right: dims.editorPadding.right,
+            top: dims.md,
+          ),
           child: GestureDetector(
             onTap: () {}, // Prevent taps in gallery area from focusing editor
             behavior: HitTestBehavior.opaque,

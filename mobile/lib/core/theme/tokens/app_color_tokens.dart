@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'app_palette.dart';
+
 /// Semantic colors that aren't part of [ColorScheme]: page and sheet
 /// gradients, status colors, and the shared card/sheet chrome.
 @immutable
@@ -8,7 +10,6 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
     required this.pageGradient,
     required this.sheetGradient,
     required this.success,
-    required this.error,
     required this.warning,
     required this.subtleBorder,
     required this.cardFill,
@@ -27,10 +28,9 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
   final LinearGradient sheetGradient;
 
   final Color success;
-  final Color error;
   final Color warning;
 
-  /// Hairline border used on glassy cards (onSurface at 6%).
+  /// Hairline border used on glassy cards.
   final Color subtleBorder;
 
   /// Glassy card fill used by SettingsCard.
@@ -49,21 +49,20 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
     pageGradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFFF8F9FC), Color(0xFFEEF1F8)],
+      colors: [AppPalette.gradientLightTop, AppPalette.gradientLightBottom],
     ),
     sheetGradient: LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [Colors.white, Color(0xFFF8F9FC)],
+      colors: [AppPalette.surfaceLight, AppPalette.gradientLightTop],
     ),
-    success: Color(0xFF2E7D32),
-    error: Color(0xFFC62828),
-    warning: Color(0xFFE65100),
-    subtleBorder: Color(0x0F2D3142),
+    success: AppPalette.successLight,
+    warning: AppPalette.warningLight,
+    subtleBorder: Color(0x0F2D3142), // slate at ~6%
     cardFill: Color(0xCCFFFFFF),
     inputFill: Color(0x99FFFFFF),
-    shimmerBase: Color(0xFFE5E9EE),
-    shimmerHighlight: Color(0xFFF2F4F8),
+    shimmerBase: AppPalette.shimmerBaseLight,
+    shimmerHighlight: AppPalette.shimmerHighlightLight,
     cardShadow: BoxShadow(
       color: Color(0x0A000000),
       blurRadius: 20,
@@ -80,21 +79,20 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
     pageGradient: LinearGradient(
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
-      colors: [Color(0xFF1C1E26), Color(0xFF262A36)],
+      colors: [AppPalette.bgDark, AppPalette.surfaceDark],
     ),
     sheetGradient: LinearGradient(
       begin: Alignment.topCenter,
       end: Alignment.bottomCenter,
-      colors: [Color(0xFF262A36), Color(0xFF1C1E26)],
+      colors: [AppPalette.surfaceDark, AppPalette.bgDark],
     ),
-    success: Color(0xFF4CAF50),
-    error: Color(0xFFEF5350),
-    warning: Color(0xFFFF9800),
-    subtleBorder: Color(0x0FEAEAEA),
+    success: AppPalette.successDark,
+    warning: AppPalette.warningDark,
+    subtleBorder: Color(0x0FEAEAEA), // offWhite at ~6%
     cardFill: Color(0x0DFFFFFF),
-    inputFill: Color(0x08FFFFFF),
-    shimmerBase: Color(0xFF3A3E4A),
-    shimmerHighlight: Color(0xFF484D5A),
+    inputFill: Color(0x1AFFFFFF),
+    shimmerBase: AppPalette.shimmerBaseDark,
+    shimmerHighlight: AppPalette.shimmerHighlightDark,
     cardShadow: BoxShadow(
       color: Color(0x33000000),
       blurRadius: 20,
@@ -115,7 +113,6 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
     LinearGradient? pageGradient,
     LinearGradient? sheetGradient,
     Color? success,
-    Color? error,
     Color? warning,
     Color? subtleBorder,
     Color? cardFill,
@@ -129,7 +126,6 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
       pageGradient: pageGradient ?? this.pageGradient,
       sheetGradient: sheetGradient ?? this.sheetGradient,
       success: success ?? this.success,
-      error: error ?? this.error,
       warning: warning ?? this.warning,
       subtleBorder: subtleBorder ?? this.subtleBorder,
       cardFill: cardFill ?? this.cardFill,
@@ -152,7 +148,6 @@ class AppColorTokens extends ThemeExtension<AppColorTokens> {
           LinearGradient.lerp(sheetGradient, other.sheetGradient, t) ??
           sheetGradient,
       success: Color.lerp(success, other.success, t)!,
-      error: Color.lerp(error, other.error, t)!,
       warning: Color.lerp(warning, other.warning, t)!,
       subtleBorder: Color.lerp(subtleBorder, other.subtleBorder, t)!,
       cardFill: Color.lerp(cardFill, other.cardFill, t)!,

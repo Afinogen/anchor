@@ -8,6 +8,7 @@ import 'package:anchor/core/widgets/quill_preview.dart'
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_selector.dart';
 import '../notes_controller.dart';
+import 'package:anchor/core/widgets/app_bottom_sheet.dart';
 
 class SelectionAppBarActions extends ConsumerWidget {
   final Set<String> selectedNoteIds;
@@ -128,10 +129,8 @@ class SelectionAppBarActions extends ConsumerWidget {
     // TagPickerSheet reports the running selection; capture the latest set
     // and merge it into the notes once the sheet is dismissed.
     final selectedTagIds = <String>[];
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    await AppBottomSheet.show(
+      context,
       builder: (context) => TagPickerSheet(
         selectedTagIds: const [],
         onTagsChanged: (tagIds) {

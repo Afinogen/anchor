@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../../../core/theme/context_extensions.dart';
 import '../../../../core/theme/tokens/app_icon_sizes.dart';
-import '../../../../core/theme/tokens/app_radius.dart';
+import '../../../../core/widgets/app_bottom_sheet.dart';
 
 class NoteOptionsSheet extends StatelessWidget {
   final bool isReadOnly;
@@ -35,143 +35,84 @@ class NoteOptionsSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final dims = context.dims;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: context.colorTokens.sheetGradient,
-        borderRadius: AppRadius.sheetTopBorder,
-        boxShadow: [context.colorTokens.sheetShadow],
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              margin: EdgeInsets.only(top: dims.sm),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                borderRadius: AppRadius.handleBorder,
-              ),
-            ),
-
-            // Header
-            Padding(
-              padding: EdgeInsets.fromLTRB(dims.xl, dims.lg, dims.md, dims.xl),
-              child: Row(
+    return AppBottomSheet(
+      icon: LucideIcons.moreHorizontal,
+      title: 'More Options',
+      subtitle: 'Customize and manage your note',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Options Grid
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: dims.xl),
+            child: SizedBox(
+              width: double.infinity,
+              child: Wrap(
+                spacing: dims.lg,
+                runSpacing: dims.xl,
+                alignment: WrapAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: AppRadius.smBorder,
+                  if (!isReadOnly)
+                    _GridOptionTile(
+                      icon: LucideIcons.palette,
+                      title: 'Background',
+                      onTap: () {
+                        Navigator.pop(context);
+                        onBackgroundTap();
+                      },
                     ),
-                    child: Icon(
-                      LucideIcons.moreHorizontal,
-                      color: theme.colorScheme.primary,
-                      size: AppIconSizes.md,
+
+                  if (!isReadOnly)
+                    _GridOptionTile(
+                      icon: LucideIcons.paperclip,
+                      title: 'Attachment',
+                      onTap: () {
+                        Navigator.pop(context);
+                        onAttachmentTap();
+                      },
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'More Options',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'Customize and manage your note',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.6,
-                            ),
-                          ),
-                        ),
-                      ],
+
+                  if (onHistoryTap != null)
+                    _GridOptionTile(
+                      icon: LucideIcons.history,
+                      title: 'History',
+                      onTap: () {
+                        Navigator.pop(context);
+                        onHistoryTap!();
+                      },
                     ),
-                  ),
+
+                  if (!isReadOnly && isOwner && !isNew) ...[
+                    _GridOptionTile(
+                      icon: isArchived
+                          ? LucideIcons.archiveRestore
+                          : LucideIcons.archive,
+                      title: isArchived ? 'Unarchive' : 'Archive',
+                      onTap: () {
+                        Navigator.pop(context);
+                        onArchiveTap();
+                      },
+                    ),
+                    _GridOptionTile(
+                      icon: LucideIcons.trash2,
+                      title: 'Delete',
+                      iconColor: theme.colorScheme.error,
+                      textColor: theme.colorScheme.error,
+                      backgroundColor: theme.colorScheme.error.withValues(
+                        alpha: 0.1,
+                      ),
+                      onTap: () {
+                        Navigator.pop(context);
+                        onDeleteTap();
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),
-
-            // Options Grid
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: dims.xl),
-              child: SizedBox(
-                width: double.infinity,
-                child: Wrap(
-                  spacing: dims.lg,
-                  runSpacing: dims.xl,
-                  alignment: WrapAlignment.start,
-                  children: [
-                    if (!isReadOnly)
-                      _GridOptionTile(
-                        icon: LucideIcons.palette,
-                        title: 'Background',
-                        onTap: () {
-                          Navigator.pop(context);
-                          onBackgroundTap();
-                        },
-                      ),
-
-                    if (!isReadOnly)
-                      _GridOptionTile(
-                        icon: LucideIcons.paperclip,
-                        title: 'Attachment',
-                        onTap: () {
-                          Navigator.pop(context);
-                          onAttachmentTap();
-                        },
-                      ),
-
-                    if (onHistoryTap != null)
-                      _GridOptionTile(
-                        icon: LucideIcons.history,
-                        title: 'History',
-                        onTap: () {
-                          Navigator.pop(context);
-                          onHistoryTap!();
-                        },
-                      ),
-
-                    if (!isReadOnly && isOwner && !isNew) ...[
-                      _GridOptionTile(
-                        icon: isArchived
-                            ? LucideIcons.archiveRestore
-                            : LucideIcons.archive,
-                        title: isArchived ? 'Unarchive' : 'Archive',
-                        onTap: () {
-                          Navigator.pop(context);
-                          onArchiveTap();
-                        },
-                      ),
-                      _GridOptionTile(
-                        icon: LucideIcons.trash2,
-                        title: 'Delete',
-                        iconColor: theme.colorScheme.error,
-                        textColor: theme.colorScheme.error,
-                        backgroundColor: theme.colorScheme.error.withValues(
-                          alpha: 0.1,
-                        ),
-                        onTap: () {
-                          Navigator.pop(context);
-                          onDeleteTap();
-                        },
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-            SizedBox(height: dims.xxl),
-          ],
-        ),
+          ),
+          SizedBox(height: dims.xxl),
+        ],
       ),
     );
   }

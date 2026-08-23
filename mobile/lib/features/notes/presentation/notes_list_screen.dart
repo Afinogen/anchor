@@ -11,8 +11,10 @@ import 'package:anchor/core/widgets/app_drawer.dart';
 import 'package:anchor/features/tags/presentation/tags_controller.dart';
 import 'package:anchor/features/tags/domain/tag.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
+import 'package:anchor/features/notes/presentation/widgets/notes_search_bar.dart';
 import 'package:anchor/features/notes/presentation/widgets/selection_app_bar_actions.dart';
-import 'package:anchor/features/notes/presentation/widgets/empty_states.dart';
+import 'package:anchor/core/widgets/app_empty_state.dart';
+import 'package:anchor/core/widgets/gradient_background.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/features/sync/presentation/sync_warning.dart';
 import 'notes_controller.dart';
@@ -21,6 +23,9 @@ import 'widgets/view_options_sheet.dart';
 import '../../../core/theme/context_extensions.dart';
 import '../../../core/theme/tokens/app_icon_sizes.dart';
 import '../../../core/theme/tokens/app_radius.dart';
+import 'package:anchor/core/widgets/app_bottom_sheet.dart';
+import 'package:anchor/core/widgets/app_bar_scrim.dart';
+import 'package:anchor/core/widgets/large_title_app_bar.dart';
 
 class NotesListScreen extends ConsumerStatefulWidget {
   const NotesListScreen({super.key});
@@ -31,6 +36,13 @@ class NotesListScreen extends ConsumerStatefulWidget {
 
 class _NotesListScreenState extends ConsumerState<NotesListScreen> {
   final _searchController = TextEditingController();
+
+  /// Height of an extended FAB, which Material does not export.
+  static const double _extendedFabHeight = 56;
+
+  /// Room under the last card for the FAB floating over it.
+  static const double _fabClearance =
+      _extendedFabHeight + kFloatingActionButtonMargin;
 
   @override
   void initState() {
@@ -113,38 +125,24 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
       },
       child: Scaffold(
         drawer: const AppDrawer(),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.surface,
-                Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-              ],
-            ),
-          ),
+        body: ContentBackground(
           child: RefreshIndicator.adaptive(
             onRefresh: _onRefresh,
             displacement: 20,
-            edgeOffset: 120, // Position below the pinned app bar
+            edgeOffset: dims.appBarExpandedHeight,
             color: theme.colorScheme.primary,
             child: CustomScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 SliverAppBar(
-                  backgroundColor: theme.colorScheme.surface.withValues(
-                    alpha: 0.9,
-                  ),
+                  backgroundColor: Colors.transparent,
                   floating: true,
                   pinned: true,
                   expandedHeight: isSelectionMode
-                      ? 56
+                      ? kToolbarHeight
                       : dims.appBarExpandedHeight,
-                  toolbarHeight: 56,
+                  toolbarHeight: kToolbarHeight,
                   scrolledUnderElevation: 0,
                   leading: isSelectionMode
                       ? IconButton(
@@ -159,14 +157,20 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                             tooltip: 'Menu',
                           ),
                         ),
-                  flexibleSpace: isSelectionMode
-                      ? null
-                      : FlexibleSpaceBar(
+                  flexibleSpace: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      const AppBarScrim(),
+                      if (!isSelectionMode)
+                        FlexibleSpaceBar(
                           centerTitle: Platform.isIOS,
-                          expandedTitleScale: 1.2,
+                          expandedTitleScale:
+                              LargeTitleAppBar.expandedTitleScale,
                           titlePadding: EdgeInsets.only(
-                            left: 56,
-                            right: Platform.isIOS ? 56 : 0,
+                            left: LargeTitleAppBar.titleInset,
+                            right: Platform.isIOS
+                                ? LargeTitleAppBar.titleInset
+                                : 0,
                             bottom: dims.sm,
                           ),
                           title: Text(
@@ -178,6 +182,8 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                             ),
                           ),
                         ),
+                    ],
+                  ),
                   title: isSelectionMode
                       ? Text(
                           selectedNoteIds.isEmpty
@@ -211,11 +217,9 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                           ),
                           tooltip: 'View options',
                           onPressed: () {
-                            showModalBottomSheet(
-                              context: context,
+                            AppBottomSheet.show(
+                              context,
                               builder: (context) => const ViewOptionsSheet(),
-                              useSafeArea: true,
-                              isScrollControlled: true,
                             );
                           },
                         ),
@@ -223,45 +227,25 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                   ],
                 ),
                 SliverPadding(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: dims.screenGutter,
-                    vertical: dims.xs,
+                  padding: EdgeInsets.fromLTRB(
+                    dims.screenGutter,
+                    dims.xs,
+                    dims.screenGutter,
+                    0,
                   ),
                   sliver: SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SyncWarning(),
-                        SearchBar(
+                        NotesSearchBar(
                           controller: _searchController,
-                          elevation: WidgetStateProperty.all(0),
-                          backgroundColor: WidgetStateProperty.all(
-                            Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest
-                                .withValues(alpha: 0.5),
-                          ),
-                          hintText: 'Search your thoughts...',
-                          leading: const Icon(LucideIcons.search),
-                          trailing: [
-                            if (searchQuery.isNotEmpty)
-                              IconButton(
-                                icon: const Icon(LucideIcons.x),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  ref
-                                      .read(searchQueryProvider.notifier)
-                                      .set('');
-                                },
-                              ),
-                          ],
-                          shape: WidgetStateProperty.all(
-                            const RoundedRectangleBorder(
-                              borderRadius: AppRadius.mdBorder,
-                            ),
-                          ),
-                          onChanged: (value) {
-                            ref.read(searchQueryProvider.notifier).set(value);
+                          query: searchQuery,
+                          onChanged: (value) =>
+                              ref.read(searchQueryProvider.notifier).set(value),
+                          onClear: () {
+                            _searchController.clear();
+                            ref.read(searchQueryProvider.notifier).set('');
                           },
                         ),
                         // Tag filter indicator
@@ -294,9 +278,15 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
 
                     if (filteredNotes.isEmpty) {
                       if (searchQuery.isNotEmpty) {
-                        return const EmptySearchState();
+                        return const SliverAppEmptyState(
+                          icon: LucideIcons.search,
+                          message: 'No matching notes found',
+                        );
                       }
-                      return const EmptyNotesState();
+                      return const SliverAppEmptyState(
+                        icon: LucideIcons.sparkles,
+                        message: 'Capture your ideas here',
+                      );
                     }
 
                     if (viewOptions == null) {
@@ -306,7 +296,11 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                     filteredNotes.sort(noteComparator(viewOptions));
 
                     return SliverPadding(
-                      padding: dims.screenInsets,
+                      padding: dims.screenInsets.copyWith(
+                        bottom:
+                            dims.screenGutter +
+                            (isSelectionMode ? 0 : _fabClearance),
+                      ),
                       sliver: viewOptions.viewType == ViewType.grid
                           ? SliverMasonryGrid.count(
                               crossAxisCount: 2,

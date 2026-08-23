@@ -29,6 +29,7 @@ import '../data/repository/notes_repository.dart';
 import 'package:anchor/core/theme/context_extensions.dart';
 import 'package:anchor/core/theme/tokens/app_icon_sizes.dart';
 import 'package:anchor/core/theme/tokens/app_radius.dart';
+import 'package:anchor/core/widgets/app_bottom_sheet.dart';
 
 class NoteEditScreen extends ConsumerStatefulWidget {
   final String? noteId;
@@ -360,10 +361,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
     if (!_isNew && _existingNote?.isActive != true) {
       return;
     }
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
+    AppBottomSheet.show(
+      context,
       builder: (context) => NoteBackgroundPicker(
         selectedColor: _selectedBackground,
         onColorChanged: (color) {
@@ -382,10 +381,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
         !(_existingNote?.isOwner ?? true)) {
       return;
     }
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
+    AppBottomSheet.show(
+      context,
       builder: (context) =>
           ShareNoteSheet(noteId: widget.noteId ?? _existingNote!.id),
     ).then((_) {
@@ -396,10 +393,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   void _showAttachmentSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
+    AppBottomSheet.show(
+      context,
       builder: (context) => NoteAttachmentSheet(
         onFileSelected: (filePath, mimeType, filename) async {
           try {
@@ -422,10 +417,8 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
   }
 
   void _showOptionsSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
+    AppBottomSheet.show(
+      context,
       builder: (context) => NoteOptionsSheet(
         isReadOnly: _isReadOnly,
         isNew: _isNew,
@@ -822,12 +815,19 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
 
   Widget _buildEditorHeader(ThemeData theme) {
     final isReadOnly = _isReadOnly;
+    final dims = context.dims;
+    final showTags = (_isEditing && !isReadOnly) || _selectedTagIds.isNotEmpty;
+    final showAttachments =
+        !_isNew && (_existingNote != null || widget.noteId != null);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: context.dims.editorPadding.left,
+          padding: EdgeInsets.only(
+            left: dims.editorPadding.left,
+            right: dims.editorPadding.right,
+            top: dims.xs,
           ),
           child: GestureDetector(
             onTap: !isReadOnly
@@ -860,7 +860,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                         ),
                       ),
                 border: InputBorder.none,
-                contentPadding: EdgeInsets.symmetric(vertical: context.dims.md),
+                contentPadding: EdgeInsets.zero,
                 filled: false,
               ),
               textCapitalization: TextCapitalization.sentences,
@@ -868,7 +868,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
             ),
           ),
         ),
-        if ((_isEditing && !isReadOnly) || _selectedTagIds.isNotEmpty)
+        if (showTags)
           TagSelector(
             selectedTagIds: _selectedTagIds,
             readOnly: !_isEditing || isReadOnly,
@@ -879,7 +879,7 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
               }
             },
           ),
-        if (!_isNew && (_existingNote != null || widget.noteId != null))
+        if (showAttachments)
           NoteAttachmentsGallery(
             noteId: widget.noteId ?? _existingNote!.id,
             isOwner: _existingNote?.isOwner ?? false,

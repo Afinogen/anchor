@@ -16,6 +16,9 @@ class AppRadius {
   /// Buttons and other small pill-shaped controls.
   static const double button = 14;
 
+  /// Floating action button.
+  static const double fab = 18;
+
   /// Sheet drag handle.
   static const double handle = 2;
 
@@ -26,6 +29,10 @@ class AppRadius {
   static const BorderRadius xlBorder = BorderRadius.all(Radius.circular(xl));
   static const BorderRadius buttonBorder = BorderRadius.all(
     Radius.circular(button),
+  );
+  static const BorderRadius fabBorder = BorderRadius.all(Radius.circular(fab));
+  static const BorderRadius sheetBorder = BorderRadius.all(
+    Radius.circular(sheet),
   );
   static const BorderRadius sheetTopBorder = BorderRadius.vertical(
     top: Radius.circular(sheet),

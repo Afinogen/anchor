@@ -13,7 +13,6 @@ import '../../../core/theme/context_extensions.dart';
 import '../../../core/theme/tokens/app_icon_sizes.dart';
 import '../../../core/theme/tokens/app_radius.dart';
 import '../../../core/widgets/app_section_header.dart';
-import '../../../core/widgets/gradient_background.dart';
 import '../../../core/widgets/settings_card.dart';
 import '../../../core/widgets/settings_row.dart';
 import '../data/repository/note_history_repository.dart';
@@ -23,6 +22,8 @@ import '../domain/note.dart';
 import '../domain/note_history.dart';
 import '../domain/note_revision.dart';
 import 'note_revision_screen.dart';
+import 'package:anchor/core/theme/tokens/app_opacity.dart';
+import 'package:anchor/core/widgets/app_page_scaffold.dart';
 
 const double _minRowHeight = 48;
 const double _badgeSize = 32;
@@ -157,26 +158,13 @@ class _NoteHistoryScreenState extends ConsumerState<NoteHistoryScreen> {
 
     final theme = Theme.of(context);
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.8),
-        leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft),
-          onPressed: () => context.pop(),
-        ),
-        title: Text(
-          'History',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: GradientBackground(
-        child: RefreshIndicator.adaptive(
-          onRefresh: _refresh,
-          color: theme.colorScheme.primary,
-          child: _buildBody(theme),
-        ),
+    return AppPageScaffold(
+      title: const Text('History'),
+      body: RefreshIndicator.adaptive(
+        onRefresh: _refresh,
+        edgeOffset: AppPageScaffold.topInset(context),
+        color: theme.colorScheme.primary,
+        child: _buildBody(theme),
       ),
     );
   }
@@ -199,7 +187,7 @@ class _NoteHistoryScreenState extends ConsumerState<NoteHistoryScreen> {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: EdgeInsets.fromLTRB(
         dims.screenGutter,
-        dims.md,
+        AppPageScaffold.topInset(context) + dims.md,
         dims.screenGutter,
         dims.xxl,
       ),
@@ -475,7 +463,9 @@ class _EmptyHistory extends StatelessWidget {
                       : 'No earlier versions yet',
                   textAlign: TextAlign.center,
                   style: theme.textTheme.bodyLarge?.copyWith(
-                    color: theme.hintColor,
+                    color: theme.colorScheme.onSurface.withValues(
+                      alpha: AppOpacity.secondary,
+                    ),
                   ),
                 ),
                 SizedBox(height: dims.xs),

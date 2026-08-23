@@ -11,7 +11,6 @@ import '../../../core/theme/context_extensions.dart';
 import '../../../core/theme/tokens/app_icon_sizes.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/confirm_dialog.dart';
-import '../../../core/widgets/gradient_background.dart';
 import '../data/repository/note_revisions_store.dart';
 import '../data/repository/notes_repository.dart';
 import '../domain/note.dart';
@@ -19,6 +18,7 @@ import '../domain/note_diff.dart';
 import '../domain/note_history.dart';
 import '../domain/note_revision.dart';
 import 'widgets/note_diff_view.dart';
+import 'package:anchor/core/widgets/app_page_scaffold.dart';
 
 /// Stands in for a revision id to read the note as it is now.
 const String currentVersionId = 'current';
@@ -137,30 +137,23 @@ class _NoteRevisionScreenState extends ConsumerState<NoteRevisionScreen> {
     final theme = Theme.of(context);
     final revision = _revision;
 
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.8),
-        leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft),
-          onPressed: () => context.pop(),
-        ),
-        title: _Title(
-          revision: revision,
-          isCurrent: _isCurrent,
-          showAuthor: historyHasMultipleAuthors(_revisions),
-          currentUserId: ref.read(activeUserIdProvider),
-        ),
-        actions: [
-          if (!_isCurrent)
-            TextButton.icon(
-              onPressed: _canRestore ? () => _restore(revision!) : null,
-              icon: const Icon(LucideIcons.rotateCcw, size: AppIconSizes.sm),
-              label: const Text('Restore'),
-            ),
-          SizedBox(width: context.dims.xxs),
-        ],
+    return AppPageScaffold(
+      title: _Title(
+        revision: revision,
+        isCurrent: _isCurrent,
+        showAuthor: historyHasMultipleAuthors(_revisions),
+        currentUserId: ref.read(activeUserIdProvider),
       ),
-      body: GradientBackground(child: _buildBody(theme, revision)),
+      actions: [
+        if (!_isCurrent)
+          TextButton.icon(
+            onPressed: _canRestore ? () => _restore(revision!) : null,
+            icon: const Icon(LucideIcons.rotateCcw, size: AppIconSizes.sm),
+            label: const Text('Restore'),
+          ),
+        SizedBox(width: context.dims.xxs),
+      ],
+      body: _buildBody(theme, revision),
     );
   }
 
@@ -191,7 +184,12 @@ class _NoteRevisionScreenState extends ConsumerState<NoteRevisionScreen> {
 
     final dims = context.dims;
     return ListView(
-      padding: EdgeInsets.fromLTRB(dims.md, dims.md, dims.md, dims.xxl),
+      padding: EdgeInsets.fromLTRB(
+        dims.md,
+        AppPageScaffold.topInset(context) + dims.md,
+        dims.md,
+        dims.xxl,
+      ),
       children: [
         if (unchanged != null)
           Padding(

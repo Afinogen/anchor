@@ -13,6 +13,8 @@ import '../../../../core/network/server_config_provider.dart';
 import '../../../../core/theme/context_extensions.dart';
 import '../../../../core/theme/tokens/app_icon_sizes.dart';
 import '../../../../core/theme/tokens/app_radius.dart';
+import '../../../../core/widgets/app_bottom_sheet.dart';
+import '../../../../core/widgets/app_icon_chip.dart';
 
 class ShareNoteSheet extends ConsumerStatefulWidget {
   final String noteId;
@@ -182,9 +184,8 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
   }
 
   void _showPermissionPicker(UserSearchResult user) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
+    AppBottomSheet.show(
+      context,
       builder: (ctx) => _PermissionPickerSheet(
         userName: user.name,
         onSelect: (permission) {
@@ -198,160 +199,84 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final serverUrl = ref.watch(serverUrlProvider);
     final dims = context.dims;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: keyboardHeight),
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.7,
-        ),
-        decoration: BoxDecoration(
-          gradient: context.colorTokens.sheetGradient,
-          borderRadius: AppRadius.sheetTopBorder,
-          boxShadow: [context.colorTokens.sheetShadow],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Handle bar
-            Container(
-              margin: EdgeInsets.only(top: dims.sm),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                borderRadius: AppRadius.handleBorder,
-              ),
-            ),
-
-            // Header
-            Padding(
-              padding: EdgeInsets.fromLTRB(dims.xl, dims.lg, dims.md, dims.md),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: AppRadius.smBorder,
-                    ),
-                    child: Icon(
-                      LucideIcons.userPlus,
-                      color: theme.colorScheme.primary,
-                      size: AppIconSizes.md,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Share Note',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
+    return AppBottomSheet(
+      avoidKeyboard: true,
+      maxHeightFactor: 0.7,
+      icon: LucideIcons.userPlus,
+      title: 'Share Note',
+      subtitle: 'Collaborate with others',
+      showDone: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Search field
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: dims.xl),
+            child: TextField(
+              controller: _searchController,
+              focusNode: _searchFocus,
+              style: theme.textTheme.bodyLarge,
+              decoration: InputDecoration(
+                hintText: 'Search by name or email...',
+                hintStyle: TextStyle(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+                ),
+                prefixIcon: Icon(
+                  LucideIcons.search,
+                  size: 18,
+                  color: theme.colorScheme.primary,
+                ),
+                suffixIcon: _isSearching
+                    ? Padding(
+                        padding: EdgeInsets.all(dims.sm),
+                        child: const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
                         ),
-                        Text(
-                          'Collaborate with others',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(
-                              alpha: 0.6,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  FilledButton.tonal(
-                    onPressed: () => Navigator.pop(context),
-                    style: FilledButton.styleFrom(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: dims.md,
-                        vertical: dims.xs,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Text('Done'),
-                  ),
-                ],
-              ),
-            ),
-
-            // Search field
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: dims.xl),
-              child: TextField(
-                controller: _searchController,
-                focusNode: _searchFocus,
-                style: theme.textTheme.bodyLarge,
-                decoration: InputDecoration(
-                  hintText: 'Search by name or email...',
-                  hintStyle: TextStyle(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
-                  ),
-                  prefixIcon: Icon(
-                    LucideIcons.search,
-                    size: 18,
+                      )
+                    : _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(LucideIcons.x, size: 18),
+                        onPressed: () {
+                          _searchController.clear();
+                          setState(() => _searchResults = []);
+                        },
+                      )
+                    : null,
+                filled: true,
+                fillColor: context.colorTokens.inputFill,
+                border: OutlineInputBorder(
+                  borderRadius: AppRadius.buttonBorder,
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: AppRadius.buttonBorder,
+                  borderSide: BorderSide(
                     color: theme.colorScheme.primary,
+                    width: 1.5,
                   ),
-                  suffixIcon: _isSearching
-                      ? Padding(
-                          padding: EdgeInsets.all(dims.sm),
-                          child: const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        )
-                      : _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(LucideIcons.x, size: 18),
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() => _searchResults = []);
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: theme.colorScheme.onSurface.withValues(
-                    alpha: 0.05,
-                  ),
-                  border: OutlineInputBorder(
-                    borderRadius: AppRadius.buttonBorder,
-                    borderSide: BorderSide.none,
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: AppRadius.buttonBorder,
-                    borderSide: BorderSide(
-                      color: theme.colorScheme.primary,
-                      width: 1.5,
-                    ),
-                  ),
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: dims.md,
-                    vertical: 14,
-                  ),
+                ),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: dims.md,
+                  vertical: 14,
                 ),
               ),
             ),
+          ),
 
-            SizedBox(height: dims.md),
+          SizedBox(height: dims.md),
 
-            // Content
-            Flexible(
-              child: _searchResults.isNotEmpty
-                  ? _buildSearchResults(theme, serverUrl)
-                  : _buildDefaultContent(theme, serverUrl),
-            ),
-          ],
-        ),
+          // Content
+          Flexible(
+            child: _searchResults.isNotEmpty
+                ? _buildSearchResults(theme, serverUrl)
+                : _buildDefaultContent(theme, serverUrl),
+          ),
+        ],
       ),
     );
   }
@@ -574,9 +499,8 @@ class _ShareNoteSheetState extends ConsumerState<ShareNoteSheet> {
   }
 
   void _showEditPermissionSheet(NoteShare share) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
+    AppBottomSheet.show(
+      context,
       builder: (ctx) => _PermissionPickerSheet(
         userName: share.sharedWithUser.name,
         currentPermission: share.permission,
@@ -603,59 +527,31 @@ class _PermissionPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final sheetColors = context.colorTokens.sheetGradient.colors;
     final dims = context.dims;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark ? sheetColors.last : sheetColors.first,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppRadius.lg),
-        ),
-      ),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              margin: EdgeInsets.only(top: dims.sm),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                borderRadius: AppRadius.handleBorder,
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.all(dims.lg),
-              child: Text(
-                currentPermission == null
-                    ? 'Share with $userName'
-                    : 'Change permission',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-            _PermissionOption(
-              icon: LucideIcons.eye,
-              title: 'Viewer',
-              subtitle: 'Can view but not edit',
-              isSelected: currentPermission == NoteSharePermission.viewer,
-              onTap: () => onSelect(NoteSharePermission.viewer),
-            ),
-            _PermissionOption(
-              icon: LucideIcons.edit3,
-              title: 'Editor',
-              subtitle: 'Can view and edit',
-              isSelected: currentPermission == NoteSharePermission.editor,
-              onTap: () => onSelect(NoteSharePermission.editor),
-            ),
-            SizedBox(height: dims.md),
-          ],
-        ),
+    return AppBottomSheet(
+      title: currentPermission == null
+          ? 'Share with $userName'
+          : 'Change permission',
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _PermissionOption(
+            icon: LucideIcons.eye,
+            title: 'Viewer',
+            subtitle: 'Can view but not edit',
+            isSelected: currentPermission == NoteSharePermission.viewer,
+            onTap: () => onSelect(NoteSharePermission.viewer),
+          ),
+          _PermissionOption(
+            icon: LucideIcons.edit3,
+            title: 'Editor',
+            subtitle: 'Can view and edit',
+            isSelected: currentPermission == NoteSharePermission.editor,
+            onTap: () => onSelect(NoteSharePermission.editor),
+          ),
+          SizedBox(height: dims.md),
+        ],
       ),
     );
   }
@@ -699,23 +595,14 @@ class _PermissionOption extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                    : theme.colorScheme.onSurface.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(
-                icon,
-                size: AppIconSizes.md,
-                color: isSelected
-                    ? theme.colorScheme.primary
-                    : theme.colorScheme.onSurfaceVariant,
-              ),
+            AppIconChip(
+              icon: icon,
+              selected: isSelected,
+              color: isSelected
+                  ? theme.colorScheme.primary
+                  : theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(width: 14),
+            SizedBox(width: dims.sm),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

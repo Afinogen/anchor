@@ -1,14 +1,19 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import '../../../core/theme/context_extensions.dart';
+import '../../../core/theme/tokens/app_dimensions.dart';
+import '../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../core/theme/tokens/app_opacity.dart';
+import '../../../core/widgets/app_section_header.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/widgets/editor/link_utils.dart';
+import '../../../core/widgets/gradient_background.dart';
+import '../../../core/widgets/settings_card.dart';
+import '../../../core/widgets/settings_row.dart';
+import '../../../core/widgets/large_title_app_bar.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/network/server_config_provider.dart';
 import '../../auth/presentation/auth_controller.dart';
@@ -57,267 +62,156 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  static const _themeModes = [
+    (
+      ThemeMode.system,
+      'System',
+      'Follow device settings',
+      LucideIcons.smartphone,
+    ),
+    (ThemeMode.light, 'Light', 'Always use light theme', LucideIcons.sun),
+    (ThemeMode.dark, 'Dark', 'Always use dark theme', LucideIcons.moon),
+  ];
+
+  static const _densities = [
+    (DisplayDensity.standard, 'More breathing room', LucideIcons.alignLeft),
+    (DisplayDensity.compact, 'Fit more on screen', LucideIcons.alignJustify),
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
     final currentThemeMode = ref.watch(themeModeControllerProvider);
+    final currentDensity = ref.watch(displayDensityControllerProvider);
     final editorPrefs = ref.watch(editorPreferencesControllerProvider);
     final serverUrl = ref.watch(serverUrlProvider);
     final serverInfoAsync = ref.watch(serverInfoProvider);
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF1C1E26), const Color(0xFF262A36)]
-                : [const Color(0xFFF8F9FC), const Color(0xFFEEF1F8)],
-          ),
-        ),
+      body: GradientBackground(
         child: CustomScrollView(
           slivers: [
-            // App Bar
-            SliverAppBar(
-              backgroundColor: Colors.transparent,
-              floating: true,
-              pinned: true,
-              expandedHeight: 120,
-              scrolledUnderElevation: 0,
-              leading: IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    LucideIcons.arrowLeft,
-                    size: 20,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                onPressed: () => context.pop(),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                centerTitle: Platform.isIOS,
-                titlePadding: EdgeInsets.only(
-                  left: 56,
-                  right: Platform.isIOS ? 56 : 0,
-                  bottom: 12,
-                ),
-                title: Text(
-                  'Settings',
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ),
-            ),
+            LargeTitleAppBar(title: 'Settings'),
 
-            // Settings Content
             SliverPadding(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(dims.pagePadding),
               sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Appearance Section
-                    _buildSectionHeader(
-                      context,
-                      'Appearance',
-                      LucideIcons.palette,
-                    ),
-                    const SizedBox(height: 12),
-                    _buildSettingsCard(
-                      context,
-                      child: Column(
-                        children: [
-                          _buildThemeOption(
-                            context,
-                            title: 'System',
-                            subtitle: 'Follow device settings',
-                            icon: LucideIcons.smartphone,
-                            isSelected: currentThemeMode == ThemeMode.system,
+                    _Section(
+                      title: 'Appearance',
+                      icon: LucideIcons.palette,
+                      children: [
+                        for (final (mode, title, subtitle, icon) in _themeModes)
+                          SettingsSelectRow(
+                            title: title,
+                            subtitle: subtitle,
+                            icon: icon,
+                            isSelected: currentThemeMode == mode,
                             onTap: () => ref
                                 .read(themeModeControllerProvider.notifier)
-                                .setThemeMode(ThemeMode.system),
+                                .setThemeMode(mode),
                           ),
-                          _buildDivider(context),
-                          _buildThemeOption(
-                            context,
-                            title: 'Light',
-                            subtitle: 'Always use light theme',
-                            icon: LucideIcons.sun,
-                            isSelected: currentThemeMode == ThemeMode.light,
+                      ],
+                    ),
+
+                    _Section(
+                      title: 'Display density',
+                      icon: LucideIcons.scaling,
+                      children: [
+                        for (final (density, subtitle, icon) in _densities)
+                          SettingsSelectRow(
+                            title: density.label,
+                            subtitle: subtitle,
+                            icon: icon,
+                            isSelected: currentDensity == density,
                             onTap: () => ref
-                                .read(themeModeControllerProvider.notifier)
-                                .setThemeMode(ThemeMode.light),
+                                .read(displayDensityControllerProvider.notifier)
+                                .setDensity(density),
                           ),
-                          _buildDivider(context),
-                          _buildThemeOption(
-                            context,
-                            title: 'Dark',
-                            subtitle: 'Always use dark theme',
-                            icon: LucideIcons.moon,
-                            isSelected: currentThemeMode == ThemeMode.dark,
-                            onTap: () => ref
-                                .read(themeModeControllerProvider.notifier)
-                                .setThemeMode(ThemeMode.dark),
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
 
-                    const SizedBox(height: 32),
-
-                    // Editor Section
-                    _buildSectionHeader(context, 'Editor', LucideIcons.edit3),
-                    const SizedBox(height: 12),
-                    _buildSettingsCard(
-                      context,
-                      child: _buildSwitchItem(
-                        context,
-                        title: 'Sort checklist items',
-                        subtitle:
-                            'Automatically move checked checklist items to the bottom',
-                        icon: LucideIcons.listChecks,
-                        value: editorPrefs.sortChecklistItems,
-                        onChanged: (value) => ref
-                            .read(editorPreferencesControllerProvider.notifier)
-                            .setSortChecklistItems(value),
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Account Section
-                    _buildSectionHeader(context, 'Account', LucideIcons.user),
-                    const SizedBox(height: 12),
-                    _buildSettingsCard(
-                      context,
-                      child: Column(
-                        children: [
-                          _buildActionItem(
-                            context,
-                            title: 'Edit Profile',
-                            subtitle: 'Update your name and profile image',
-                            icon: LucideIcons.user,
-                            onTap: () => context.push(
-                              '/${AppRoutes.settings}/${AppRoutes.editProfile}',
-                            ),
-                          ),
-                          _buildDivider(context),
-                          _buildActionItem(
-                            context,
-                            title: 'Change Password',
-                            subtitle: 'Update your account password',
-                            icon: LucideIcons.lock,
-                            onTap: () => context.push(
-                              '/${AppRoutes.settings}/${AppRoutes.changePassword}',
-                            ),
-                          ),
-                          _buildDivider(context),
-                          _buildActionItem(
-                            context,
-                            title: 'View Logs',
-                            subtitle:
-                                'Diagnostic logs for support and debugging',
-                            icon: LucideIcons.fileText,
-                            onTap: () => context.push(
-                              '/${AppRoutes.settings}/${AppRoutes.viewLogs}',
-                            ),
-                          ),
-                          _buildDivider(context),
-                          _buildActionItem(
-                            context,
-                            title: 'Log Out',
-                            subtitle: 'Sign out of your account',
-                            icon: LucideIcons.logOut,
-                            isDestructive: true,
-                            onTap: _showLogoutDialog,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 32),
-
-                    // Support Section
-                    _buildSectionHeader(context, 'Support', LucideIcons.heart),
-                    const SizedBox(height: 12),
-                    _buildSettingsCard(
-                      context,
-                      child: _buildActionItem(
-                        context,
-                        title: 'Buy me a coffee',
-                        subtitle: 'Support the development of Anchor',
-                        icon: LucideIcons.coffee,
-                        onTap: () => launchExternal(
-                          context,
-                          'https://www.buymeacoffee.com/zahid',
+                    _Section(
+                      title: 'Editor',
+                      icon: LucideIcons.edit3,
+                      children: [
+                        SettingsSwitchRow(
+                          title: 'Sort checklist items',
+                          subtitle:
+                              'Automatically move checked checklist items to the bottom',
+                          icon: LucideIcons.listChecks,
+                          value: editorPrefs.sortChecklistItems,
+                          onChanged: (value) => ref
+                              .read(
+                                editorPreferencesControllerProvider.notifier,
+                              )
+                              .setSortChecklistItems(value),
                         ),
-                      ),
+                      ],
                     ),
 
-                    const SizedBox(height: 32),
-
-                    // About Section
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 4),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                LucideIcons.info,
-                                size: 12,
-                                color: theme.colorScheme.onSurface.withValues(
-                                  alpha: 0.4,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'App v${_appVersion.isNotEmpty ? _appVersion : '...'}',
-                                style: theme.textTheme.labelSmall?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(
-                                    alpha: 0.5,
-                                  ),
-                                  fontFamily: 'monospace',
-                                ),
-                              ),
-                            ],
+                    _Section(
+                      title: 'Account',
+                      icon: LucideIcons.user,
+                      children: [
+                        SettingsActionRow(
+                          title: 'Edit Profile',
+                          subtitle: 'Update your name and profile image',
+                          icon: LucideIcons.user,
+                          onTap: () => context.push(
+                            '/${AppRoutes.settings}/${AppRoutes.editProfile}',
                           ),
-                          if (serverUrl != null) ...[
-                            const SizedBox(height: 6),
-                            serverInfoAsync.when(
-                              loading: () => _buildAboutInfoRow(
-                                context,
-                                LucideIcons.package,
-                                'Server v...',
-                              ),
-                              error: (_, _) => _buildServerStatusRows(
-                                context,
-                                serverInfo: null,
-                                serverUrl: serverUrl,
-                              ),
-                              data: (serverInfo) => _buildServerStatusRows(
-                                context,
-                                serverInfo: serverInfo,
-                                serverUrl: serverUrl,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
+                        ),
+                        SettingsActionRow(
+                          title: 'Change Password',
+                          subtitle: 'Update your account password',
+                          icon: LucideIcons.lock,
+                          onTap: () => context.push(
+                            '/${AppRoutes.settings}/${AppRoutes.changePassword}',
+                          ),
+                        ),
+                        SettingsActionRow(
+                          title: 'View Logs',
+                          subtitle: 'Diagnostic logs for support and debugging',
+                          icon: LucideIcons.fileText,
+                          onTap: () => context.push(
+                            '/${AppRoutes.settings}/${AppRoutes.viewLogs}',
+                          ),
+                        ),
+                        SettingsActionRow(
+                          title: 'Log Out',
+                          subtitle: 'Sign out of your account',
+                          icon: LucideIcons.logOut,
+                          isDestructive: true,
+                          onTap: _showLogoutDialog,
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 20),
+
+                    _Section(
+                      title: 'Support',
+                      icon: LucideIcons.heart,
+                      children: [
+                        SettingsActionRow(
+                          title: 'Buy me a coffee',
+                          subtitle: 'Support the development of Anchor',
+                          icon: LucideIcons.coffee,
+                          onTap: () => launchExternal(
+                            context,
+                            'https://www.buymeacoffee.com/zahid',
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    _AboutFooter(
+                      appVersion: _appVersion,
+                      serverUrl: serverUrl,
+                      serverInfo: serverInfoAsync,
+                    ),
+                    SizedBox(height: dims.pagePadding),
                   ],
                 ),
               ),
@@ -327,48 +221,132 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
+}
 
-  Widget _buildSectionHeader(
-    BuildContext context,
-    String title,
-    IconData icon,
-  ) {
-    final theme = Theme.of(context);
+/// A titled settings group: header, card, and dividers between the rows.
+class _Section extends StatelessWidget {
+  const _Section({
+    required this.title,
+    required this.icon,
+    required this.children,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final dims = context.dims;
     return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Row(
+      padding: EdgeInsets.only(bottom: dims.sectionGap),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16, color: theme.colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(
-            title.toUpperCase(),
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.primary,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.5,
+          AppSectionHeader(title: title, icon: icon),
+          SizedBox(height: dims.sm),
+          SettingsCard(
+            child: Column(
+              children: [
+                for (var i = 0; i < children.length; i++) ...[
+                  if (i > 0) const SettingsDivider(),
+                  children[i],
+                ],
+              ],
             ),
           ),
         ],
       ),
     );
   }
+}
 
-  Widget _buildAboutInfoRow(BuildContext context, IconData icon, String text) {
+/// App version, and where the app is pointed, in fine print.
+class _AboutFooter extends StatelessWidget {
+  const _AboutFooter({
+    required this.appVersion,
+    required this.serverUrl,
+    required this.serverInfo,
+  });
+
+  final String appVersion;
+  final String? serverUrl;
+  final AsyncValue<ServerInfo?> serverInfo;
+
+  @override
+  Widget build(BuildContext context) {
+    final dims = context.dims;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: dims.xxs),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          _AboutRow(
+            icon: LucideIcons.info,
+            text: 'App v${appVersion.isNotEmpty ? appVersion : '...'}',
+          ),
+          if (serverUrl != null) ...[
+            SizedBox(height: dims.xxs),
+            serverInfo.when(
+              loading: () => const _AboutRow(
+                icon: LucideIcons.package,
+                text: 'Server v...',
+              ),
+              error: (_, _) => _AboutRow(
+                icon: LucideIcons.serverOff,
+                text: "Can't reach $serverUrl",
+              ),
+              data: (info) => info == null
+                  ? _AboutRow(
+                      icon: LucideIcons.serverOff,
+                      text: "Can't reach $serverUrl",
+                    )
+                  : Column(
+                      children: [
+                        _AboutRow(
+                          icon: LucideIcons.package,
+                          text: 'Server v${info.version}',
+                        ),
+                        SizedBox(height: dims.xxs),
+                        _AboutRow(
+                          icon: LucideIcons.server,
+                          text: 'Connected to $serverUrl',
+                        ),
+                      ],
+                    ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _AboutRow extends StatelessWidget {
+  const _AboutRow({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final onSurface = theme.colorScheme.onSurface;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(
           icon,
-          size: 12,
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+          size: AppIconSizes.xs,
+          color: onSurface.withValues(alpha: AppOpacity.disabled),
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: context.dims.xxs),
         Flexible(
           child: Text(
             text,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+              color: onSurface.withValues(alpha: AppOpacity.secondary),
               fontFamily: 'monospace',
             ),
             overflow: TextOverflow.ellipsis,
@@ -376,292 +354,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildServerStatusRows(
-    BuildContext context, {
-    required ServerInfo? serverInfo,
-    required String serverUrl,
-  }) {
-    if (serverInfo == null) {
-      return _buildAboutInfoRow(
-        context,
-        LucideIcons.serverOff,
-        "Can't reach $serverUrl",
-      );
-    }
-    return Column(
-      children: [
-        _buildAboutInfoRow(
-          context,
-          LucideIcons.package,
-          'Server v${serverInfo.version}',
-        ),
-        const SizedBox(height: 6),
-        _buildAboutInfoRow(
-          context,
-          LucideIcons.server,
-          'Connected to $serverUrl',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSettingsCard(BuildContext context, {required Widget child}) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.05)
-            : Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.04),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: child,
-    );
-  }
-
-  Widget _buildThemeOption(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Row(
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: isSelected
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.2),
-                    width: isSelected ? 2 : 1.5,
-                  ),
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : Colors.transparent,
-                ),
-                child: isSelected
-                    ? Icon(
-                        LucideIcons.check,
-                        size: 14,
-                        color: isDark ? Colors.black : Colors.white,
-                      )
-                    : null,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionItem(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    final theme = Theme.of(context);
-    final color = isDestructive
-        ? theme.colorScheme.error
-        : theme.colorScheme.onSurface;
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  size: 20,
-                  color: color.withValues(alpha: 0.8),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(
-                          alpha: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Icon(
-                LucideIcons.chevronRight,
-                size: 20,
-                color: color.withValues(alpha: 0.4),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDivider(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Divider(
-        height: 1,
-        color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.06),
-      ),
-    );
-  }
-
-  Widget _buildSwitchItem(
-    BuildContext context, {
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, size: 20, color: theme.colorScheme.primary),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Switch.adaptive(
-            value: value,
-            onChanged: (newValue) {
-              HapticFeedback.selectionClick();
-              onChanged(newValue);
-            },
-            activeTrackColor: theme.colorScheme.primary,
-            activeThumbColor: theme.colorScheme.onPrimary,
-          ),
-        ],
-      ),
     );
   }
 }

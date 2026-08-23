@@ -1,8 +1,34 @@
 import 'package:flutter/material.dart';
 
 import '../theme/context_extensions.dart';
-import '../theme/tokens/app_icon_sizes.dart';
+import '../theme/tokens/app_opacity.dart';
 import '../theme/tokens/app_radius.dart';
+import 'app_icon_chip.dart';
+
+/// The grab bar at the top of a modal sheet.
+class SheetDragHandle extends StatelessWidget {
+  const SheetDragHandle({super.key});
+
+  static const double _width = 40;
+  static const double _height = 4;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: EdgeInsets.only(top: context.dims.sm),
+        width: _width,
+        height: _height,
+        decoration: BoxDecoration(
+          color: Theme.of(
+            context,
+          ).colorScheme.onSurface.withValues(alpha: AppOpacity.activeFill),
+          borderRadius: AppRadius.handleBorder,
+        ),
+      ),
+    );
+  }
+}
 
 /// Shared chrome for modal bottom sheets: gradient surface, rounded top,
 /// drag handle, and an optional icon/title header.
@@ -42,6 +68,8 @@ class AppBottomSheet extends StatelessWidget {
   final CrossAxisAlignment crossAxisAlignment;
   final Widget child;
 
+  static const double _titleSize = 20;
+
   static Future<T?> show<T>(
     BuildContext context, {
     required WidgetBuilder builder,
@@ -76,17 +104,7 @@ class AppBottomSheet extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: crossAxisAlignment,
           children: [
-            Center(
-              child: Container(
-                margin: EdgeInsets.only(top: context.dims.sm),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                  borderRadius: AppRadius.handleBorder,
-                ),
-              ),
-            ),
+            const SheetDragHandle(),
             if (hasHeader) _buildHeader(theme, context),
             Flexible(
               child: Padding(padding: contentPadding, child: child),
@@ -120,15 +138,8 @@ class AppBottomSheet extends StatelessWidget {
       child: Row(
         children: [
           if (icon != null) ...[
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.1),
-                borderRadius: AppRadius.smBorder,
-              ),
-              child: Icon(icon, color: accent, size: AppIconSizes.md),
-            ),
-            const SizedBox(width: 14),
+            AppIconChip(icon: icon!, color: accent),
+            SizedBox(width: dims.sm),
           ],
           Expanded(
             child: Column(
@@ -138,7 +149,7 @@ class AppBottomSheet extends StatelessWidget {
                   Text(
                     title!,
                     style: theme.textTheme.titleLarge?.copyWith(
-                      fontSize: 20,
+                      fontSize: _titleSize,
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
@@ -147,7 +158,9 @@ class AppBottomSheet extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: AppOpacity.secondary,
+                      ),
                     ),
                   ),
               ],
@@ -156,21 +169,22 @@ class AppBottomSheet extends StatelessWidget {
           if (trailing != null)
             trailing!
           else if (showDone)
-            FilledButton.tonal(
-              onPressed: () => Navigator.pop(context),
-              style: FilledButton.styleFrom(
-                padding: EdgeInsets.symmetric(
-                  horizontal: dims.md,
-                  vertical: dims.xs,
-                ),
-                shape: const RoundedRectangleBorder(
-                  borderRadius: AppRadius.smBorder,
-                ),
-              ),
-              child: const Text('Done'),
-            ),
+            const SheetDoneButton(),
         ],
       ),
+    );
+  }
+}
+
+/// Tonal "Done" button that dismisses the sheet it sits in.
+class SheetDoneButton extends StatelessWidget {
+  const SheetDoneButton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.tonal(
+      onPressed: () => Navigator.pop(context),
+      child: const Text('Done'),
     );
   }
 }
@@ -182,31 +196,35 @@ class SheetActionButtons extends StatelessWidget {
     this.cancelText = 'Cancel',
     required this.confirmText,
     required this.onConfirm,
+    this.onCancel,
     this.isDestructive = false,
+    this.confirmColor,
   });
 
   final String cancelText;
   final String confirmText;
   final VoidCallback onConfirm;
+
+  /// Defaults to popping the route.
+  final VoidCallback? onCancel;
+
+  /// Shorthand for a confirm button in the error color.
   final bool isDestructive;
+
+  /// Overrides the confirm button's background; the label color follows.
+  final Color? confirmColor;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final confirmColor =
+        this.confirmColor ?? (isDestructive ? theme.colorScheme.error : null);
+
     return Row(
       children: [
         Expanded(
           child: OutlinedButton(
-            onPressed: () => Navigator.pop(context),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              shape: const RoundedRectangleBorder(
-                borderRadius: AppRadius.smBorder,
-              ),
-              side: BorderSide(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.2),
-              ),
-            ),
+            onPressed: onCancel ?? () => Navigator.pop(context),
             child: Text(cancelText),
           ),
         ),
@@ -214,13 +232,15 @@ class SheetActionButtons extends StatelessWidget {
         Expanded(
           child: FilledButton(
             onPressed: onConfirm,
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              backgroundColor: isDestructive ? theme.colorScheme.error : null,
-              shape: const RoundedRectangleBorder(
-                borderRadius: AppRadius.smBorder,
-              ),
-            ),
+            style: confirmColor == null
+                ? null
+                : FilledButton.styleFrom(
+                    backgroundColor: confirmColor,
+                    // Keep the label legible on any confirm color.
+                    foregroundColor: confirmColor.computeLuminance() > 0.5
+                        ? Colors.black
+                        : Colors.white,
+                  ),
             child: Text(confirmText),
           ),
         ),

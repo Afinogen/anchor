@@ -5,7 +5,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../theme/context_extensions.dart';
 import '../theme/tokens/app_durations.dart';
 import '../theme/tokens/app_icon_sizes.dart';
+import '../theme/tokens/app_opacity.dart';
 import '../theme/tokens/app_radius.dart';
+import 'app_icon_chip.dart';
 
 /// Selectable row with an animated check circle — one option of a
 /// radio-style group inside a settings card.
@@ -40,22 +42,14 @@ class SettingsSelectRow extends StatelessWidget {
           padding: dims.settingsRowPadding,
           child: Row(
             children: [
-              AnimatedContainer(
-                duration: AppDurations.medium,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? theme.colorScheme.primary.withValues(alpha: 0.15)
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.05),
-                  borderRadius: AppRadius.smBorder,
-                ),
-                child: Icon(
-                  icon,
-                  size: AppIconSizes.md,
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                ),
+              AppIconChip(
+                icon: icon,
+                selected: isSelected,
+                color: isSelected
+                    ? theme.colorScheme.primary
+                    : theme.colorScheme.onSurface.withValues(
+                        alpha: AppOpacity.secondary,
+                      ),
               ),
               SizedBox(width: dims.md),
               Expanded(
@@ -76,7 +70,9 @@ class SettingsSelectRow extends StatelessWidget {
                   border: Border.all(
                     color: isSelected
                         ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface.withValues(alpha: 0.2),
+                        : theme.colorScheme.onSurface.withValues(
+                            alpha: AppOpacity.border,
+                          ),
                     width: isSelected ? 2 : 1.5,
                   ),
                   color: isSelected
@@ -125,18 +121,7 @@ class SettingsSwitchRow extends StatelessWidget {
       padding: dims.settingsRowPadding,
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
-              borderRadius: AppRadius.smBorder,
-            ),
-            child: Icon(
-              icon,
-              size: AppIconSizes.md,
-              color: theme.colorScheme.primary,
-            ),
-          ),
+          AppIconChip(icon: icon),
           SizedBox(width: dims.md),
           Expanded(
             child: _RowLabels(title: title, subtitle: subtitle),
@@ -190,18 +175,7 @@ class SettingsActionRow extends StatelessWidget {
           padding: dims.settingsRowPadding,
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
-                  borderRadius: AppRadius.smBorder,
-                ),
-                child: Icon(
-                  icon,
-                  size: AppIconSizes.md,
-                  color: color.withValues(alpha: 0.8),
-                ),
-              ),
+              AppIconChip(icon: icon, color: color),
               SizedBox(width: dims.md),
               Expanded(
                 child: _RowLabels(
@@ -213,7 +187,7 @@ class SettingsActionRow extends StatelessWidget {
               Icon(
                 LucideIcons.chevronRight,
                 size: AppIconSizes.md,
-                color: color.withValues(alpha: 0.4),
+                color: color.withValues(alpha: AppOpacity.disabled),
               ),
             ],
           ),
@@ -231,7 +205,7 @@ class SettingsDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: context.dims.lg),
-      child: Divider(height: 1, color: context.colorTokens.subtleBorder),
+      child: const Divider(),
     );
   }
 }
@@ -260,11 +234,13 @@ class _RowLabels extends StatelessWidget {
             color: titleColor ?? theme.colorScheme.onSurface,
           ),
         ),
-        const SizedBox(height: 2),
+        SizedBox(height: context.dims.xxs / 2),
         Text(
           subtitle,
           style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
+            color: theme.colorScheme.onSurface.withValues(
+              alpha: AppOpacity.secondary,
+            ),
           ),
         ),
       ],

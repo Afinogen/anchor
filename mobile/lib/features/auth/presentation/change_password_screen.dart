@@ -1,14 +1,12 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/settings_card.dart';
+import '../../../core/widgets/large_title_app_bar.dart';
 import 'auth_controller.dart';
 import '../../../core/theme/context_extensions.dart';
-import '../../../core/theme/tokens/app_icon_sizes.dart';
 import '../../../core/theme/tokens/app_radius.dart';
 
 class ChangePasswordScreen extends ConsumerStatefulWidget {
@@ -78,44 +76,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
         child: CustomScrollView(
           slivers: [
             // App Bar
-            SliverAppBar(
-              backgroundColor: Colors.transparent,
-              floating: true,
-              pinned: true,
-              expandedHeight: 120,
-              scrolledUnderElevation: 0,
-              leading: IconButton(
-                icon: Container(
-                  padding: EdgeInsets.all(dims.xs),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withValues(alpha: 0.8),
-                    borderRadius: AppRadius.smBorder,
-                  ),
-                  child: Icon(
-                    LucideIcons.arrowLeft,
-                    size: AppIconSizes.md,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                onPressed: () => context.pop(),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                centerTitle: Platform.isIOS,
-                expandedTitleScale: 1.2,
-                titlePadding: EdgeInsets.only(
-                  left: 56,
-                  right: Platform.isIOS ? 56 : 0,
-                  bottom: 12,
-                ),
-                title: Text(
-                  'Change Password',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ),
-            ),
+            LargeTitleAppBar(title: 'Change Password'),
 
             // Form Content
             SliverPadding(
@@ -168,7 +129,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                             },
                                           ),
                                     filled: true,
-                                    fillColor: context.colorTokens.inputFill,
                                     border: const OutlineInputBorder(
                                       borderRadius: AppRadius.mdBorder,
                                       borderSide: BorderSide.none,
@@ -213,7 +173,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                             },
                                           ),
                                     filled: true,
-                                    fillColor: context.colorTokens.inputFill,
                                     border: const OutlineInputBorder(
                                       borderRadius: AppRadius.mdBorder,
                                       borderSide: BorderSide.none,
@@ -264,7 +223,6 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
                                             },
                                           ),
                                     filled: true,
-                                    fillColor: context.colorTokens.inputFill,
                                     border: const OutlineInputBorder(
                                       borderRadius: AppRadius.mdBorder,
                                       borderSide: BorderSide.none,

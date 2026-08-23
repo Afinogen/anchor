@@ -7,6 +7,9 @@ import '../../../../core/theme/tokens/app_radius.dart';
 import '../../domain/tag.dart';
 
 class TagChip extends StatelessWidget {
+  /// Vertical padding of a chip, shared by anything in the same strip.
+  static const double verticalPadding = 6;
+
   final Tag tag;
   final bool selected;
   final bool showDelete;
@@ -45,8 +48,8 @@ class TagChip extends StatelessWidget {
           padding: EdgeInsets.only(
             left: dims.sm,
             right: showDelete ? dims.xxs : dims.sm,
-            top: 6,
-            bottom: 6,
+            top: verticalPadding,
+            bottom: verticalPadding,
           ),
           decoration: BoxDecoration(
             color: selected
@@ -58,34 +61,47 @@ class TagChip extends StatelessWidget {
               width: selected ? 2 : 1,
             ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(LucideIcons.hash, size: AppIconSizes.xs, color: color),
-              SizedBox(width: dims.xxs),
-              Text(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final label = Text(
                 tag.name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelMedium?.copyWith(
                   color: color,
                   fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
                 ),
-              ),
-              if (showDelete) ...[
-                SizedBox(width: dims.xxs),
-                InkWell(
-                  onTap: onDelete,
-                  borderRadius: AppRadius.smBorder,
-                  child: Padding(
-                    padding: EdgeInsets.all(dims.xxs),
-                    child: Icon(
-                      LucideIcons.x,
-                      size: AppIconSizes.xs,
-                      color: color,
+              );
+
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(LucideIcons.hash, size: AppIconSizes.xs, color: color),
+                  SizedBox(width: dims.xxs),
+                  // `Flexible` needs a bounded width; a horizontal scroller
+                  // gives none.
+                  if (constraints.hasBoundedWidth)
+                    Flexible(child: label)
+                  else
+                    label,
+                  if (showDelete) ...[
+                    SizedBox(width: dims.xxs),
+                    InkWell(
+                      onTap: onDelete,
+                      borderRadius: AppRadius.smBorder,
+                      child: Padding(
+                        padding: EdgeInsets.all(dims.xxs),
+                        child: Icon(
+                          LucideIcons.x,
+                          size: AppIconSizes.xs,
+                          color: color,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ],
+                  ],
+                ],
+              );
+            },
           ),
         ),
       ),

@@ -7,11 +7,12 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../features/settings/data/repository/preferences_repository.dart';
 import 'home_widget/home_widget_payload.dart';
 import 'logging/app_logger.dart';
 import 'router/app_routes.dart';
+import 'theme/tokens/app_dimensions.dart';
 
-const _themeModeKey = 'theme_mode';
 const _serverUrlKey = 'server_url';
 const _accessTokenKey = 'access_token';
 const _storage = FlutterSecureStorage();
@@ -19,6 +20,10 @@ const _storage = FlutterSecureStorage();
 /// Holds the initial theme mode loaded before the app starts
 /// This is set by [initializeApp] and read by the theme provider
 ThemeMode initialThemeMode = ThemeMode.system;
+
+/// Holds the initial display density loaded before the app starts
+/// This is set by [initializeApp] and read by the density provider
+DisplayDensity initialDisplayDensity = DisplayDensity.standard;
 
 /// Holds the initial user ID loaded before the app starts
 /// This is set by [initializeApp] and read by [ActiveUserId] provider
@@ -54,12 +59,20 @@ Future<void> initializeApp() async {
     return false;
   };
 
-  // Load saved theme preference
-  final savedTheme = await _storage.read(key: _themeModeKey);
+  // Load saved appearance preferences
+  final savedTheme = await _storage.read(key: PreferenceKeys.themeMode);
   if (savedTheme != null) {
     initialThemeMode = ThemeMode.values.firstWhere(
       (mode) => mode.name == savedTheme,
       orElse: () => ThemeMode.system,
+    );
+  }
+
+  final savedDensity = await _storage.read(key: PreferenceKeys.displayDensity);
+  if (savedDensity != null) {
+    initialDisplayDensity = DisplayDensity.values.firstWhere(
+      (density) => density.name == savedDensity,
+      orElse: () => DisplayDensity.standard,
     );
   }
 

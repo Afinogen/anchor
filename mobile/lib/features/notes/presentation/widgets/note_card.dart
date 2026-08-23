@@ -19,6 +19,14 @@ import 'package:anchor/features/tags/presentation/tags_controller.dart';
 import 'package:anchor/features/tags/presentation/widgets/tag_chip.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
 import 'package:anchor/features/notes/presentation/widgets/share_note_sheet.dart';
+import 'package:anchor/core/widgets/app_bottom_sheet.dart';
+import 'package:anchor/core/theme/tokens/app_opacity.dart';
+
+/// Lines of body text shown under the title.
+const _previewMaxLines = 6;
+
+/// Aspect ratio of a note card carrying exactly one image.
+const _singleImageAspect = 16 / 9;
 
 class NoteCard extends ConsumerWidget {
   final Note note;
@@ -131,7 +139,7 @@ class NoteCard extends ConsumerWidget {
                           SizedBox(height: dims.noteCardTitleGap),
                           QuillPreview(
                             content: note.content,
-                            maxLines: dims.notePreviewMaxLines,
+                            maxLines: _previewMaxLines,
                           ),
                         ],
                         if (note.tagIds.isNotEmpty) ...[
@@ -203,10 +211,8 @@ class NoteCard extends ConsumerWidget {
                                     count: note.shareIds!.length,
                                     onTap: isSelectionMode
                                         ? null
-                                        : () => showModalBottomSheet(
-                                            context: context,
-                                            backgroundColor: Colors.transparent,
-                                            isScrollControlled: true,
+                                        : () => AppBottomSheet.show(
+                                            context,
                                             builder: (_) =>
                                                 ShareNoteSheet(noteId: note.id),
                                           ),
@@ -221,7 +227,10 @@ class NoteCard extends ConsumerWidget {
                                             note.updatedAt!,
                                           ),
                                     style: theme.textTheme.labelSmall?.copyWith(
-                                      color: theme.hintColor,
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(
+                                            alpha: AppOpacity.secondary,
+                                          ),
                                     ),
                                   ),
                               ],
@@ -235,7 +244,9 @@ class NoteCard extends ConsumerWidget {
                               Icon(
                                 LucideIcons.cloudOff,
                                 size: AppIconSizes.sm,
-                                color: theme.hintColor,
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: AppOpacity.secondary,
+                                ),
                               ),
                           ],
                         ),
@@ -313,7 +324,7 @@ class _NoteImagePreviews extends StatelessWidget {
 
     if (count == 1) {
       return AspectRatio(
-        aspectRatio: context.dims.noteCardSingleImageAspect,
+        aspectRatio: _singleImageAspect,
         child: _Thumb(
           key: ValueKey(previews[0].attachmentId),
           preview: previews[0],
@@ -572,13 +583,17 @@ class _SharedByMeIndicator extends StatelessWidget {
               Icon(
                 LucideIcons.users,
                 size: AppIconSizes.xs,
-                color: theme.hintColor,
+                color: theme.colorScheme.onSurface.withValues(
+                  alpha: AppOpacity.secondary,
+                ),
               ),
               SizedBox(width: dims.xxs),
               Text(
                 '$count',
                 style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.hintColor,
+                  color: theme.colorScheme.onSurface.withValues(
+                    alpha: AppOpacity.secondary,
+                  ),
                 ),
               ),
             ],

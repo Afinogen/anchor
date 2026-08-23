@@ -8,6 +8,7 @@ import 'package:anchor/core/theme/tokens/app_radius.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'auth_controller.dart';
 import '../data/repository/auth_repository.dart';
+import 'package:anchor/core/theme/tokens/app_opacity.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -115,7 +116,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   Text(
                     'Start capturing your ideas',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).hintColor,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(
+                        alpha: AppOpacity.secondary,
+                      ),
                     ),
                     textAlign: TextAlign.center,
                   ),

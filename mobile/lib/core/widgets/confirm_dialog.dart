@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../theme/context_extensions.dart';
-import '../theme/tokens/app_radius.dart';
+import '../theme/tokens/app_opacity.dart';
+import 'app_bottom_sheet.dart';
 
+/// Confirm/cancel dialog with a large tinted icon.
 class ConfirmDialog extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
@@ -26,37 +28,34 @@ class ConfirmDialog extends StatelessWidget {
     required this.onConfirm,
   });
 
+  static const double _iconChipSize = 64;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dims = context.dims;
     final effectiveIconColor = iconColor ?? theme.colorScheme.primary;
-    final effectiveConfirmColor = confirmColor ?? theme.colorScheme.primary;
-
-    // Calculate contrasting text color based on confirm button background
-    final confirmTextColor = effectiveConfirmColor.computeLuminance() > 0.5
-        ? Colors.black
-        : Colors.white;
 
     return Dialog(
-      backgroundColor: theme.colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadius.sheet),
-      ),
       child: Padding(
         padding: EdgeInsets.all(dims.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: _iconChipSize,
+              height: _iconChipSize,
               decoration: BoxDecoration(
-                color: effectiveIconColor.withValues(alpha: 0.12),
+                color: effectiveIconColor.withValues(
+                  alpha: AppOpacity.subtleFill,
+                ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: effectiveIconColor, size: 32),
+              child: Icon(
+                icon,
+                color: effectiveIconColor,
+                size: _iconChipSize / 2,
+              ),
             ),
             SizedBox(height: dims.lg),
             Text(
@@ -70,47 +69,22 @@ class ConfirmDialog extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                color: theme.colorScheme.onSurface.withValues(
+                  alpha: AppOpacity.secondary,
+                ),
                 height: 1.4,
               ),
             ),
             SizedBox(height: dims.xl),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.pop(false),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: AppRadius.buttonBorder,
-                      ),
-                      side: BorderSide(
-                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Text(cancelText),
-                  ),
-                ),
-                SizedBox(width: dims.sm),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: effectiveConfirmColor,
-                      foregroundColor: confirmTextColor,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: AppRadius.buttonBorder,
-                      ),
-                    ),
-                    onPressed: () {
-                      context.pop(true);
-                      onConfirm();
-                    },
-                    child: Text(confirmText),
-                  ),
-                ),
-              ],
+            SheetActionButtons(
+              cancelText: cancelText,
+              confirmText: confirmText,
+              confirmColor: confirmColor,
+              onCancel: () => context.pop(false),
+              onConfirm: () {
+                context.pop(true);
+                onConfirm();
+              },
             ),
           ],
         ),

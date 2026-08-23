@@ -9,6 +9,10 @@ import 'package:google_fonts/google_fonts.dart';
 class AppTypography {
   AppTypography._();
 
+  /// Playfair's default figures are old-style — `4` and `7` hang below the
+  /// baseline. Every Playfair style here uses lining figures instead.
+  static const List<FontFeature> _liningFigures = [FontFeature.liningFigures()];
+
   // Editor type scale — the editor renders note content, so these are
   // fixed and independent of the UI theme.
   static const double editorBodySize = 18;
@@ -22,14 +26,17 @@ class AppTypography {
       displayLarge: GoogleFonts.playfairDisplay(
         textStyle: base.displayLarge,
         fontWeight: FontWeight.bold,
+        fontFeatures: _liningFigures,
       ),
       displayMedium: GoogleFonts.playfairDisplay(
         textStyle: base.displayMedium,
         fontWeight: FontWeight.bold,
+        fontFeatures: _liningFigures,
       ),
       headlineMedium: GoogleFonts.playfairDisplay(
         textStyle: base.headlineMedium,
         fontWeight: FontWeight.w600,
+        fontFeatures: _liningFigures,
       ),
       titleLarge: GoogleFonts.dmSans(
         textStyle: base.titleLarge,
@@ -59,6 +66,7 @@ class AppTypography {
     fontWeight: fontWeight,
     color: color,
     height: height,
+    fontFeatures: _liningFigures,
   );
 
   /// Monospace style for code blocks and log output.

@@ -2,10 +2,20 @@ import 'dart:ui' show lerpDouble;
 
 import 'package:flutter/material.dart';
 
-/// Spacing and sizing tokens.
+/// How tightly the UI is packed. Chosen by the user in Settings → Appearance.
+enum DisplayDensity {
+  standard,
+  compact;
+
+  String get label => switch (this) {
+    DisplayDensity.standard => 'Default',
+    DisplayDensity.compact => 'Compact',
+  };
+}
+
+/// Spacing and sizing tokens, resolved from the current [DisplayDensity].
 ///
-/// Lives in the theme as a [ThemeExtension] so widgets read the values
-/// via `context.dims` without watching any provider.
+/// Lives in the theme as a [ThemeExtension], read via `context.dims`.
 @immutable
 class AppDimensions extends ThemeExtension<AppDimensions> {
   const AppDimensions({
@@ -29,11 +39,11 @@ class AppDimensions extends ThemeExtension<AppDimensions> {
     required this.drawerItemPadding,
     required this.drawerTagPadding,
     required this.sheetHeaderPadding,
+    required this.buttonPadding,
+    required this.searchBarHeight,
     required this.appBarExpandedHeight,
-    required this.largeAppBarExpandedHeight,
+    required this.largeAppBarHeight,
     required this.editorPadding,
-    required this.notePreviewMaxLines,
-    required this.noteCardSingleImageAspect,
   });
 
   // Generic spacing scale.
@@ -64,18 +74,24 @@ class AppDimensions extends ThemeExtension<AppDimensions> {
   final EdgeInsets drawerItemPadding;
   final EdgeInsets drawerTagPadding;
   final EdgeInsets sheetHeaderPadding;
+
+  /// Inner padding of filled and outlined buttons.
+  final EdgeInsets buttonPadding;
+
+  /// Height of the notes-list search field. Material fixes its own at 56.
+  final double searchBarHeight;
+
   final double appBarExpandedHeight;
-  final double largeAppBarExpandedHeight;
+
+  /// Expanded height of a [LargeTitleAppBar].
+  final double largeAppBarHeight;
 
   /// Gutters around note content in the editor.
   final EdgeInsets editorPadding;
 
-  final int notePreviewMaxLines;
-  final double noteCardSingleImageAspect;
-
   EdgeInsets get screenInsets => EdgeInsets.all(screenGutter);
 
-  static const comfortable = AppDimensions(
+  static const standard = AppDimensions(
     xxs: 4,
     xs: 8,
     sm: 12,
@@ -96,12 +112,45 @@ class AppDimensions extends ThemeExtension<AppDimensions> {
     drawerItemPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     drawerTagPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 10),
     sheetHeaderPadding: EdgeInsets.fromLTRB(24, 20, 24, 24),
+    buttonPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    searchBarHeight: 48,
     appBarExpandedHeight: 80,
-    largeAppBarExpandedHeight: 120,
+    largeAppBarHeight: 120,
     editorPadding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-    notePreviewMaxLines: 6,
-    noteCardSingleImageAspect: 16 / 9,
   );
+
+  static const compact = AppDimensions(
+    xxs: 2,
+    xs: 6,
+    sm: 10,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    xxl: 24,
+    noteCardPadding: EdgeInsets.fromLTRB(16, 12, 16, 12),
+    noteCardTitleGap: 6,
+    noteCardTagGap: 8,
+    noteCardFooterGap: 10,
+    screenGutter: 12,
+    gridSpacing: 12,
+    listItemSpacing: 12,
+    settingsRowPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    sectionGap: 24,
+    pagePadding: 16,
+    drawerItemPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    drawerTagPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+    sheetHeaderPadding: EdgeInsets.fromLTRB(20, 16, 20, 18),
+    buttonPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+    searchBarHeight: 44,
+    appBarExpandedHeight: 68,
+    largeAppBarHeight: 104,
+    editorPadding: EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+  );
+
+  factory AppDimensions.of(DisplayDensity density) => switch (density) {
+    DisplayDensity.standard => standard,
+    DisplayDensity.compact => compact,
+  };
 
   @override
   AppDimensions copyWith({
@@ -125,11 +174,11 @@ class AppDimensions extends ThemeExtension<AppDimensions> {
     EdgeInsets? drawerItemPadding,
     EdgeInsets? drawerTagPadding,
     EdgeInsets? sheetHeaderPadding,
+    EdgeInsets? buttonPadding,
+    double? searchBarHeight,
     double? appBarExpandedHeight,
-    double? largeAppBarExpandedHeight,
+    double? largeAppBarHeight,
     EdgeInsets? editorPadding,
-    int? notePreviewMaxLines,
-    double? noteCardSingleImageAspect,
   }) {
     return AppDimensions(
       xxs: xxs ?? this.xxs,
@@ -152,13 +201,11 @@ class AppDimensions extends ThemeExtension<AppDimensions> {
       drawerItemPadding: drawerItemPadding ?? this.drawerItemPadding,
       drawerTagPadding: drawerTagPadding ?? this.drawerTagPadding,
       sheetHeaderPadding: sheetHeaderPadding ?? this.sheetHeaderPadding,
+      buttonPadding: buttonPadding ?? this.buttonPadding,
+      searchBarHeight: searchBarHeight ?? this.searchBarHeight,
       appBarExpandedHeight: appBarExpandedHeight ?? this.appBarExpandedHeight,
-      largeAppBarExpandedHeight:
-          largeAppBarExpandedHeight ?? this.largeAppBarExpandedHeight,
+      largeAppBarHeight: largeAppBarHeight ?? this.largeAppBarHeight,
       editorPadding: editorPadding ?? this.editorPadding,
-      notePreviewMaxLines: notePreviewMaxLines ?? this.notePreviewMaxLines,
-      noteCardSingleImageAspect:
-          noteCardSingleImageAspect ?? this.noteCardSingleImageAspect,
     );
   }
 
@@ -214,25 +261,19 @@ class AppDimensions extends ThemeExtension<AppDimensions> {
         other.sheetHeaderPadding,
         t,
       )!,
+      buttonPadding: EdgeInsets.lerp(buttonPadding, other.buttonPadding, t)!,
+      searchBarHeight: lerpDouble(searchBarHeight, other.searchBarHeight, t)!,
       appBarExpandedHeight: lerpDouble(
         appBarExpandedHeight,
         other.appBarExpandedHeight,
         t,
       )!,
-      largeAppBarExpandedHeight: lerpDouble(
-        largeAppBarExpandedHeight,
-        other.largeAppBarExpandedHeight,
+      largeAppBarHeight: lerpDouble(
+        largeAppBarHeight,
+        other.largeAppBarHeight,
         t,
       )!,
       editorPadding: EdgeInsets.lerp(editorPadding, other.editorPadding, t)!,
-      notePreviewMaxLines: t < 0.5
-          ? notePreviewMaxLines
-          : other.notePreviewMaxLines,
-      noteCardSingleImageAspect: lerpDouble(
-        noteCardSingleImageAspect,
-        other.noteCardSingleImageAspect,
-        t,
-      )!,
     );
   }
 }

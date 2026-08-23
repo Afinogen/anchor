@@ -5,7 +5,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'link_utils.dart';
 import '../../../core/theme/context_extensions.dart';
 import '../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../core/theme/tokens/app_opacity.dart';
 import '../../../core/theme/tokens/app_radius.dart';
+import '../app_bottom_sheet.dart';
 
 class LinkEditSheet extends StatefulWidget {
   final String initialText;
@@ -28,10 +30,8 @@ class LinkEditSheet extends StatefulWidget {
     required void Function(String text, String url) onSubmit,
     VoidCallback? onRemove,
   }) {
-    return showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+    return AppBottomSheet.show(
+      context,
       builder: (_) => LinkEditSheet(
         initialText: initialText,
         initialUrl: initialUrl,
@@ -103,128 +103,53 @@ class _LinkEditSheetState extends State<LinkEditSheet> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final dims = context.dims;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final safeBottom = MediaQuery.of(context).viewPadding.bottom;
     final trimmedUrl = _urlController.text.trim();
     final canSubmit = trimmedUrl.isNotEmpty;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: keyboardHeight),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: context.colorTokens.sheetGradient,
-          borderRadius: AppRadius.sheetTopBorder,
-          boxShadow: [context.colorTokens.sheetShadow],
+    return AppBottomSheet(
+      avoidKeyboard: true,
+      icon: LucideIcons.link,
+      iconColor: theme.colorScheme.tertiary,
+      title: _isEditing ? 'Edit Link' : 'Insert Link',
+      trailing: IconButton(
+        icon: const Icon(LucideIcons.x, size: AppIconSizes.md),
+        color: theme.colorScheme.onSurface.withValues(
+          alpha: AppOpacity.secondary,
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _HandleBar(theme: theme),
-            _Header(
-              theme: theme,
-              isEditing: _isEditing,
-              onClose: () => Navigator.pop(context),
-            ),
-            _TextField(
-              controller: _textController,
-              label: 'Text',
-              hint: trimmedUrl.isEmpty ? 'Link text' : trimmedUrl,
-              icon: LucideIcons.type,
-              padding: EdgeInsets.fromLTRB(dims.xl, 0, dims.xl, dims.xs),
-            ),
-            _TextField(
-              controller: _urlController,
-              focusNode: _urlFocus,
-              label: 'URL',
-              hint: 'https://...',
-              icon: LucideIcons.globe,
-              keyboardType: TextInputType.url,
-              textInputAction: TextInputAction.done,
-              onSubmitted: (_) => _submit(),
-              padding: EdgeInsets.fromLTRB(dims.xl, dims.xs, dims.xl, dims.lg),
-            ),
-            _Actions(
-              theme: theme,
-              isEditing: _isEditing,
-              canSubmit: canSubmit,
-              onSubmit: _submit,
-              onRemove: widget.onRemove == null
-                  ? null
-                  : () {
-                      widget.onRemove!.call();
-                      Navigator.pop(context);
-                    },
-              bottomPadding: safeBottom > 0 ? safeBottom + 8 : 20,
-            ),
-          ],
-        ),
+        onPressed: () => Navigator.pop(context),
       ),
-    );
-  }
-}
-
-class _HandleBar extends StatelessWidget {
-  final ThemeData theme;
-  const _HandleBar({required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(top: context.dims.sm),
-      width: 40,
-      height: 4,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-        borderRadius: AppRadius.handleBorder,
-      ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  final ThemeData theme;
-  final bool isEditing;
-  final VoidCallback onClose;
-
-  const _Header({
-    required this.theme,
-    required this.isEditing,
-    required this.onClose,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final dims = context.dims;
-    return Padding(
-      padding: EdgeInsets.fromLTRB(dims.xl, dims.lg, dims.sm, dims.md),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.tertiary.withValues(alpha: 0.1),
-              borderRadius: AppRadius.smBorder,
-            ),
-            child: Icon(
-              LucideIcons.link,
-              color: theme.colorScheme.tertiary,
-              size: AppIconSizes.md,
-            ),
+          _TextField(
+            controller: _textController,
+            label: 'Text',
+            hint: trimmedUrl.isEmpty ? 'Link text' : trimmedUrl,
+            icon: LucideIcons.type,
+            padding: EdgeInsets.fromLTRB(dims.xl, 0, dims.xl, dims.xs),
           ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              isEditing ? 'Edit Link' : 'Insert Link',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+          _TextField(
+            controller: _urlController,
+            focusNode: _urlFocus,
+            label: 'URL',
+            hint: 'https://...',
+            icon: LucideIcons.globe,
+            keyboardType: TextInputType.url,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _submit(),
+            padding: EdgeInsets.fromLTRB(dims.xl, dims.xs, dims.xl, dims.lg),
           ),
-          IconButton(
-            icon: const Icon(LucideIcons.x, size: AppIconSizes.md),
-            color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            onPressed: onClose,
+          _Actions(
+            theme: theme,
+            isEditing: _isEditing,
+            canSubmit: canSubmit,
+            onSubmit: _submit,
+            onRemove: widget.onRemove == null
+                ? null
+                : () {
+                    widget.onRemove!.call();
+                    Navigator.pop(context);
+                  },
           ),
         ],
       ),
@@ -282,7 +207,6 @@ class _Actions extends StatelessWidget {
   final bool canSubmit;
   final VoidCallback onSubmit;
   final VoidCallback? onRemove;
-  final double bottomPadding;
 
   const _Actions({
     required this.theme,
@@ -290,7 +214,6 @@ class _Actions extends StatelessWidget {
     required this.canSubmit,
     required this.onSubmit,
     required this.onRemove,
-    required this.bottomPadding,
   });
 
   @override
@@ -299,7 +222,7 @@ class _Actions extends StatelessWidget {
     final showRemove = isEditing && onRemove != null;
 
     return Padding(
-      padding: EdgeInsets.fromLTRB(dims.xl, 0, dims.xl, bottomPadding),
+      padding: EdgeInsets.fromLTRB(dims.xl, 0, dims.xl, dims.lg),
       child: Row(
         children: [
           if (showRemove) ...[

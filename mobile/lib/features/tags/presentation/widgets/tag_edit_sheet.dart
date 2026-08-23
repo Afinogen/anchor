@@ -122,7 +122,7 @@ class _TagEditSheetState extends ConsumerState<TagEditSheet> {
                 color: hasError ? theme.colorScheme.error : accent,
               ),
               filled: true,
-              fillColor: theme.colorScheme.onSurface.withValues(alpha: 0.05),
+              fillColor: context.colorTokens.inputFill,
               errorText: _errorMessage,
               errorStyle: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.error,

@@ -553,7 +553,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
                         },
                       ),
                 filled: true,
-                fillColor: context.colorTokens.cardFill,
+                fillColor: context.colorTokens.inputFill,
                 contentPadding: EdgeInsets.symmetric(
                   horizontal: dims.sm,
                   vertical: 10,

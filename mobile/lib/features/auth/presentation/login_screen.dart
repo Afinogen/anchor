@@ -11,6 +11,7 @@ import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/features/auth/presentation/providers/oidc_config_provider.dart';
 import 'package:anchor/features/auth/presentation/providers/registration_mode_provider.dart';
 import 'auth_controller.dart';
+import 'package:anchor/core/theme/tokens/app_opacity.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -97,7 +98,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   Text(
                     'Sign in to continue',
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).hintColor,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(
+                        alpha: AppOpacity.secondary,
+                      ),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -243,9 +246,11 @@ class _OrDivider extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: context.dims.md),
           child: Text(
             'Or continue with',
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: AppOpacity.secondary),
+            ),
           ),
         ),
         const Expanded(child: Divider()),

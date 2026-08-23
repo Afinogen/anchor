@@ -4,6 +4,7 @@ import 'package:anchor/features/notes/presentation/widgets/note_background.dart'
 import '../../../../core/theme/context_extensions.dart';
 import '../../../../core/theme/tokens/app_icon_sizes.dart';
 import '../../../../core/theme/tokens/app_radius.dart';
+import '../../../../core/widgets/app_bottom_sheet.dart';
 
 class NoteBackgroundPicker extends StatefulWidget {
   final String? selectedColor;
@@ -59,210 +60,130 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final dims = context.dims;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: keyboardHeight),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: context.colorTokens.sheetGradient,
-          borderRadius: AppRadius.sheetTopBorder,
-          boxShadow: [context.colorTokens.sheetShadow],
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Container(
-                margin: EdgeInsets.only(top: dims.sm),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                  borderRadius: AppRadius.handleBorder,
-                ),
-              ),
-
-              // Header
-              Padding(
-                padding: EdgeInsets.fromLTRB(
-                  dims.xl,
-                  dims.lg,
-                  dims.md,
-                  dims.xl,
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: AppRadius.smBorder,
-                      ),
-                      child: Icon(
-                        LucideIcons.palette,
-                        color: theme.colorScheme.primary,
-                        size: AppIconSizes.md,
+    return AppBottomSheet(
+      avoidKeyboard: true,
+      icon: LucideIcons.palette,
+      title: 'Background',
+      subtitle: 'Customize your note',
+      showDone: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Content
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Colors Section
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: dims.xl,
+                      vertical: dims.xs,
+                    ),
+                    child: Text(
+                      'Color',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Background',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          Text(
-                            'Customize your note',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.6,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    FilledButton.tonal(
-                      onPressed: () => Navigator.pop(context),
-                      style: FilledButton.styleFrom(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: dims.md,
-                          vertical: dims.xs,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: const Text('Done'),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Content
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 1. Colors Section
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: dims.xl,
-                          vertical: dims.xs,
-                        ),
-                        child: Text(
-                          'Color',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 80,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          padding: EdgeInsets.symmetric(horizontal: dims.md),
-                          physics: const BouncingScrollPhysics(),
-                          children: [
-                            // None / Default option
-                            _buildOptionItem(
-                              context: context,
-                              isSelected: _selectedColor == null,
-                              onTap: () => _onColorSelected(null),
-                              child: Icon(
-                                Icons.format_color_reset_outlined,
-                                color: theme.colorScheme.onSurfaceVariant,
-                                size: AppIconSizes.lg,
-                              ),
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              hasBorder: true,
-                            ),
-
-                            SizedBox(width: dims.sm),
-
-                            // Solid Colors
-                            ..._solidColors.map((style) {
-                              final isSelected = _selectedColor == style.id;
-                              final color = isDark
-                                  ? style.darkColor
-                                  : style.lightColor;
-                              return Padding(
-                                padding: EdgeInsets.only(right: dims.sm),
-                                child: _buildOptionItem(
-                                  context: context,
-                                  isSelected: isSelected,
-                                  onTap: () => _onColorSelected(style.id),
-                                  child: isSelected
-                                      ? Icon(
-                                          Icons.check,
-                                          color: color.computeLuminance() > 0.5
-                                              ? Colors.black
-                                              : Colors.white,
-                                        )
-                                      : null,
-                                  color: color,
-                                ),
-                              );
-                            }),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: dims.md),
-
-                      // 2. Backgrounds Section
-                      Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: dims.xl,
-                          vertical: dims.xs,
-                        ),
-                        child: Text(
-                          'Background',
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 80,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          padding: EdgeInsets.symmetric(horizontal: dims.md),
-                          physics: const BouncingScrollPhysics(),
-                          children: _patterns.map((style) {
-                            final isSelected = _selectedColor == style.id;
-                            return Padding(
-                              padding: EdgeInsets.only(right: dims.sm),
-                              child: _buildBackgroundItem(
-                                context: context,
-                                style: style,
-                                isSelected: isSelected,
-                                onTap: () => _onColorSelected(style.id),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                      SizedBox(height: dims.xxl),
-                    ],
                   ),
-                ),
+                  SizedBox(
+                    height: 80,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.symmetric(horizontal: dims.md),
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        // None / Default option
+                        _buildOptionItem(
+                          context: context,
+                          isSelected: _selectedColor == null,
+                          onTap: () => _onColorSelected(null),
+                          child: Icon(
+                            Icons.format_color_reset_outlined,
+                            color: theme.colorScheme.onSurfaceVariant,
+                            size: AppIconSizes.lg,
+                          ),
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          hasBorder: true,
+                        ),
+
+                        SizedBox(width: dims.sm),
+
+                        // Solid Colors
+                        ..._solidColors.map((style) {
+                          final isSelected = _selectedColor == style.id;
+                          final color = isDark
+                              ? style.darkColor
+                              : style.lightColor;
+                          return Padding(
+                            padding: EdgeInsets.only(right: dims.sm),
+                            child: _buildOptionItem(
+                              context: context,
+                              isSelected: isSelected,
+                              onTap: () => _onColorSelected(style.id),
+                              child: isSelected
+                                  ? Icon(
+                                      Icons.check,
+                                      color: color.computeLuminance() > 0.5
+                                          ? Colors.black
+                                          : Colors.white,
+                                    )
+                                  : null,
+                              color: color,
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: dims.md),
+
+                  // 2. Backgrounds Section
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: dims.xl,
+                      vertical: dims.xs,
+                    ),
+                    child: Text(
+                      'Background',
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 80,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.symmetric(horizontal: dims.md),
+                      physics: const BouncingScrollPhysics(),
+                      children: _patterns.map((style) {
+                        final isSelected = _selectedColor == style.id;
+                        return Padding(
+                          padding: EdgeInsets.only(right: dims.sm),
+                          child: _buildBackgroundItem(
+                            context: context,
+                            style: style,
+                            isSelected: isSelected,
+                            onTap: () => _onColorSelected(style.id),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  SizedBox(height: dims.xxl),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

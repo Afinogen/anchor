@@ -13,6 +13,7 @@ import 'package:path/path.dart' as path;
 import '../../../../core/theme/context_extensions.dart';
 import '../../../../core/theme/tokens/app_icon_sizes.dart';
 import '../../../../core/theme/tokens/app_radius.dart';
+import '../../../../core/widgets/app_bottom_sheet.dart';
 
 class NoteAttachmentSheet extends StatefulWidget {
   final Future<void> Function(String filePath, String mimeType, String filename)
@@ -258,126 +259,67 @@ class _NoteAttachmentSheetState extends State<NoteAttachmentSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final dims = context.dims;
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: context.colorTokens.sheetGradient,
-        borderRadius: AppRadius.sheetTopBorder,
-        boxShadow: [context.colorTokens.sheetShadow],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(dims.xl, 0, dims.xl, dims.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                margin: EdgeInsets.only(top: dims.sm),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                  borderRadius: AppRadius.handleBorder,
+    return AppBottomSheet(
+      icon: LucideIcons.paperclip,
+      title: 'Add Attachment',
+      subtitle: _sheetState == _SheetState.recording
+          ? 'Recording in progress'
+          : _sheetState == _SheetState.preview
+          ? 'Review your recording'
+          : 'Images or audio',
+      contentPadding: EdgeInsets.fromLTRB(dims.xl, 0, dims.xl, dims.xl),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (_sheetState == _SheetState.recording)
+            _RecordingWidget(
+              duration: _recordingDuration,
+              formatDuration: _formatDuration,
+              onStop: _stopRecording,
+            )
+          else if (_sheetState == _SheetState.preview)
+            _PreviewWidget(
+              duration: _previewDuration,
+              position: _previewPosition,
+              isPlaying: _previewPlaying,
+              formatDuration: _formatDuration,
+              onTogglePlay: _togglePreviewPlay,
+              onRestart: _startRecording,
+              onDiscard: _discardRecording,
+              onSave: _saveRecording,
+            )
+          else
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _OptionTile(
+                  icon: LucideIcons.camera,
+                  label: 'Take Photo',
+                  onTap: () => _pickImage(ImageSource.camera),
                 ),
-              ),
-              Padding(
-                padding: EdgeInsets.fromLTRB(0, dims.lg, 0, dims.xl),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: AppRadius.smBorder,
-                      ),
-                      child: Icon(
-                        LucideIcons.paperclip,
-                        color: theme.colorScheme.primary,
-                        size: AppIconSizes.md,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Add Attachment',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          Text(
-                            _sheetState == _SheetState.recording
-                                ? 'Recording in progress'
-                                : _sheetState == _SheetState.preview
-                                ? 'Review your recording'
-                                : 'Images or audio',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.6,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                SizedBox(height: dims.xs),
+                _OptionTile(
+                  icon: LucideIcons.image,
+                  label: 'Choose Image',
+                  onTap: () => _pickImage(ImageSource.gallery),
                 ),
-              ),
-              if (_sheetState == _SheetState.recording)
-                _RecordingWidget(
-                  duration: _recordingDuration,
-                  formatDuration: _formatDuration,
-                  onStop: _stopRecording,
-                )
-              else if (_sheetState == _SheetState.preview)
-                _PreviewWidget(
-                  duration: _previewDuration,
-                  position: _previewPosition,
-                  isPlaying: _previewPlaying,
-                  formatDuration: _formatDuration,
-                  onTogglePlay: _togglePreviewPlay,
-                  onRestart: _startRecording,
-                  onDiscard: _discardRecording,
-                  onSave: _saveRecording,
-                )
-              else
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _OptionTile(
-                      icon: LucideIcons.camera,
-                      label: 'Take Photo',
-                      onTap: () => _pickImage(ImageSource.camera),
-                    ),
-                    SizedBox(height: dims.xs),
-                    _OptionTile(
-                      icon: LucideIcons.image,
-                      label: 'Choose Image',
-                      onTap: () => _pickImage(ImageSource.gallery),
-                    ),
-                    SizedBox(height: dims.xs),
-                    _OptionTile(
-                      icon: LucideIcons.mic,
-                      label: 'Record Audio',
-                      onTap: _startRecording,
-                    ),
-                    SizedBox(height: dims.xs),
-                    _OptionTile(
-                      icon: LucideIcons.music,
-                      label: 'Choose Audio File',
-                      onTap: _pickAudioFile,
-                    ),
-                  ],
+                SizedBox(height: dims.xs),
+                _OptionTile(
+                  icon: LucideIcons.mic,
+                  label: 'Record Audio',
+                  onTap: _startRecording,
                 ),
-            ],
-          ),
-        ),
+                SizedBox(height: dims.xs),
+                _OptionTile(
+                  icon: LucideIcons.music,
+                  label: 'Choose Audio File',
+                  onTap: _pickAudioFile,
+                ),
+              ],
+            ),
+        ],
       ),
     );
   }

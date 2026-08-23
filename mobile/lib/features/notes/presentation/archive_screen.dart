@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
-import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_list_page.dart';
 import 'notes_controller.dart';
-import 'package:anchor/core/theme/context_extensions.dart';
 
 class ArchiveScreen extends ConsumerWidget {
   const ArchiveScreen({super.key});
@@ -45,83 +43,20 @@ class ArchiveScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final archiveAsync = ref.watch(archiveControllerProvider);
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.8),
-        leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft),
-          onPressed: () => context.pop(),
+    return NoteListPage(
+      title: 'Archive',
+      notes: ref.watch(archiveControllerProvider),
+      emptyIcon: LucideIcons.archive,
+      emptyMessage: 'Archive is empty',
+      datePrefix: 'Archived',
+      trailingActions: (note) => [
+        IconButton(
+          icon: const Icon(LucideIcons.archiveRestore),
+          onPressed: () => _showUnarchiveDialog(context, ref, note),
+          tooltip: 'Unarchive',
+          visualDensity: VisualDensity.compact,
         ),
-        title: Text(
-          'Archive',
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.surface,
-              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            ],
-          ),
-        ),
-        child: archiveAsync.when(
-          data: (notes) {
-            if (notes.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(LucideIcons.archive, size: 64, color: theme.hintColor),
-                    SizedBox(height: context.dims.md),
-                    Text(
-                      'Archive is empty',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.hintColor,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-            final dims = context.dims;
-            return ListView.builder(
-              padding: dims.screenInsets,
-              itemCount: notes.length,
-              itemBuilder: (context, index) {
-                final note = notes[index];
-                return Padding(
-                  padding: EdgeInsets.only(bottom: dims.listItemSpacing),
-                  child: NoteCard(
-                    note: note,
-                    datePrefix: 'Archived',
-                    onTap: () => context.push('/note/${note.id}', extra: note),
-                    trailingActions: [
-                      IconButton(
-                        icon: const Icon(LucideIcons.archiveRestore),
-                        onPressed: () =>
-                            _showUnarchiveDialog(context, ref, note),
-                        tooltip: 'Unarchive',
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) => Center(child: Text('Error: $err')),
-        ),
-      ),
+      ],
     );
   }
 }

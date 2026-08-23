@@ -157,7 +157,7 @@ class _DiffRow extends StatelessWidget {
     final accent = switch (kind) {
       DiffKind.same => null,
       DiffKind.added => tokens.success,
-      DiffKind.removed => tokens.error,
+      DiffKind.removed => Theme.of(context).colorScheme.error,
     };
 
     return Container(
