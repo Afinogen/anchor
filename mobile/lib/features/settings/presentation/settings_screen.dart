@@ -20,6 +20,7 @@ import '../../auth/presentation/auth_controller.dart';
 import '../data/server_info_provider.dart';
 import 'controllers/editor_preferences_controller.dart';
 import 'controllers/theme_preferences_controller.dart';
+import '../../sync/data/sync_compatibility.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -312,6 +313,14 @@ class _AboutFooter extends StatelessWidget {
                           icon: LucideIcons.server,
                           text: 'Connected to $serverUrl',
                         ),
+                        if (compatibilityFor(info.protocols).isMismatch) ...[
+                          SizedBox(height: dims.xxs),
+                          _AboutRow(
+                            icon: LucideIcons.triangleAlert,
+                            text: 'Sync paused, versions incompatible',
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ],
                       ],
                     ),
             ),
@@ -323,15 +332,18 @@ class _AboutFooter extends StatelessWidget {
 }
 
 class _AboutRow extends StatelessWidget {
-  const _AboutRow({required this.icon, required this.text});
+  const _AboutRow({required this.icon, required this.text, this.color});
 
   final IconData icon;
   final String text;
 
+  /// Overrides the muted default.
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final onSurface = theme.colorScheme.onSurface;
+    final onSurface = color ?? theme.colorScheme.onSurface;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,

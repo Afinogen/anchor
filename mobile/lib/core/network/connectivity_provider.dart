@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/widgets.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -11,6 +12,7 @@ import '../../features/sync/data/sync_service.dart';
 import '../logging/app_logger.dart';
 import '../providers/active_user_id_provider.dart';
 import 'server_config_provider.dart';
+import 'anchor_protocol.dart';
 import 'sync_requester.dart';
 
 part 'connectivity_provider.g.dart';
@@ -171,13 +173,20 @@ class SyncManager extends _$SyncManager {
 
     if (!await _serverSpeaksOurProtocol()) return;
 
-    await ref.read(syncServiceProvider).run();
+    try {
+      await ref.read(syncServiceProvider).run();
+    } on DioException catch (error) {
+      if (error.response?.statusCode != upgradeRequiredStatus) rethrow;
+      AppLogger.instance.warn('Sync', 'Server refused our sync protocol');
+      ref.invalidate(serverInfoProvider);
+    }
   }
 
   Future<bool> _serverSpeaksOurProtocol() async {
     final compatibility = await ref.read(syncCompatibilityProvider.future);
     switch (compatibility) {
       case SyncCompatibility.ok:
+        _applyLiveUpdates();
         return true;
       case SyncCompatibility.unreachable:
         // Let the sync itself report the real network error.
@@ -186,6 +195,7 @@ class SyncManager extends _$SyncManager {
       case SyncCompatibility.serverOutdated:
       case SyncCompatibility.appOutdated:
         AppLogger.instance.warn('Sync', compatibility.message!);
+        ref.read(syncEventsProvider).disconnect();
         // Ask again next cycle, so a server update needs no app restart.
         ref.invalidate(serverInfoProvider);
         return false;

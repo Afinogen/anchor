@@ -201,7 +201,9 @@ class SheetActionButtons extends StatelessWidget {
     this.confirmColor,
   });
 
-  final String cancelText;
+  /// Null drops the cancel button, leaving the confirm button full width.
+  final String? cancelText;
+
   final String confirmText;
   final VoidCallback onConfirm;
 
@@ -222,13 +224,15 @@ class SheetActionButtons extends StatelessWidget {
 
     return Row(
       children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: onCancel ?? () => Navigator.pop(context),
-            child: Text(cancelText),
+        if (cancelText != null) ...[
+          Expanded(
+            child: OutlinedButton(
+              onPressed: onCancel ?? () => Navigator.pop(context),
+              child: Text(cancelText!),
+            ),
           ),
-        ),
-        SizedBox(width: context.dims.sm),
+          SizedBox(width: context.dims.sm),
+        ],
         Expanded(
           child: FilledButton(
             onPressed: onConfirm,

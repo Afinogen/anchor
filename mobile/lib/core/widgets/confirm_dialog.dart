@@ -5,13 +5,15 @@ import '../theme/context_extensions.dart';
 import '../theme/tokens/app_opacity.dart';
 import 'app_bottom_sheet.dart';
 
-/// Confirm/cancel dialog with a large tinted icon.
+/// Dialog with a large tinted icon and one or two actions.
 class ConfirmDialog extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
   final String title;
   final String message;
-  final String cancelText;
+
+  final String? cancelText;
+
   final String confirmText;
   final Color? confirmColor;
   final VoidCallback onConfirm;
@@ -60,6 +62,7 @@ class ConfirmDialog extends StatelessWidget {
             SizedBox(height: dims.lg),
             Text(
               title,
+              textAlign: TextAlign.center,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -80,7 +83,7 @@ class ConfirmDialog extends StatelessWidget {
               cancelText: cancelText,
               confirmText: confirmText,
               confirmColor: confirmColor,
-              onCancel: () => context.pop(false),
+              onCancel: cancelText == null ? null : () => context.pop(false),
               onConfirm: () {
                 context.pop(true);
                 onConfirm();
@@ -98,7 +101,7 @@ class ConfirmDialog extends StatelessWidget {
     Color? iconColor,
     required String title,
     required String message,
-    String cancelText = 'Cancel',
+    String? cancelText = 'Cancel',
     required String confirmText,
     Color? confirmColor,
   }) {

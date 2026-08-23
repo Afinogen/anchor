@@ -7,23 +7,21 @@ class ServerInfo {
   final String version;
   final String app;
 
-  /// Sync protocols the server understands. Empty on a server old enough not to
   /// advertise them.
-  final List<int> syncProtocols;
+  final List<int> protocols;
 
   ServerInfo({
     required this.version,
     required this.app,
-    this.syncProtocols = const [],
+    this.protocols = const [],
   });
 
   factory ServerInfo.fromJson(Map<String, dynamic> json) {
     return ServerInfo(
       version: json['version'] as String? ?? 'Unknown',
       app: json['app'] as String? ?? 'Unknown',
-      syncProtocols:
-          (json['syncProtocols'] as List?)?.whereType<int>().toList() ??
-          const [],
+      protocols:
+          (json['protocols'] as List?)?.whereType<int>().toList() ?? const [],
     );
   }
 }

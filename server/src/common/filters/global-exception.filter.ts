@@ -27,10 +27,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const path = httpAdapter.getRequestUrl(request) as string;
     const timestamp = new Date().toISOString();
 
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+    const declared =
+      exception instanceof HttpException ? exception.getStatus() : undefined;
+    const status = isHttpStatus(declared)
+      ? declared
+      : HttpStatus.INTERNAL_SERVER_ERROR;
 
     let body: Record<string, unknown>;
     if (exception instanceof HttpException) {
@@ -61,3 +62,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     httpAdapter.reply(ctx.getResponse(), body, status);
   }
 }
+
+const isHttpStatus = (status: unknown): status is number =>
+  Number.isInteger(status) &&
+  (status as number) >= 100 &&
+  (status as number) < 600;

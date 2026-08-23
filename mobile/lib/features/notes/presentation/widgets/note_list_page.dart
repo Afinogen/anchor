@@ -8,6 +8,7 @@ import 'package:anchor/core/widgets/app_page_scaffold.dart';
 import 'package:anchor/core/widgets/gradient_background.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
+import 'package:anchor/features/sync/presentation/sync_warning.dart';
 
 /// A titled, back-navigable list of [NoteCard]s with per-row actions.
 class NoteListPage extends StatelessWidget {
@@ -47,9 +48,10 @@ class NoteListPage extends StatelessWidget {
             padding: dims.screenInsets.copyWith(
               top: AppPageScaffold.topInset(context) + dims.screenGutter,
             ),
-            itemCount: notes.length,
+            itemCount: notes.length + 1,
             itemBuilder: (context, index) {
-              final note = notes[index];
+              if (index == 0) return const SyncWarning();
+              final note = notes[index - 1];
               return Padding(
                 padding: EdgeInsets.only(bottom: dims.listItemSpacing),
                 child: NoteCard(

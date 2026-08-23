@@ -1,6 +1,8 @@
 import 'package:anchor/core/router/app_routes.dart';
 import 'package:anchor/features/auth/presentation/providers/oidc_config_provider.dart';
 import 'package:anchor/features/auth/presentation/providers/registration_mode_provider.dart';
+import 'package:anchor/features/settings/data/server_info_provider.dart';
+import 'package:anchor/features/sync/data/sync_compatibility.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +15,7 @@ import '../theme/tokens/app_icon_sizes.dart';
 import '../theme/tokens/app_radius.dart';
 import '../widgets/app_snackbar.dart';
 import '../widgets/anchor_icon.dart';
+import '../widgets/confirm_dialog.dart';
 
 class ServerConfigScreen extends ConsumerStatefulWidget {
   final String? initialUrl;
@@ -106,11 +109,19 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
       if (response.statusCode == 200 && response.data['app'] == 'anchor') {
         final version = response.data['version'] ?? 'Unknown';
+        final compatibility = _compatibilityOf(response);
         if (mounted) {
-          AppSnackbar.showSuccess(
-            context,
-            message: 'Server is running! Version: $version',
-          );
+          if (compatibility.isMismatch) {
+            AppSnackbar.showWarning(
+              context,
+              message: 'Server v$version. ${compatibility.message}',
+            );
+          } else {
+            AppSnackbar.showSuccess(
+              context,
+              message: 'Server is running! Version: $version',
+            );
+          }
         }
       } else {
         setState(() {
@@ -142,6 +153,12 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
       final response = await dio.get('$url/api/health');
 
       if (response.statusCode == 200 && response.data['app'] == 'anchor') {
+        final compatibility = _compatibilityOf(response);
+        if (compatibility.isMismatch &&
+            !await _confirmMismatch(compatibility)) {
+          return;
+        }
+
         final shouldPop = widget.initialUrl != null;
         final notifier = ref.read(serverConfigProvider.notifier);
 
@@ -156,6 +173,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
         await notifier.setServerUrl(url);
         ref.invalidate(oidcConfigProvider);
         ref.invalidate(registrationModeProvider);
+        ref.invalidate(serverInfoProvider);
       } else {
         setState(() {
           _error = 'Invalid server response. Is this an Anchor server?';
@@ -170,6 +188,26 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
         });
       }
     }
+  }
+
+  SyncCompatibility _compatibilityOf(Response<dynamic> response) {
+    final protocols =
+        (response.data['protocols'] as List?)?.whereType<int>().toList() ??
+        const <int>[];
+    return compatibilityFor(protocols);
+  }
+
+  Future<bool> _confirmMismatch(SyncCompatibility compatibility) async {
+    if (!mounted) return false;
+    final confirmed = await ConfirmDialog.show(
+      context: context,
+      icon: LucideIcons.triangleAlert,
+      iconColor: Theme.of(context).colorScheme.error,
+      title: compatibility.title!,
+      message: compatibility.message!,
+      confirmText: 'Connect anyway',
+    );
+    return confirmed ?? false;
   }
 
   String? _validateUrl(String? value) {

@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import '../../notes/domain/note.dart' as domain;
 import '../../notes/domain/note_attachment.dart' as domain;
 
-const int syncProtocol = 3;
 const int maxChangesPerRequest = 200;
 const int maxRevisionsPerNote = 20;
 const int maxRequestBytes = 8 * 1024 * 1024;

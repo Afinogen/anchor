@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { SyncApplyService } from './sync-apply.service';
 import { SyncFeedService } from './sync-feed.service';
 import { DEFAULT_SYNC_LIMIT } from './sync.constants';
+import { ANCHOR_PROTOCOL } from '../common/protocol/protocol.constants';
 import type { SyncRequestDto } from './dto/sync-request.dto';
 import type { SyncResponse } from './dto/sync-response.dto';
 
@@ -22,6 +23,6 @@ export class SyncService {
       dto.cursor,
       dto.limit ?? DEFAULT_SYNC_LIMIT,
     );
-    return { protocol: 3, results, ...feed };
+    return { protocol: ANCHOR_PROTOCOL, results, ...feed };
   }
 }

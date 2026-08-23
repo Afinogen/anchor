@@ -48,4 +48,4 @@ final class SyncCompatibilityProvider
   }
 }
 
-String _$syncCompatibilityHash() => r'1001c8e31985ebe6cf38f460bd1678182717006a';
+String _$syncCompatibilityHash() => r'4c95074af9bcb3a80d603809c76ea43e5a7fc2f1';

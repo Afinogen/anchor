@@ -53,6 +53,6 @@ export interface SyncFeedPage {
 }
 
 export interface SyncResponse extends SyncFeedPage {
-  protocol: 3;
+  protocol: number;
   results: SyncApplyResult[];
 }

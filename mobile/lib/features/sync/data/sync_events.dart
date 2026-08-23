@@ -7,6 +7,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/logging/app_logger.dart';
 import '../../../core/network/dio_provider.dart';
+import '../../../core/network/anchor_protocol.dart';
 import '../../../core/network/sync_requester.dart';
 import 'sync_api.dart';
 
@@ -119,6 +120,12 @@ class SyncEvents {
           'Server has no push channel; falling back to polling',
         );
         disconnect();
+        return;
+      }
+      if (error.response?.statusCode == upgradeRequiredStatus) {
+        AppLogger.instance.warn(_tag, 'Server refused our sync protocol');
+        disconnect();
+        scheduleAppSync(trigger: 'protocol');
         return;
       }
       _scheduleRetry(error: error);

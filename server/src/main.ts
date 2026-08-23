@@ -1,5 +1,4 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
 import type { ConfigType } from '@nestjs/config';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
@@ -7,6 +6,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import { AppConfig, StorageConfig } from './config/configuration';
 import { PUBLIC_PROFILES_PREFIX } from './config/storage.constants';
+import { AppValidationPipe } from './common/pipes/app-validation.pipe';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -38,13 +38,7 @@ async function bootstrap() {
     prefix: PUBLIC_PROFILES_PREFIX,
   });
 
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
+  app.useGlobalPipes(new AppValidationPipe());
 
   await app.listen(appConfig.port);
 }

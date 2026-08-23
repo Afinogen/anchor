@@ -86,4 +86,22 @@ void main() {
 
     expect(result, 'chosen');
   });
+
+  testWidgets('a null cancelText leaves one full-width action', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: SheetActionButtons(
+            cancelText: null,
+            confirmText: 'Got it',
+            onConfirm: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Got it'), findsOneWidget);
+    expect(find.byType(OutlinedButton), findsNothing);
+  });
 }

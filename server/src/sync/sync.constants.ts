@@ -1,6 +1,3 @@
-// Advertised on /api/health so clients can pick a protocol without probing.
-export const SYNC_PROTOCOLS = [3];
-
 // Successive edits by the same author collapse into one revision within this
 // window, so autosave doesn't flood the history.
 export const REVISION_COLLAPSE_WINDOW_MS = 10 * 60 * 1000;
