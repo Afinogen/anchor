@@ -1,5 +1,10 @@
 import type { QuillOp } from "./quill";
-import { type DeltaLine, getLineText, indentOf } from "./quill-lines";
+import {
+  type DeltaLine,
+  getLineText,
+  indentOf,
+  isChecklistLine,
+} from "./quill-lines";
 
 /** Bare `DD.MM.YYYY` — the form this module writes. */
 const BARE_DATE = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/;
@@ -43,4 +48,50 @@ export function dateHeaderOps(key: string): QuillOp[] {
 export function sortableDateKey(key: string): string {
   const [day, month, year] = key.split(".");
   return `${year}${month}${day}`;
+}
+
+/**
+ * Bounds `[start, end]` of the checklist group containing [lineIndex]: the run
+ * of checklist lines around it, extended over date headers that are directly
+ * followed by a checklist line. A trailing header belongs to the text below,
+ * not to the group.
+ */
+export function dateGroupBounds(
+  lines: DeltaLine[],
+  lineIndex: number,
+): [number, number] {
+  let start = lineIndex;
+  while (start > 0) {
+    if (isChecklistLine(lines[start - 1])) {
+      start--;
+      continue;
+    }
+    if (
+      dateHeaderKey(lines[start - 1]) !== null &&
+      isChecklistLine(lines[start])
+    ) {
+      start--;
+      continue;
+    }
+    break;
+  }
+
+  let end = lineIndex;
+  while (end < lines.length - 1) {
+    if (isChecklistLine(lines[end + 1])) {
+      end++;
+      continue;
+    }
+    if (
+      dateHeaderKey(lines[end + 1]) !== null &&
+      end + 2 < lines.length &&
+      isChecklistLine(lines[end + 2])
+    ) {
+      end++;
+      continue;
+    }
+    break;
+  }
+
+  return [start, end];
 }

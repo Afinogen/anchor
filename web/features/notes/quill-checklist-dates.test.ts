@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { QuillOp } from "./quill";
 import {
+  dateGroupBounds,
   dateHeaderKey,
   dateHeaderOps,
   formatDateKey,
@@ -84,5 +85,67 @@ describe("sortableDateKey", () => {
         sortableDateKey(a).localeCompare(sortableDateKey(b)),
       ),
     ).toEqual(["31.12.2025", "29.08.2026", "01.09.2026"]);
+  });
+});
+
+/** Lines from (text, listType) pairs; listType null = plain paragraph. */
+function lines(items: [string, string | null][]): DeltaLine[] {
+  return items.map(([text, list]) => line(text, list ? { list } : undefined));
+}
+
+describe("dateGroupBounds", () => {
+  it("covers a plain contiguous checklist", () => {
+    const doc = lines([
+      ["intro", null],
+      ["a", "unchecked"],
+      ["b", "checked"],
+      ["outro", null],
+    ]);
+    expect(dateGroupBounds(doc, 1)).toEqual([1, 2]);
+  });
+
+  it("extends over a date header followed by a checklist line", () => {
+    const doc = lines([
+      ["a", "unchecked"],
+      ["30.08.2026", null],
+      ["b", "checked"],
+    ]);
+    expect(dateGroupBounds(doc, 0)).toEqual([0, 2]);
+  });
+
+  it("extends over the hand-written dashed form", () => {
+    const doc = lines([
+      ["a", "unchecked"],
+      ["----- 29.08.2026 -------", null],
+      ["b", "checked"],
+    ]);
+    expect(dateGroupBounds(doc, 0)).toEqual([0, 2]);
+  });
+
+  it("stops before a trailing header with no checklist line under it", () => {
+    const doc = lines([
+      ["a", "unchecked"],
+      ["30.08.2026", null],
+      ["some note", null],
+    ]);
+    expect(dateGroupBounds(doc, 0)).toEqual([0, 0]);
+  });
+
+  it("stops at a foreign paragraph", () => {
+    const doc = lines([
+      ["a", "unchecked"],
+      ["some note", null],
+      ["b", "checked"],
+    ]);
+    expect(dateGroupBounds(doc, 0)).toEqual([0, 0]);
+  });
+
+  it("walks up from a line below a header", () => {
+    const doc = lines([
+      ["a", "unchecked"],
+      ["30.08.2026", null],
+      ["b", "checked"],
+    ]);
+    expect(dateGroupBounds(doc, 2)).toEqual([0, 2]);
   });
 });
