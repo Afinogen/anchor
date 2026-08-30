@@ -86,6 +86,7 @@ export const en = {
       "Registration successful. Your account is pending approval.",
     createAccountFailed: "Failed to create account",
     authFailed: "Failed to authenticate",
+    downloadApk: "Download the Android app",
   },
   settings: {
     title: "Settings",

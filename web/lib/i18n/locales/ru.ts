@@ -88,6 +88,7 @@ export const ru: Dictionary = {
     registrationPending: "Регистрация прошла. Аккаунт ждёт подтверждения.",
     createAccountFailed: "Не удалось создать аккаунт",
     authFailed: "Не удалось авторизоваться",
+    downloadApk: "Скачать приложение для Android",
   },
   settings: {
     title: "Настройки",

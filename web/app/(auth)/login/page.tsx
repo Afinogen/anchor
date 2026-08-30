@@ -1,11 +1,11 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { Loader2, Lock, LogIn, Mail } from "lucide-react";
+import { Download, Loader2, Lock, LogIn, Mail } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,8 +26,37 @@ import {
 import { getSafeRedirectUrl } from "@/features/auth/utils/redirect";
 import { useTranslation } from "@/lib/i18n";
 
+/**
+ * The Android build, if the deployment publishes one. Not shipped in the image:
+ * the APKs are mounted into `web/public/apk` on the server, so the file may
+ * simply not be there.
+ */
+const APK_URL = "/apk/anchor-arm64-v8a.apk";
+
+/** Whether [APK_URL] resolves, so the link is only offered when it downloads. */
+function useApkAvailable() {
+  const [available, setAvailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(APK_URL, { method: "HEAD" })
+      .then((res) => {
+        if (!cancelled) setAvailable(res.ok);
+      })
+      .catch(() => {
+        // Offline or blocked: just leave the link hidden.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return available;
+}
+
 export default function LoginPage() {
   const { t } = useTranslation();
+  const apkAvailable = useApkAvailable();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const searchParams = useSearchParams();
@@ -188,6 +217,19 @@ export default function LoginPage() {
                       {t("auth.createOne")}
                     </Link>
                   </p>
+                </div>
+              )}
+
+              {apkAvailable && (
+                <div className="mt-6 border-t pt-4 text-center">
+                  <a
+                    href={APK_URL}
+                    download
+                    className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-accent"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    {t("auth.downloadApk")}
+                  </a>
                 </div>
               )}
             </CardContent>
