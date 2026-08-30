@@ -1,5 +1,13 @@
 FROM node:24-alpine AS base
 
+# Alpine's CDN is unreachable from some networks (DPI, dead IPv6). Point apk at
+# a mirror with --build-arg ALPINE_MIRROR=https://mirror.yandex.ru/mirrors/alpine
+# Empty by default: the stock CDN is used unless a mirror is asked for.
+ARG ALPINE_MIRROR=""
+RUN if [ -n "$ALPINE_MIRROR" ]; then \
+      sed -i "s|https\?://dl-cdn.alpinelinux.org/alpine|$ALPINE_MIRROR|g" /etc/apk/repositories; \
+    fi
+
 # pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -63,7 +71,11 @@ ENV PGDATA=/data/postgres
 COPY --from=base /usr/local/bin/node /usr/local/bin/node
 
 # curl for HEALTHCHECK, supervisor for process management
-RUN apk add --no-cache curl supervisor libstdc++ libc6-compat
+ARG ALPINE_MIRROR=""
+RUN if [ -n "$ALPINE_MIRROR" ]; then \
+      sed -i "s|https\?://dl-cdn.alpinelinux.org/alpine|$ALPINE_MIRROR|g" /etc/apk/repositories; \
+    fi \
+ && apk add --no-cache curl supervisor libstdc++ libc6-compat
 
 # Server runtime files
 COPY --from=server_builder /app/server/dist ./server/dist
