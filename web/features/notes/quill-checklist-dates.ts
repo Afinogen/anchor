@@ -34,10 +34,19 @@ export function parseDateHeaderText(text: string): string | null {
   return `${day.padStart(2, "0")}.${month.padStart(2, "0")}.${year}`;
 }
 
-/** Key of the date header on [line], or null when the line is not one. */
+/**
+ * Key of the date header on [line], or null when the line is not one.
+ * [getLineText] maps a non-string insert (an embed, e.g. an inline image) to
+ * "", so a line mixing an embed with date-shaped text would otherwise read
+ * as a bare header. Rejecting it here keeps that line from being deleted,
+ * embed included, once the "header" is left with nothing under it.
+ */
 export function dateHeaderKey(line: DeltaLine): string | null {
   if (line.newlineOp.attributes?.list !== undefined) return null;
   if (indentOf(line) !== 0) return null;
+  if (line.contentOps.some((op) => typeof op.insert !== "string")) {
+    return null;
+  }
   return parseDateHeaderText(getLineText(line));
 }
 

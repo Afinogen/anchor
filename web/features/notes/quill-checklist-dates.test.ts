@@ -69,6 +69,14 @@ describe("dateHeaderKey", () => {
   it("rejects an indented line", () => {
     expect(dateHeaderKey(line("30.08.2026", { indent: 1 }))).toBeNull();
   });
+
+  it("rejects a line mixing an embed with date-shaped text", () => {
+    const embedLine: DeltaLine = {
+      contentOps: [{ insert: { image: "x" } }, { insert: "30.08.2026" }],
+      newlineOp: { insert: "\n" },
+    };
+    expect(dateHeaderKey(embedLine)).toBeNull();
+  });
 });
 
 describe("dateHeaderOps", () => {
