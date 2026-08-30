@@ -988,6 +988,9 @@ class _NoteEditScreenState extends ConsumerState<NoteEditScreen>
                             sortChecklistItems: ref
                                 .watch(editorPreferencesControllerProvider)
                                 .sortChecklistItems,
+                            groupCheckedByDate: ref
+                                .watch(editorPreferencesControllerProvider)
+                                .groupCheckedByDate,
                             contentPadding: context.dims.editorPadding,
                             header: _buildEditorHeader(theme),
                           )

@@ -51,6 +51,9 @@ class RichTextEditor extends StatefulWidget {
   /// Whether to sort checklist items (checked to bottom, unchecked to top).
   final bool sortChecklistItems;
 
+  /// Whether checked items are grouped under the day they were checked.
+  final bool groupCheckedByDate;
+
   /// Optional header widget placed above the editor, scrolling together.
   final Widget? header;
 
@@ -65,6 +68,7 @@ class RichTextEditor extends StatefulWidget {
     this.focusNode,
     this.contentPadding = const EdgeInsets.symmetric(vertical: 16),
     this.sortChecklistItems = true,
+    this.groupCheckedByDate = false,
     this.header,
   });
 
@@ -90,6 +94,9 @@ class RichTextEditorState extends State<RichTextEditor>
 
   @override
   bool get sortChecklistItems => widget.sortChecklistItems;
+
+  @override
+  bool get groupCheckedByDate => widget.groupCheckedByDate;
 
   @override
   RenderEditor? get renderEditor => _editorKey.currentState?.renderEditor;

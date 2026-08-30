@@ -6,6 +6,7 @@ class PreferenceKeys {
   PreferenceKeys._();
 
   static const sortChecklistItems = 'editor_sort_checklist_items';
+  static const groupCheckedByDate = 'editor_group_checked_by_date';
   static const themeMode = 'theme_mode';
   static const displayDensity = 'display_density';
   static const locale = 'app_locale';
@@ -26,6 +27,18 @@ class PreferencesRepository {
   Future<void> setSortChecklistItems(bool value) async {
     await _storage.write(
       key: PreferenceKeys.sortChecklistItems,
+      value: value.toString(),
+    );
+  }
+
+  Future<bool> getGroupCheckedByDate() async {
+    final value = await _storage.read(key: PreferenceKeys.groupCheckedByDate);
+    return value == 'true'; // Default to false
+  }
+
+  Future<void> setGroupCheckedByDate(bool value) async {
+    await _storage.write(
+      key: PreferenceKeys.groupCheckedByDate,
       value: value.toString(),
     );
   }

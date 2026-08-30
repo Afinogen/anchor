@@ -65,6 +65,9 @@ void main() {
       () => attachmentsRepo.watchAttachments(any()),
     ).thenAnswer((_) => Stream.value(const []));
     when(() => prefsRepo.getSortChecklistItems()).thenAnswer((_) async => true);
+    when(
+      () => prefsRepo.getGroupCheckedByDate(),
+    ).thenAnswer((_) async => false);
   });
 
   Future<void> pumpScreen(WidgetTester tester, {Note? note}) async {

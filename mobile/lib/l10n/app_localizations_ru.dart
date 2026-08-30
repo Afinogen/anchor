@@ -49,6 +49,17 @@ class AppLocalizationsRu extends AppLocalizations {
       'Автоматически перемещать отмеченные пункты вниз';
 
   @override
+  String get groupCheckedByDate => 'Группировать выполненные по дате';
+
+  @override
+  String get groupCheckedByDateSubtitle =>
+      'Отмеченный пункт уезжает под заголовок с датой, когда его отметили';
+
+  @override
+  String get groupCheckedByDateDisabledSubtitle =>
+      'Включите сортировку, чтобы группировать выполненные по дате';
+
+  @override
   String get account => 'Аккаунт';
 
   @override

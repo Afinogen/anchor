@@ -104,6 +104,7 @@ class SettingsSwitchRow extends StatelessWidget {
     required this.icon,
     required this.value,
     required this.onChanged,
+    this.enabled = true,
   });
 
   final String title;
@@ -111,6 +112,7 @@ class SettingsSwitchRow extends StatelessWidget {
   final IconData icon;
   final bool value;
   final ValueChanged<bool> onChanged;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -124,14 +126,19 @@ class SettingsSwitchRow extends StatelessWidget {
           AppIconChip(icon: icon),
           SizedBox(width: dims.md),
           Expanded(
-            child: _RowLabels(title: title, subtitle: subtitle),
+            child: Opacity(
+              opacity: enabled ? 1 : AppOpacity.secondary,
+              child: _RowLabels(title: title, subtitle: subtitle),
+            ),
           ),
           Switch.adaptive(
             value: value,
-            onChanged: (newValue) {
-              HapticFeedback.selectionClick();
-              onChanged(newValue);
-            },
+            onChanged: enabled
+                ? (newValue) {
+                    HapticFeedback.selectionClick();
+                    onChanged(newValue);
+                  }
+                : null,
             activeTrackColor: theme.colorScheme.primary,
             activeThumbColor: theme.colorScheme.onPrimary,
           ),

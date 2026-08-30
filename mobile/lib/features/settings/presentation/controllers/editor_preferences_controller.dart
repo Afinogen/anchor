@@ -22,12 +22,22 @@ class EditorPreferencesController extends _$EditorPreferencesController {
   Future<void> _loadFromStorage() async {
     final repository = ref.read(preferencesRepositoryProvider);
     final sortChecklistItems = await repository.getSortChecklistItems();
-    state = state.copyWith(sortChecklistItems: sortChecklistItems);
+    final groupCheckedByDate = await repository.getGroupCheckedByDate();
+    state = state.copyWith(
+      sortChecklistItems: sortChecklistItems,
+      groupCheckedByDate: groupCheckedByDate,
+    );
   }
 
   Future<void> setSortChecklistItems(bool value) async {
     state = state.copyWith(sortChecklistItems: value);
     final repository = ref.read(preferencesRepositoryProvider);
     await repository.setSortChecklistItems(value);
+  }
+
+  Future<void> setGroupCheckedByDate(bool value) async {
+    state = state.copyWith(groupCheckedByDate: value);
+    final repository = ref.read(preferencesRepositoryProvider);
+    await repository.setGroupCheckedByDate(value);
   }
 }

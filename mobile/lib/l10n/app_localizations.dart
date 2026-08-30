@@ -176,6 +176,24 @@ abstract class AppLocalizations {
   /// **'Automatically move checked checklist items to the bottom'**
   String get sortChecklistItemsSubtitle;
 
+  /// No description provided for @groupCheckedByDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Group checked items by date'**
+  String get groupCheckedByDate;
+
+  /// No description provided for @groupCheckedByDateSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Move a checked item under a heading with the day it was checked'**
+  String get groupCheckedByDateSubtitle;
+
+  /// No description provided for @groupCheckedByDateDisabledSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Turn on sorting to group checked items by date'**
+  String get groupCheckedByDateDisabledSubtitle;
+
   /// No description provided for @account.
   ///
   /// In en, this message translates to:

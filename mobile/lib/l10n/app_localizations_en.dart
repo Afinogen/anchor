@@ -49,6 +49,17 @@ class AppLocalizationsEn extends AppLocalizations {
       'Automatically move checked checklist items to the bottom';
 
   @override
+  String get groupCheckedByDate => 'Group checked items by date';
+
+  @override
+  String get groupCheckedByDateSubtitle =>
+      'Move a checked item under a heading with the day it was checked';
+
+  @override
+  String get groupCheckedByDateDisabledSubtitle =>
+      'Turn on sorting to group checked items by date';
+
+  @override
   String get account => 'Account';
 
   @override

@@ -160,6 +160,20 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               )
                               .setSortChecklistItems(value),
                         ),
+                        SettingsSwitchRow(
+                          title: context.l10n.groupCheckedByDate,
+                          subtitle: editorPrefs.sortChecklistItems
+                              ? context.l10n.groupCheckedByDateSubtitle
+                              : context.l10n.groupCheckedByDateDisabledSubtitle,
+                          icon: LucideIcons.calendarDays,
+                          enabled: editorPrefs.sortChecklistItems,
+                          value: editorPrefs.groupCheckedByDate,
+                          onChanged: (value) => ref
+                              .read(
+                                editorPreferencesControllerProvider.notifier,
+                              )
+                              .setGroupCheckedByDate(value),
+                        ),
                       ],
                     ),
 
