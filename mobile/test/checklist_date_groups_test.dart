@@ -195,4 +195,97 @@ void main() {
       );
     });
   });
+
+  group('buildChecklistDateGroupDelta', () {
+    /// Applies the delta and reads back (text, listType, bold) per line.
+    List<(String, String?, bool)> applied(
+      List<(String, String?)> source,
+      int toggled,
+      String today,
+    ) {
+      final doc = makeDocument(source);
+      final move = buildChecklistDateGroupDelta(doc, toggled, today);
+      expect(move, isNotNull);
+      final result = Document.fromDelta(doc.toDelta().compose(move!));
+      final lines = parseDocumentLines(result);
+      final out = <(String, String?, bool)>[];
+      for (var i = 0; i < lines.length; i++) {
+        final text = lineText(result, lines[i]);
+        final bold = result
+            .toDelta()
+            .slice(lines[i].startOffset, lines[i].startOffset + lines[i].length - 1)
+            .toList()
+            .any((op) => op.attributes?['bold'] == true);
+        out.add((text, lines[i].listType, bold));
+      }
+      return out;
+    }
+
+    test("writes today's header in bold above the checked item", () {
+      expect(
+        applied([('a', 'unchecked'), ('b', 'checked')], 1, '30.08.2026'),
+        [
+          ('a', 'unchecked', false),
+          ('30.08.2026', null, true),
+          ('b', 'checked', false),
+        ],
+      );
+    });
+
+    test('moves the checked item under an existing header', () {
+      expect(
+        applied([
+          ('a', 'checked'),
+          ('30.08.2026', null),
+          ('done', 'checked'),
+        ], 0, '30.08.2026'),
+        [
+          ('30.08.2026', null, false),
+          ('done', 'checked', false),
+          ('a', 'checked', false),
+        ],
+      );
+    });
+
+    test('removes a header left empty by unchecking', () {
+      expect(
+        applied([
+          ('a', 'unchecked'),
+          ('30.08.2026', null),
+          ('b', 'unchecked'),
+        ], 2, '31.08.2026'),
+        [('a', 'unchecked', false), ('b', 'unchecked', false)],
+      );
+    });
+
+    test('handles a group that ends the document', () {
+      expect(
+        applied([('a', 'checked'), ('b', 'unchecked')], 0, '30.08.2026'),
+        [
+          ('b', 'unchecked', false),
+          ('30.08.2026', null, true),
+          ('a', 'checked', false),
+        ],
+      );
+    });
+
+    test('returns null when the layout is already right', () {
+      final doc = makeDocument([
+        ('a', 'unchecked'),
+        ('30.08.2026', null),
+        ('b', 'checked'),
+      ]);
+      expect(buildChecklistDateGroupDelta(doc, 2, '30.08.2026'), isNull);
+    });
+
+    test('returns null for a nested item', () {
+      final delta = Delta()
+        ..insert('parent')
+        ..insert('\n', {'list': 'unchecked'})
+        ..insert('child')
+        ..insert('\n', {'list': 'checked', 'indent': 1});
+      final doc = Document.fromDelta(delta);
+      expect(buildChecklistDateGroupDelta(doc, 1, '30.08.2026'), isNull);
+    });
+  });
 }

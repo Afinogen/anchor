@@ -1,3 +1,4 @@
+import 'package:dart_quill_delta/dart_quill_delta.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
 import 'checklist_lines.dart';
@@ -207,4 +208,94 @@ List<GroupItem> dateGroupedItems(
   undated.forEach(pushBlock);
 
   return items;
+}
+
+/// Delta that re-lays out the checklist group around [toggledIndex], grouping
+/// checked items under date headers and dating the toggled one [today]
+/// (`DD.MM.YYYY`). Null when nothing changes, when the line is not a checklist
+/// item, or when it is nested — nesting is left to the plain sort.
+///
+/// Built in three phases because [buildGroupReorderDelta] can only permute
+/// lines that already exist. Insertion goes first and always lands on an
+/// existing line start; deletions only ever touch headers that still have a
+/// checklist line under them. Both keep the document's final newline intact,
+/// which `Document.compose` cannot delete or insert past.
+Delta? buildChecklistDateGroupDelta(
+  Document document,
+  int toggledIndex,
+  String today,
+) {
+  var lines = parseDocumentLines(document);
+  if (toggledIndex < 0 || toggledIndex >= lines.length) return null;
+  if (!lines[toggledIndex].isChecklist) return null;
+  if (lines[toggledIndex].indent != 0) return null;
+
+  var doc = document;
+  var index = toggledIndex;
+  Delta? total;
+
+  void apply(Delta step) {
+    total = total == null ? step : total!.compose(step);
+    doc = Document.fromDelta(doc.toDelta().compose(step));
+    lines = parseDocumentLines(doc);
+  }
+
+  var (groupStart, groupEnd) = dateGroupBounds(doc, lines, index);
+  var items = dateGroupedItems(doc, lines, groupStart, groupEnd, index, today);
+
+  // Phase A: write today's header at the top of the group.
+  final missing = items.whereType<NewHeader>().toList();
+  if (missing.isNotEmpty) {
+    apply(
+      Delta()
+        ..retain(lines[groupStart].startOffset)
+        ..insert(missing.single.key, {'bold': true})
+        ..insert('\n'),
+    );
+    index += 1;
+    (groupStart, groupEnd) = dateGroupBounds(doc, lines, index);
+    items = dateGroupedItems(doc, lines, groupStart, groupEnd, index, today);
+  }
+
+  // Phase B: drop headers that head nothing.
+  final kept = <int>{
+    for (final item in items)
+      if (item is ExistingLine) item.index,
+  };
+  final stale = [
+    for (var i = groupStart; i <= groupEnd; i++)
+      if (!kept.contains(i) && dateHeaderKey(doc, lines, i) != null) i,
+  ];
+  if (stale.isNotEmpty) {
+    final step = Delta();
+    var cursor = 0;
+    for (final i in stale) {
+      if (lines[i].startOffset > cursor) {
+        step.retain(lines[i].startOffset - cursor);
+      }
+      step.delete(lines[i].length);
+      cursor = lines[i].startOffset + lines[i].length;
+    }
+    apply(step);
+    index -= stale.where((i) => i < index).length;
+    (groupStart, groupEnd) = dateGroupBounds(doc, lines, index);
+    items = dateGroupedItems(doc, lines, groupStart, groupEnd, index, today);
+  }
+
+  // Phase C: permute the group into the target order.
+  final order = [
+    for (final item in items) (item as ExistingLine).index,
+  ];
+  var moved = false;
+  for (var k = 0; k < order.length; k++) {
+    if (order[k] != groupStart + k) {
+      moved = true;
+      break;
+    }
+  }
+  if (moved) {
+    apply(buildGroupReorderDelta(doc, lines, groupStart, order));
+  }
+
+  return total;
 }
