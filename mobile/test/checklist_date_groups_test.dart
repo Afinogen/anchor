@@ -123,24 +123,25 @@ void main() {
     }
 
     test("creates today's header for the toggled item", () {
-      expect(
-        layout([('a', 'unchecked'), ('b', 'checked')], 1, '30.08.2026'),
-        [
-          const ExistingLine(0),
-          const NewHeader('30.08.2026'),
-          const ExistingLine(1),
-        ],
-      );
+      expect(layout([('a', 'unchecked'), ('b', 'checked')], 1, '30.08.2026'), [
+        const ExistingLine(0),
+        const NewHeader('30.08.2026'),
+        const ExistingLine(1),
+      ]);
     });
 
     test('reuses an existing header for the same day', () {
       expect(
-        layout([
-          ('a', 'unchecked'),
-          ('30.08.2026', null),
-          ('b', 'checked'),
-          ('c', 'checked'),
-        ], 3, '30.08.2026'),
+        layout(
+          [
+            ('a', 'unchecked'),
+            ('30.08.2026', null),
+            ('b', 'checked'),
+            ('c', 'checked'),
+          ],
+          3,
+          '30.08.2026',
+        ),
         [
           const ExistingLine(0),
           const ExistingLine(1),
@@ -152,12 +153,16 @@ void main() {
 
     test('orders dates newest first, under the unchecked items', () {
       expect(
-        layout([
-          ('29.08.2026', null),
-          ('old', 'checked'),
-          ('a', 'unchecked'),
-          ('new', 'checked'),
-        ], 3, '30.08.2026'),
+        layout(
+          [
+            ('29.08.2026', null),
+            ('old', 'checked'),
+            ('a', 'unchecked'),
+            ('new', 'checked'),
+          ],
+          3,
+          '30.08.2026',
+        ),
         [
           const ExistingLine(2),
           const NewHeader('30.08.2026'),
@@ -170,22 +175,22 @@ void main() {
 
     test('drops a header left with nothing under it', () {
       expect(
-        layout([
-          ('a', 'unchecked'),
-          ('29.08.2026', null),
-          ('b', 'unchecked'),
-        ], 2, '30.08.2026'),
+        layout(
+          [('a', 'unchecked'), ('29.08.2026', null), ('b', 'unchecked')],
+          2,
+          '30.08.2026',
+        ),
         [const ExistingLine(0), const ExistingLine(2)],
       );
     });
 
     test('keeps undated checked items as a tail below every date', () {
       expect(
-        layout([
-          ('a', 'unchecked'),
-          ('stale', 'checked'),
-          ('fresh', 'checked'),
-        ], 2, '30.08.2026'),
+        layout(
+          [('a', 'unchecked'), ('stale', 'checked'), ('fresh', 'checked')],
+          2,
+          '30.08.2026',
+        ),
         [
           const ExistingLine(0),
           const NewHeader('30.08.2026'),
@@ -213,7 +218,10 @@ void main() {
         final text = lineText(result, lines[i]);
         final bold = result
             .toDelta()
-            .slice(lines[i].startOffset, lines[i].startOffset + lines[i].length - 1)
+            .slice(
+              lines[i].startOffset,
+              lines[i].startOffset + lines[i].length - 1,
+            )
             .toList()
             .any((op) => op.attributes?['bold'] == true);
         out.add((text, lines[i].listType, bold));
@@ -222,23 +230,20 @@ void main() {
     }
 
     test("writes today's header in bold above the checked item", () {
-      expect(
-        applied([('a', 'unchecked'), ('b', 'checked')], 1, '30.08.2026'),
-        [
-          ('a', 'unchecked', false),
-          ('30.08.2026', null, true),
-          ('b', 'checked', false),
-        ],
-      );
+      expect(applied([('a', 'unchecked'), ('b', 'checked')], 1, '30.08.2026'), [
+        ('a', 'unchecked', false),
+        ('30.08.2026', null, true),
+        ('b', 'checked', false),
+      ]);
     });
 
     test('moves the checked item under an existing header', () {
       expect(
-        applied([
-          ('a', 'checked'),
-          ('30.08.2026', null),
-          ('done', 'checked'),
-        ], 0, '30.08.2026'),
+        applied(
+          [('a', 'checked'), ('30.08.2026', null), ('done', 'checked')],
+          0,
+          '30.08.2026',
+        ),
         [
           ('30.08.2026', null, false),
           ('done', 'checked', false),
@@ -249,22 +254,22 @@ void main() {
 
     test('removes a header left empty by unchecking', () {
       expect(
-        applied([
-          ('a', 'unchecked'),
-          ('30.08.2026', null),
-          ('b', 'unchecked'),
-        ], 2, '31.08.2026'),
+        applied(
+          [('a', 'unchecked'), ('30.08.2026', null), ('b', 'unchecked')],
+          2,
+          '31.08.2026',
+        ),
         [('a', 'unchecked', false), ('b', 'unchecked', false)],
       );
     });
 
     test('inserts a new header above a group that already starts with one', () {
       expect(
-        applied([
-          ('30.08.2026', null),
-          ('y', 'checked'),
-          ('z', 'checked'),
-        ], 2, '31.08.2026'),
+        applied(
+          [('30.08.2026', null), ('y', 'checked'), ('z', 'checked')],
+          2,
+          '31.08.2026',
+        ),
         [
           ('31.08.2026', null, true),
           ('z', 'checked', false),
@@ -278,11 +283,11 @@ void main() {
       'creates a new header and drops an old one emptied by the same toggle',
       () {
         expect(
-          applied([
-            ('a', 'unchecked'),
-            ('30.08.2026', null),
-            ('b', 'checked'),
-          ], 2, '31.08.2026'),
+          applied(
+            [('a', 'unchecked'), ('30.08.2026', null), ('b', 'checked')],
+            2,
+            '31.08.2026',
+          ),
           [
             ('a', 'unchecked', false),
             ('31.08.2026', null, true),
@@ -292,35 +297,33 @@ void main() {
       },
     );
 
-    test(
-      'inserts a new header above two headers, one of which empties',
-      () {
-        expect(
-          applied([
+    test('inserts a new header above two headers, one of which empties', () {
+      expect(
+        applied(
+          [
             ('30.08.2026', null),
             ('y', 'checked'),
             ('29.08.2026', null),
             ('b', 'checked'),
-          ], 3, '31.08.2026'),
-          [
-            ('31.08.2026', null, true),
-            ('b', 'checked', false),
-            ('30.08.2026', null, false),
-            ('y', 'checked', false),
           ],
-        );
-      },
-    );
-
-    test('handles a group that ends the document', () {
-      expect(
-        applied([('a', 'checked'), ('b', 'unchecked')], 0, '30.08.2026'),
+          3,
+          '31.08.2026',
+        ),
         [
-          ('b', 'unchecked', false),
-          ('30.08.2026', null, true),
-          ('a', 'checked', false),
+          ('31.08.2026', null, true),
+          ('b', 'checked', false),
+          ('30.08.2026', null, false),
+          ('y', 'checked', false),
         ],
       );
+    });
+
+    test('handles a group that ends the document', () {
+      expect(applied([('a', 'checked'), ('b', 'unchecked')], 0, '30.08.2026'), [
+        ('b', 'unchecked', false),
+        ('30.08.2026', null, true),
+        ('a', 'checked', false),
+      ]);
     });
 
     test('returns null when the layout is already right', () {
