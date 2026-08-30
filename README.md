@@ -2,23 +2,49 @@
 
 <img src="https://raw.githubusercontent.com/zhfahim/anchor/main/web/public/icons/anchor_icon.png" alt="Anchor" width="120" height="120">
 
-# Anchor
+# Anchor — Russian localization fork
 
-**An offline first, self hostable note taking application**
+**An offline first, self hostable note taking application — now in Russian**
 
-[![Version](https://img.shields.io/github/v/release/zhfahim/anchor?label=version&style=for-the-badge)](https://github.com/zhfahim/anchor/releases)
+[![Version](https://img.shields.io/badge/version-0.16.0-blue.svg?style=for-the-badge)](https://github.com/Afinogen/anchor/tree/i18n)
+[![Upstream](https://img.shields.io/badge/upstream-ZhFahim%2Fanchor%20v0.16.0-lightgrey.svg?style=for-the-badge)](https://github.com/ZhFahim/anchor)
+[![Languages](https://img.shields.io/badge/UI-English%20%7C%20%D0%A0%D1%83%D1%81%D1%81%D0%BA%D0%B8%D0%B9-success.svg?style=for-the-badge)](#localization)
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL%20v3-blue.svg?style=for-the-badge)](LICENSE)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg?style=for-the-badge&logo=docker)](https://github.com/zhfahim/anchor)
-[![Discord](https://img.shields.io/discord/1487830114795257906?label=Discord&style=for-the-badge)](https://discord.gg/sAfqjy8EYK)
 
-<a href="https://trendshift.io/repositories/18646" target="_blank"><img src="https://trendshift.io/api/badge/repositories/18646" alt="ZhFahim%2Fanchor | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-
-Anchor focuses on speed, privacy, simplicity, and reliability across mobile and web. Notes are stored locally, editable offline, and synced across devices when online.
+**English** · [Русский](README.ru.md)
 
 </div>
 
+> ### 🇷🇺 This is a fork of [ZhFahim/anchor](https://github.com/ZhFahim/anchor) that adds a full Russian translation
+>
+> The web client, the API messages and the Android app are translated end to end.
+> Upstream is English-only and did not take the translation, so it lives here.
+> Everything else — features, data model, sync protocol — is upstream code.
+>
+> **Русская версия Anchor** — заметки и задачи на своём сервере, с полностью
+> переведённым интерфейсом: веб, сообщения сервера и Android-приложение.
+> Как поставить и что переведено — см. [README.ru.md](README.ru.md).
+
+Anchor focuses on speed, privacy, simplicity, and reliability across mobile and web. Notes are stored locally, editable offline, and synced across devices when online.
+
+## Differences from upstream
+
+| Change | Why |
+| --- | --- |
+| **Russian localization** of web, server and mobile | The point of this fork — see [Localization](#localization) |
+| i18n asset path fix in the server build (`outDir: dist/src`) | Without it `nestjs-i18n` finds no catalogs inside the image and returns raw keys like `auth.invalidCredentials` |
+| Optional `ALPINE_MIRROR` build argument | `dl-cdn.alpinelinux.org` is unreachable from some networks and `apk add` kills the build |
+| Download link for the Android APK on the login page | Shown only when an APK is mounted into `web/public/apk` |
+
+That is the whole diff: five commits on top of upstream `v0.16.0`. There are no
+feature changes, no schema changes and no telemetry.
+
+Bugs in Anchor itself belong [upstream](https://github.com/ZhFahim/anchor/issues).
+Translation problems belong [here](https://github.com/Afinogen/anchor/issues).
+
 ## Features
 
+- **Localization** - Full English and Russian UI, server messages and mobile app *(fork only)*
 - **Rich Text Editor** - Create and edit notes with powerful formatting (bold, italic, underline, headings, lists, checkboxes)
 - **Offline First** - All edits work offline with local database
 - **Note Sharing** - Share notes with other users (viewer or editor)
@@ -36,7 +62,37 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 - **Admin Panel** - User management, registration control, and system statistics
 - **OIDC Authentication** - Sign in with OpenID Connect providers (Pocket ID, Authelia, Keycloak, etc.)
 
+## Localization
+
+| Platform | Languages | How the language is chosen |
+| --- | --- | --- |
+| Web | English, Русский | Browser language on first run, then **Settings → Language**; the choice is stored per browser |
+| Server (errors, e-mails, API messages) | English, Русский | `?lang=ru`, header `X-Lang: ru`, or `Accept-Language`; falls back to English |
+| Android app | English, Русский | Device locale, or the EN/RU button on the login and server-setup screens |
+
+Where the strings live:
+
+- **web** — `web/lib/i18n/locales/{en,ru}.ts`, hook `useTranslation()`.
+  The `TranslationKey` type is derived from the English dictionary, so a missing
+  key is a **build error**, not a blank label at runtime.
+- **server** — `nestjs-i18n`, JSON per namespace in `server/src/i18n/{en,ru}/`
+  (`auth`, `notes`, `tags`, `admin`, `import`, `oidc`, `settings`).
+- **mobile** — Flutter `gen-l10n`, ARB files `mobile/lib/l10n/app_{en,ru}.arb`,
+  accessed as `context.l10n.<key>`.
+
+Adding a language: copy the `en` catalog in all three places, register the locale
+in `web/lib/i18n/config.ts` and in `mobile/lib/l10n/`, then run
+`cd web && pnpm build` — the build will list every key you missed.
+
+Pure helper functions take the locale as an **optional** parameter with an English
+fallback, so upstream tests keep passing unchanged and merges stay small.
+
+**Not translated yet:** the attachment upload zone in the web client
+(`web/features/notes/components/attachments/attachment-upload-zone.tsx`).
+
 ## Screenshots
+
+Screenshots are upstream's and show the English UI; the layout is identical in Russian.
 
 ### Web App
 
@@ -54,29 +110,35 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
 
 ## Self Hosting With Docker
 
-### Option 1: Using Pre-built Image (Recommended)
+> There is no pre-built image for this fork. `ghcr.io/zhfahim/anchor` is the
+> upstream image and it is **English-only** — build from this branch instead.
 
-1. **Create a `docker-compose.yml` file:**
+1. **Clone this fork and build:**
 
-   ```yaml
-   services:
-     anchor:
-       image: ghcr.io/zhfahim/anchor:latest
-       container_name: anchor
-       restart: unless-stopped
-       ports:
-         - "3000:3000"
-       volumes:
-         - anchor_data:/data
-
-   volumes:
-     anchor_data:
+   ```bash
+   git clone -b i18n https://github.com/Afinogen/anchor.git
+   cd anchor
+   docker compose up -d
    ```
 
-2. **(Optional) Configure environment:**
-   Add environment variables to the `environment` section. Most users can skip this step - defaults work out of the box.
+   `docker-compose.yml` builds the image from source and starts it on port 3000
+   with an embedded PostgreSQL in the `anchor_data` volume.
 
-   Available options:
+2. **If `apk add` fails during the build**, your network cannot reach the Alpine
+   CDN. Pass a mirror:
+
+   ```bash
+   docker build --build-arg ALPINE_MIRROR=https://mirror.yandex.ru/mirrors/alpine \
+     -t anchor:0.16.0-i18n .
+   ```
+
+3. **Access the app:**
+   Open http://localhost:3000
+
+4. **(Optional) Configure environment:**
+   Add environment variables to the `environment` section of the compose file.
+   Most users can skip this step — defaults work out of the box.
+
    | Variable | Required | Default | Description |
    |----------|----------|---------|-------------|
    | `APP_URL` | No | `http://localhost:3000` | Base URL where Anchor is served |
@@ -96,66 +158,31 @@ Anchor focuses on speed, privacy, simplicity, and reliability across mobile and 
    | `OIDC_CLIENT_SECRET` | No | — | OIDC client secret. Omit for public client (PKCE) |
    | `DISABLE_INTERNAL_AUTH` | No | `false` | Hide local login form when OIDC is enabled (OIDC-only mode) |
 
-3. **Start the container:**
+### Verifying the translation
 
-   ```bash
-   docker compose up -d
-   ```
+Localization only breaks in the built image, never in dev mode — check it there:
 
-4. **Access the app:**
-   Open http://localhost:3000
-
-### Pre-release (Beta) Image
-
-To test upcoming features before they are officially released, use the `next` tag:
-
-```yaml
-services:
-  anchor:
-    image: ghcr.io/zhfahim/anchor:next
-    container_name: anchor
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    volumes:
-      - anchor_data:/data
-
-volumes:
-  anchor_data:
+```bash
+curl -H "Accept-Language: ru" http://localhost:3000/api/... # expect Russian text, not keys like auth.invalidCredentials
 ```
-
-> **Warning:** The `next` image is built from the `next` branch and may contain incomplete features or breaking changes. Do not use it in production. Back up your data before switching.
-
-### Option 2: Building from Source
-
-If you want to build from source or customize the image:
-
-1. **Clone the project:**
-
-   ```bash
-   git clone https://github.com/zhfahim/anchor.git
-   cd anchor
-   ```
-
-2. **Start the container:**
-
-   ```bash
-   docker compose up -d
-   ```
-
-   The `docker-compose.yml` file will build the image from source automatically.
 
 ## Mobile App
 
-Download the Android mobile app.
+Upstream [releases](https://github.com/ZhFahim/anchor/releases) ship the English
+app. For the Russian one, build it from this branch:
 
-1. **Visit the releases page:**
-   Go to [GitHub Releases](https://github.com/zhfahim/anchor/releases).
+```bash
+cd mobile
+flutter build apk --release            # or --split-per-abi for smaller files
+```
 
-2. **Download the latest release:**
-   Multiple APK files are available:
-   - **Universal APK** (`anchor-{version}.apk`) - Recommended for most users, works on all devices
-   - **Architecture-specific APKs** - Smaller file sizes for specific CPU architectures
+Drop the result into `web/public/apk/` (mount it into the container as
+`/app/web/public/apk`) and the login page shows a download link for
+`anchor-arm64-v8a.apk` automatically.
+
+> **The app and the server must be updated together.** Since 0.16 they have to
+> agree on `X-Anchor-Protocol` (currently `3`); a mismatch is answered with
+> HTTP 426 and sync stops.
 
 ## OIDC Authentication
 
@@ -201,7 +228,7 @@ Configure OIDC via environment variables in your `docker-compose.yml`. Pocket ID
 ```yaml
 services:
   anchor:
-    image: ghcr.io/zhfahim/anchor:latest
+    build: .
     environment:
       - OIDC_ENABLED=true
       - OIDC_PROVIDER_NAME=Pocket ID
@@ -230,9 +257,22 @@ Anchor never collects any data. When you need to report a bug, you can collect l
 
 Logs are stored locally on the device only (rolling, ~2 MB max).
 
+## Keeping up with upstream
+
+The fork tracks upstream by **merge**, not rebase, so history stays usable:
+
+```bash
+git fetch upstream && git merge upstream/main
+```
+
+Then run everything before pushing: `flutter analyze` and `flutter test` in
+`mobile/`, `pnpm build && pnpm test` in `server/`, and `pnpm exec tsc --noEmit`,
+`pnpm test --run`, `pnpm build` in `web/`. Finally grep for `t(` calls that a
+conflict may have resolved in upstream's favour.
+
 ## Roadmap
 
-Future planned features:
+Upstream's planned features:
 
 - Reminders and notifications
 - Real-time collaboration
@@ -244,6 +284,9 @@ Future planned features:
 - **Web**: Next.js, TypeScript
 
 ## Contributing
+
+New languages and fixes to existing translations are welcome here; everything else
+is better sent upstream, where it benefits all users.
 
 1. Fork the repository
 2. Create a feature branch:
@@ -275,7 +318,8 @@ Before committing, fix issues with `pnpm check:fix` in the relevant project.
 
 ## Support
 
-If you find Anchor useful, consider supporting its development:
+Anchor is written by [ZhFahim](https://github.com/ZhFahim). If you find it useful,
+support the original author:
 
 [<img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" height="60">](https://www.buymeacoffee.com/zahid)
 
