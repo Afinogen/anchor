@@ -1,6 +1,12 @@
 import Delta from "quill-delta";
 import { LIST_FORMATS, type QuillDelta, type QuillOp } from "./quill";
 import {
+  dateGroupBounds,
+  dateGroupedItems,
+  dateHeaderOps,
+  type GroupItem,
+} from "./quill-checklist-dates";
+import {
   blockEndIndex,
   type DeltaLine,
   deltaToLines,
@@ -149,10 +155,14 @@ function orderSiblingBlocks(
  * @param togglePosition - Position where the checkbox was toggled (from change delta)
  * @param currentDelta - Current document content
  * @returns A delta to pass to updateContents, or null if no move needed
+ *
+ * When [today] is given (`DD.MM.YYYY`) and the toggled line is top level,
+ * checked items are grouped under date headers instead of a flat tail.
  */
 export function createChecklistSortDelta(
   togglePosition: number,
   currentDelta: QuillDelta,
+  today?: string,
 ): QuillDelta | null {
   const lines = deltaToLines(currentDelta.ops);
   const lineIndex = findLineIndexAtPosition(lines, togglePosition);
@@ -160,17 +170,30 @@ export function createChecklistSortDelta(
   if (lineIndex < 0 || lineIndex >= lines.length) return null;
   if (!isChecklistLine(lines[lineIndex])) return null;
 
-  let groupStart = lineIndex;
-  while (groupStart > 0 && isChecklistLine(lines[groupStart - 1])) {
-    groupStart--;
-  }
-  let groupEnd = lineIndex;
-  while (groupEnd < lines.length - 1 && isChecklistLine(lines[groupEnd + 1])) {
-    groupEnd++;
-  }
+  let groupStart: number;
+  let groupEnd: number;
+  let items: GroupItem[];
 
-  const order = checklistSortOrder(lines, groupStart, groupEnd, lineIndex);
-  if (!order) return null;
+  if (today !== undefined && indentOf(lines[lineIndex]) === 0) {
+    [groupStart, groupEnd] = dateGroupBounds(lines, lineIndex);
+    items = dateGroupedItems(lines, groupStart, groupEnd, lineIndex, today);
+  } else {
+    groupStart = lineIndex;
+    while (groupStart > 0 && isChecklistLine(lines[groupStart - 1])) {
+      groupStart--;
+    }
+    groupEnd = lineIndex;
+    while (
+      groupEnd < lines.length - 1 &&
+      isChecklistLine(lines[groupEnd + 1])
+    ) {
+      groupEnd++;
+    }
+
+    const order = checklistSortOrder(lines, groupStart, groupEnd, lineIndex);
+    if (!order) return null;
+    items = order.map((line) => ({ line }));
+  }
 
   const groupOffset = getLineStartPosition(lines, groupStart);
   let groupLength = 0;
@@ -183,9 +206,13 @@ export function createChecklistSortDelta(
     groupOffset + groupLength,
   );
   const newSlice = new Delta();
-  for (const idx of order) {
-    for (const op of lines[idx].contentOps) newSlice.push(op as never);
-    newSlice.push(lines[idx].newlineOp as never);
+  for (const item of items) {
+    if ("header" in item) {
+      for (const op of dateHeaderOps(item.header)) newSlice.push(op as never);
+      continue;
+    }
+    for (const op of lines[item.line].contentOps) newSlice.push(op as never);
+    newSlice.push(lines[item.line].newlineOp as never);
   }
 
   const diff = oldSlice.diff(newSlice);

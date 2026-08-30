@@ -1,5 +1,7 @@
+import Delta from "quill-delta";
 import { describe, expect, it } from "vitest";
-import type { QuillOp } from "./quill";
+import type { QuillDelta, QuillOp } from "./quill";
+import { createChecklistSortDelta } from "./quill-checklist";
 import {
   dateGroupBounds,
   dateGroupedItems,
@@ -273,6 +275,148 @@ describe("dateGroupedItems", () => {
       { line: 0 },
       { line: 1 },
       { line: 2 },
+    ]);
+  });
+});
+
+/** A document from (text, listType, indent) triples. */
+function doc(items: [string, string | null, number?][]): QuillDelta {
+  const ops: QuillOp[] = [];
+  for (const [text, list, indent] of items) {
+    if (text) ops.push({ insert: text });
+    const attributes = {
+      ...(list ? { list } : {}),
+      ...(indent ? { indent } : {}),
+    };
+    ops.push({
+      insert: "\n",
+      ...(Object.keys(attributes).length ? { attributes } : {}),
+    });
+  }
+  return { ops };
+}
+
+/** Position of the newline of line [index]. */
+function newlineOffset(
+  items: [string, string | null, number?][],
+  index: number,
+) {
+  let offset = 0;
+  for (let i = 0; i < index; i++) offset += items[i][0].length + 1;
+  return offset + items[index][0].length;
+}
+
+/** Apply a move delta and read back (text, listType, bold) per line. */
+function applied(base: QuillDelta, move: QuillDelta | null) {
+  expect(move).not.toBeNull();
+  const result = new Delta(base.ops as never).compose(
+    new Delta((move as QuillDelta).ops as never),
+  );
+  const out: [string, string | null, boolean][] = [];
+  let text = "";
+  let bold = false;
+  for (const op of result.ops as QuillOp[]) {
+    const insert = typeof op.insert === "string" ? op.insert : "";
+    const parts = insert.split("\n");
+    for (let i = 0; i < parts.length; i++) {
+      if (parts[i]) {
+        text += parts[i];
+        if (op.attributes?.bold) bold = true;
+      }
+      if (i < parts.length - 1) {
+        out.push([
+          text,
+          (op.attributes?.list as string | undefined) ?? null,
+          bold,
+        ]);
+        text = "";
+        bold = false;
+      }
+    }
+  }
+  return out;
+}
+
+describe("createChecklistSortDelta with dates", () => {
+  it("writes today's header in bold above the checked item", () => {
+    const items: [string, string | null][] = [
+      ["a", "unchecked"],
+      ["b", "checked"],
+    ];
+    const base = doc(items);
+    const move = createChecklistSortDelta(
+      newlineOffset(items, 1),
+      base,
+      "30.08.2026",
+    );
+    expect(applied(base, move)).toEqual([
+      ["a", "unchecked", false],
+      ["30.08.2026", null, true],
+      ["b", "checked", false],
+    ]);
+  });
+
+  it("removes a header left empty by unchecking", () => {
+    const items: [string, string | null][] = [
+      ["a", "unchecked"],
+      ["30.08.2026", null],
+      ["b", "unchecked"],
+    ];
+    const base = doc(items);
+    const move = createChecklistSortDelta(
+      newlineOffset(items, 2),
+      base,
+      "31.08.2026",
+    );
+    expect(applied(base, move)).toEqual([
+      ["a", "unchecked", false],
+      ["b", "unchecked", false],
+    ]);
+  });
+
+  it("leaves the document alone when it is already laid out", () => {
+    const items: [string, string | null][] = [
+      ["a", "unchecked"],
+      ["30.08.2026", null],
+      ["b", "checked"],
+    ];
+    const move = createChecklistSortDelta(
+      newlineOffset(items, 2),
+      doc(items),
+      "30.08.2026",
+    );
+    expect(move).toBeNull();
+  });
+
+  it("falls back to plain sorting without a date", () => {
+    const items: [string, string | null][] = [
+      ["a", "checked"],
+      ["b", "unchecked"],
+    ];
+    const base = doc(items);
+    const move = createChecklistSortDelta(newlineOffset(items, 0), base);
+    expect(applied(base, move)).toEqual([
+      ["b", "unchecked", false],
+      ["a", "checked", false],
+    ]);
+  });
+
+  it("falls back to plain sorting for a nested item", () => {
+    const items: [string, string | null, number?][] = [
+      ["parent", "unchecked"],
+      ["child a", "checked", 1],
+      ["child b", "unchecked", 1],
+    ];
+    const base = doc(items);
+    const move = createChecklistSortDelta(
+      newlineOffset(items, 1),
+      base,
+      "30.08.2026",
+    );
+    expect(applied(base, move)).toEqual([
+      ["parent", "unchecked", false],
+      ["child b", "unchecked", false],
+      ["child a", "checked", false],
     ]);
   });
 });
