@@ -1,8 +1,10 @@
 import type { QuillOp } from "./quill";
 import {
+  blockEndIndex,
   type DeltaLine,
   getLineText,
   indentOf,
+  isCheckedLine,
   isChecklistLine,
 } from "./quill-lines";
 
@@ -94,4 +96,90 @@ export function dateGroupBounds(
   }
 
   return [start, end];
+}
+
+/** An item of the rebuilt group: an existing line, or a header to write. */
+export type GroupItem = { line: number } | { header: string };
+
+type Block = { start: number; end: number };
+
+/**
+ * Target contents of the group [groupStart..groupEnd] after the block at
+ * [toggledIndex] was toggled: unchecked blocks first, then date sections
+ * newest first, then checked blocks that never had a header. The toggled
+ * block is dated [today] and sits last within its section.
+ *
+ * Children of a block keep their document order — a toggle at the top level
+ * has no business reshuffling nesting the user did not touch.
+ */
+export function dateGroupedItems(
+  lines: DeltaLine[],
+  groupStart: number,
+  groupEnd: number,
+  toggledIndex: number,
+  today: string,
+): GroupItem[] {
+  const unchecked: Block[] = [];
+  const dated = new Map<string, Block[]>();
+  const undated: Block[] = [];
+  /** Existing header line per date key, so its text survives untouched. */
+  const headerLine = new Map<string, number>();
+  let toggled: Block | null = null;
+  let currentDate: string | null = null;
+
+  for (let i = groupStart; i <= groupEnd; ) {
+    const header = dateHeaderKey(lines[i]);
+    if (header !== null) {
+      currentDate = header;
+      if (!headerLine.has(header)) headerLine.set(header, i);
+      i++;
+      continue;
+    }
+
+    const block: Block = { start: i, end: blockEndIndex(lines, i, groupEnd) };
+    if (i === toggledIndex) {
+      toggled = block;
+    } else if (isCheckedLine(lines[i])) {
+      if (currentDate === null) {
+        undated.push(block);
+      } else {
+        const section = dated.get(currentDate) ?? [];
+        section.push(block);
+        dated.set(currentDate, section);
+      }
+    } else {
+      unchecked.push(block);
+    }
+    i = block.end + 1;
+  }
+
+  if (toggled) {
+    if (isCheckedLine(lines[toggled.start])) {
+      const section = dated.get(today) ?? [];
+      section.push(toggled);
+      dated.set(today, section);
+    } else {
+      unchecked.push(toggled);
+    }
+  }
+
+  const items: GroupItem[] = [];
+  const pushBlock = (block: Block) => {
+    for (let i = block.start; i <= block.end; i++) items.push({ line: i });
+  };
+
+  for (const block of unchecked) pushBlock(block);
+
+  const keys = [...dated.keys()].sort((a, b) =>
+    sortableDateKey(b).localeCompare(sortableDateKey(a)),
+  );
+  for (const key of keys) {
+    const source = headerLine.get(key);
+    items.push(source === undefined ? { header: key } : { line: source });
+    for (const block of dated.get(key) as Block[]) pushBlock(block);
+  }
+
+  for (const block of undated) pushBlock(block);
+
+  return items;
 }

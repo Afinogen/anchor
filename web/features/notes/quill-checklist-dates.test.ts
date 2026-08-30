@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { QuillOp } from "./quill";
 import {
   dateGroupBounds,
+  dateGroupedItems,
   dateHeaderKey,
   dateHeaderOps,
   formatDateKey,
@@ -93,6 +94,17 @@ function lines(items: [string, string | null][]): DeltaLine[] {
   return items.map(([text, list]) => line(text, list ? { list } : undefined));
 }
 
+/** Lines from (text, listType, indent) triples. */
+function docLines(items: [string, string | null, number?][]): DeltaLine[] {
+  return items.map(([text, list, indent]) => {
+    const attributes = {
+      ...(list ? { list } : {}),
+      ...(indent ? { indent } : {}),
+    };
+    return line(text, Object.keys(attributes).length ? attributes : undefined);
+  });
+}
+
 describe("dateGroupBounds", () => {
   it("covers a plain contiguous checklist", () => {
     const doc = lines([
@@ -147,5 +159,120 @@ describe("dateGroupBounds", () => {
       ["b", "checked"],
     ]);
     expect(dateGroupBounds(doc, 2)).toEqual([0, 2]);
+  });
+});
+
+describe("dateGroupedItems", () => {
+  it("creates today's header for the toggled item", () => {
+    const doc = docLines([
+      ["a", "unchecked"],
+      ["b", "checked"],
+    ]);
+    expect(dateGroupedItems(doc, 0, 1, 1, "30.08.2026")).toEqual([
+      { line: 0 },
+      { header: "30.08.2026" },
+      { line: 1 },
+    ]);
+  });
+
+  it("reuses an existing header for the same day", () => {
+    const doc = docLines([
+      ["a", "unchecked"],
+      ["30.08.2026", null],
+      ["b", "checked"],
+      ["c", "checked"],
+    ]);
+    // c is toggled today; b already sits under today's header.
+    expect(dateGroupedItems(doc, 0, 3, 3, "30.08.2026")).toEqual([
+      { line: 0 },
+      { line: 1 },
+      { line: 2 },
+      { line: 3 },
+    ]);
+  });
+
+  it("keeps the hand-written header text as is", () => {
+    const doc = docLines([
+      ["----- 29.08.2026 -------", null],
+      ["b", "checked"],
+      ["a", "unchecked"],
+    ]);
+    expect(dateGroupedItems(doc, 0, 2, 2, "29.08.2026")).toEqual([
+      { line: 2 },
+      { line: 0 },
+      { line: 1 },
+    ]);
+  });
+
+  it("puts the toggled block last within its date", () => {
+    const doc = docLines([
+      ["30.08.2026", null],
+      ["b", "checked"],
+      ["c", "checked"],
+    ]);
+    expect(dateGroupedItems(doc, 0, 2, 1, "30.08.2026")).toEqual([
+      { line: 0 },
+      { line: 2 },
+      { line: 1 },
+    ]);
+  });
+
+  it("orders dates newest first, under the unchecked items", () => {
+    const doc = docLines([
+      ["29.08.2026", null],
+      ["old", "checked"],
+      ["a", "unchecked"],
+      ["new", "checked"],
+    ]);
+    expect(dateGroupedItems(doc, 0, 3, 3, "30.08.2026")).toEqual([
+      { line: 2 },
+      { header: "30.08.2026" },
+      { line: 3 },
+      { line: 0 },
+      { line: 1 },
+    ]);
+  });
+
+  it("drops a header left with nothing under it", () => {
+    const doc = docLines([
+      ["a", "unchecked"],
+      ["29.08.2026", null],
+      ["b", "unchecked"],
+    ]);
+    // b was just unchecked; its header has nothing left.
+    expect(dateGroupedItems(doc, 0, 2, 2, "30.08.2026")).toEqual([
+      { line: 0 },
+      { line: 2 },
+    ]);
+  });
+
+  it("keeps undated checked items as a tail below every date", () => {
+    const doc = docLines([
+      ["a", "unchecked"],
+      ["stale", "checked"],
+      ["fresh", "checked"],
+    ]);
+    expect(dateGroupedItems(doc, 0, 2, 2, "30.08.2026")).toEqual([
+      { line: 0 },
+      { header: "30.08.2026" },
+      { line: 2 },
+      { line: 1 },
+    ]);
+  });
+
+  it("moves nested children with their parent, in document order", () => {
+    const doc = docLines([
+      ["parent", "checked"],
+      ["child b", "checked", 1],
+      ["child a", "unchecked", 1],
+      ["other", "unchecked"],
+    ]);
+    expect(dateGroupedItems(doc, 0, 3, 0, "30.08.2026")).toEqual([
+      { line: 3 },
+      { header: "30.08.2026" },
+      { line: 0 },
+      { line: 1 },
+      { line: 2 },
+    ]);
   });
 });
