@@ -342,4 +342,60 @@ void main() {
       expect(buildChecklistDateGroupDelta(doc, 1, '30.08.2026'), isNull);
     });
   });
+
+  group('buildChecklistDateGroupDelta: свойства', () {
+    // Два падения подряд (NewHeader доживал до фазы C) прошли мимо примеров,
+    // потому что примеры пишут под уже понятый случай. Перебор коротких
+    // документов ловит те формы, о которых никто не подумал.
+    const kinds = <(String, String?)>[
+      ('u', 'unchecked'),
+      ('c', 'checked'),
+      ('29.08.2026', null),
+      ('30.08.2026', null),
+      ('txt', null),
+    ];
+
+    test('никогда не падает и не теряет строк чек-листа', () {
+      final failures = <String>[];
+      var combos = <List<int>>[[]];
+      for (var length = 1; length <= 4; length++) {
+        combos = [
+          for (final prefix in combos)
+            for (var k = 0; k < kinds.length; k++) [...prefix, k],
+        ];
+        for (final combo in combos) {
+          final spec = [
+            for (var i = 0; i < combo.length; i++)
+              ('${kinds[combo[i]].$1}$i', kinds[combo[i]].$2),
+          ];
+          for (var toggled = 0; toggled < spec.length; toggled++) {
+            if (spec[toggled].$2 == null) continue;
+            final doc = makeDocument(spec);
+            final delta = buildChecklistDateGroupDelta(
+              doc,
+              toggled,
+              '31.08.2026',
+            );
+            if (delta == null) continue;
+            final text = Document.fromDelta(
+              doc.toDelta().compose(delta),
+            ).toPlainText();
+            for (final line in spec) {
+              if (line.$2 == null) continue;
+              final seen = RegExp(
+                '(^|\n)${line.$1}(\n|\$)',
+              ).allMatches(text).length;
+              if (seen != 1) {
+                failures.add(
+                  '$spec toggled=$toggled: "${line.$1}" встретилась $seen раз '
+                  'в "${text.replaceAll('\n', '|')}"',
+                );
+              }
+            }
+          }
+        }
+      }
+      expect(failures, isEmpty);
+    });
+  });
 }
