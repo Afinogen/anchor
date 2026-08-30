@@ -352,12 +352,16 @@ void main() {
     // understood. Sweeping every short document catches the shapes nobody
     // thought of. Header kinds carry no index suffix: `29.08.20260` is not a
     // date the parser accepts, and a sweep whose headers are not headers
-    // cannot reach the code it exists to guard.
+    // cannot reach the code it exists to guard. One kind equals `today`
+    // itself, so the sweep also enumerates documents that already carry
+    // today's header — the "reuse the existing header" path, which is the
+    // header-adjacency machinery both crashes came from.
     const kinds = <(String, String?)>[
       ('u', 'unchecked'),
       ('c', 'checked'),
       ('29.08.2026', null),
       ('30.08.2026', null),
+      ('31.08.2026', null),
       ('txt', null),
     ];
 
