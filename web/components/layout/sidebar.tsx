@@ -94,8 +94,15 @@ export function Sidebar({
   });
 
   const updateTagMutation = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) =>
-      updateTag(id, { name }),
+    mutationFn: ({
+      id,
+      name,
+      baseVersion,
+    }: {
+      id: string;
+      name: string;
+      baseVersion: number;
+    }) => updateTag(id, { name, baseVersion }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["tags"] });
       setRenameDialogOpen(false);
@@ -104,6 +111,7 @@ export function Sidebar({
       setRenameError(null);
     },
     onError: (error: Error) => {
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
       setRenameError(error.message || t("sidebar.renameTagFailed"));
     },
   });
@@ -146,6 +154,7 @@ export function Sidebar({
       updateTagMutation.mutate({
         id: selectedTag.id,
         name: renameValue.trim(),
+        baseVersion: selectedTag.version,
       });
     }
   };
@@ -359,7 +368,7 @@ export function Sidebar({
                   )}
                   aria-current={isActive ? "page" : undefined}
                 >
-                  <item.icon className="h-4 w-4 flex-shrink-0" />
+                  <item.icon className="h-4 w-4 shrink-0" />
                   {!isCollapsed && item.label}
                 </Link>
               );
@@ -458,7 +467,7 @@ export function Sidebar({
                               aria-current={isTagActive ? "page" : undefined}
                             >
                               <LucideHash
-                                className="h-3 w-3 flex-shrink-0"
+                                className="h-3 w-3 shrink-0"
                                 style={{ color: tag.color || "var(--accent)" }}
                               />
                               <span className="flex-1 truncate">
@@ -533,7 +542,7 @@ export function Sidebar({
                   className="w-10 h-10 rounded-xl text-sidebar-foreground/70 bg-transparent
                   hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                 >
-                  <ThemeIcon className="h-4 w-4 flex-shrink-0" />
+                  <ThemeIcon className="h-4 w-4 shrink-0" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">
@@ -546,7 +555,7 @@ export function Sidebar({
               className="w-full h-10 justify-start gap-3 rounded-xl text-sidebar-foreground/70 bg-transparent
               hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
             >
-              <ThemeIcon className="h-4 w-4 flex-shrink-0" />
+              <ThemeIcon className="h-4 w-4 shrink-0" />
               {themeLabel}
             </Button>
           )}
@@ -562,7 +571,7 @@ export function Sidebar({
                         className="w-10 h-10 rounded-xl text-sidebar-foreground/70 bg-transparent
                         hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                       >
-                        <Avatar className="h-8 w-8 flex-shrink-0">
+                        <Avatar className="h-8 w-8 shrink-0">
                           <AvatarImage
                             src={
                               user.profileImage
@@ -595,7 +604,7 @@ export function Sidebar({
                     className="w-full justify-start gap-3 px-3 py-2.5 h-auto rounded-xl text-sidebar-foreground/70 bg-transparent
                     hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
                   >
-                    <Avatar className="h-8 w-8 flex-shrink-0">
+                    <Avatar className="h-8 w-8 shrink-0">
                       <AvatarImage
                         src={
                           user.profileImage

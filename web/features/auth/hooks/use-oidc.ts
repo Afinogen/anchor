@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { useTranslation } from "@/lib/i18n";
 import { exchangeOidcCode, getOidcConfig } from "../api";
 import { useAuthStore } from "../store";
 import type { OidcConfig } from "../types";
@@ -42,6 +43,7 @@ export function useOidcLogin() {
  */
 export function useOidcCallback() {
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
   const router = useRouter();
   const { setAuth, setInitialized } = useAuthStore();
   const processedRef = useRef(false);
@@ -67,18 +69,18 @@ export function useOidcCallback() {
         .then((result) => {
           setAuth(result.user, result.access_token, result.refresh_token);
           setInitialized(true);
-          toast.success("Welcome back!");
+          toast.success(t("auth.welcomeBackToast"));
           router.replace(getSafeRedirectUrl(result.redirectUrl));
         })
         .catch((err) => {
-          toast.error(err.message || "Failed to authenticate");
+          toast.error(err.message || t("auth.authFailed"));
           router.replace("/login");
         })
         .finally(() => {
           setIsProcessing(false);
         });
     }
-  }, [searchParams, router, setAuth, setInitialized]);
+  }, [searchParams, router, setAuth, setInitialized, t]);
 
   return { isProcessing };
 }

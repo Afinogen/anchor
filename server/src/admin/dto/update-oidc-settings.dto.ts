@@ -1,5 +1,7 @@
 import { IsBoolean, IsOptional, IsString, IsUrl } from 'class-validator';
+import { RejectUnknownFields } from '../../common/decorators/reject-unknown-fields.decorator';
 
+@RejectUnknownFields()
 export class UpdateOidcSettingsDto {
   @IsOptional()
   @IsBoolean()

@@ -114,6 +114,44 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _localRevMeta = const VerificationMeta(
+    'localRev',
+  );
+  @override
+  late final GeneratedColumn<int> localRev = GeneratedColumn<int>(
+    'local_rev',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _isPinSyncedMeta = const VerificationMeta(
+    'isPinSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isPinSynced = GeneratedColumn<bool>(
+    'is_pin_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_pin_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
   static const VerificationMeta _permissionMeta = const VerificationMeta(
     'permission',
   );
@@ -192,6 +230,9 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
     state,
     updatedAt,
     isSynced,
+    version,
+    localRev,
+    isPinSynced,
     permission,
     shareIds,
     sharedById,
@@ -264,6 +305,27 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
       context.handle(
         _isSyncedMeta,
         isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    }
+    if (data.containsKey('local_rev')) {
+      context.handle(
+        _localRevMeta,
+        localRev.isAcceptableOrUnknown(data['local_rev']!, _localRevMeta),
+      );
+    }
+    if (data.containsKey('is_pin_synced')) {
+      context.handle(
+        _isPinSyncedMeta,
+        isPinSynced.isAcceptableOrUnknown(
+          data['is_pin_synced']!,
+          _isPinSyncedMeta,
+        ),
       );
     }
     if (data.containsKey('permission')) {
@@ -359,6 +421,18 @@ class $NotesTable extends Notes with TableInfo<$NotesTable, Note> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_synced'],
       )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      ),
+      localRev: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_rev'],
+      )!,
+      isPinSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_pin_synced'],
+      )!,
       permission: attachedDatabase.typeMapping.read(
         DriftSqlType.string,
         data['${effectivePrefix}permission'],
@@ -402,6 +476,9 @@ class Note extends DataClass implements Insertable<Note> {
   final String state;
   final DateTime? updatedAt;
   final bool isSynced;
+  final int? version;
+  final int localRev;
+  final bool isPinSynced;
   final String permission;
   final String? shareIds;
   final String? sharedById;
@@ -418,6 +495,9 @@ class Note extends DataClass implements Insertable<Note> {
     required this.state,
     this.updatedAt,
     required this.isSynced,
+    this.version,
+    required this.localRev,
+    required this.isPinSynced,
     required this.permission,
     this.shareIds,
     this.sharedById,
@@ -443,6 +523,11 @@ class Note extends DataClass implements Insertable<Note> {
       map['updated_at'] = Variable<DateTime>(updatedAt);
     }
     map['is_synced'] = Variable<bool>(isSynced);
+    if (!nullToAbsent || version != null) {
+      map['version'] = Variable<int>(version);
+    }
+    map['local_rev'] = Variable<int>(localRev);
+    map['is_pin_synced'] = Variable<bool>(isPinSynced);
     map['permission'] = Variable<String>(permission);
     if (!nullToAbsent || shareIds != null) {
       map['share_ids'] = Variable<String>(shareIds);
@@ -479,6 +564,11 @@ class Note extends DataClass implements Insertable<Note> {
           ? const Value.absent()
           : Value(updatedAt),
       isSynced: Value(isSynced),
+      version: version == null && nullToAbsent
+          ? const Value.absent()
+          : Value(version),
+      localRev: Value(localRev),
+      isPinSynced: Value(isPinSynced),
       permission: Value(permission),
       shareIds: shareIds == null && nullToAbsent
           ? const Value.absent()
@@ -513,6 +603,9 @@ class Note extends DataClass implements Insertable<Note> {
       state: serializer.fromJson<String>(json['state']),
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
+      version: serializer.fromJson<int?>(json['version']),
+      localRev: serializer.fromJson<int>(json['localRev']),
+      isPinSynced: serializer.fromJson<bool>(json['isPinSynced']),
       permission: serializer.fromJson<String>(json['permission']),
       shareIds: serializer.fromJson<String?>(json['shareIds']),
       sharedById: serializer.fromJson<String?>(json['sharedById']),
@@ -536,6 +629,9 @@ class Note extends DataClass implements Insertable<Note> {
       'state': serializer.toJson<String>(state),
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
+      'version': serializer.toJson<int?>(version),
+      'localRev': serializer.toJson<int>(localRev),
+      'isPinSynced': serializer.toJson<bool>(isPinSynced),
       'permission': serializer.toJson<String>(permission),
       'shareIds': serializer.toJson<String?>(shareIds),
       'sharedById': serializer.toJson<String?>(sharedById),
@@ -555,6 +651,9 @@ class Note extends DataClass implements Insertable<Note> {
     String? state,
     Value<DateTime?> updatedAt = const Value.absent(),
     bool? isSynced,
+    Value<int?> version = const Value.absent(),
+    int? localRev,
+    bool? isPinSynced,
     String? permission,
     Value<String?> shareIds = const Value.absent(),
     Value<String?> sharedById = const Value.absent(),
@@ -571,6 +670,9 @@ class Note extends DataClass implements Insertable<Note> {
     state: state ?? this.state,
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     isSynced: isSynced ?? this.isSynced,
+    version: version.present ? version.value : this.version,
+    localRev: localRev ?? this.localRev,
+    isPinSynced: isPinSynced ?? this.isPinSynced,
     permission: permission ?? this.permission,
     shareIds: shareIds.present ? shareIds.value : this.shareIds,
     sharedById: sharedById.present ? sharedById.value : this.sharedById,
@@ -597,6 +699,11 @@ class Note extends DataClass implements Insertable<Note> {
       state: data.state.present ? data.state.value : this.state,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+      version: data.version.present ? data.version.value : this.version,
+      localRev: data.localRev.present ? data.localRev.value : this.localRev,
+      isPinSynced: data.isPinSynced.present
+          ? data.isPinSynced.value
+          : this.isPinSynced,
       permission: data.permission.present
           ? data.permission.value
           : this.permission,
@@ -628,6 +735,9 @@ class Note extends DataClass implements Insertable<Note> {
           ..write('state: $state, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced, ')
+          ..write('version: $version, ')
+          ..write('localRev: $localRev, ')
+          ..write('isPinSynced: $isPinSynced, ')
           ..write('permission: $permission, ')
           ..write('shareIds: $shareIds, ')
           ..write('sharedById: $sharedById, ')
@@ -649,6 +759,9 @@ class Note extends DataClass implements Insertable<Note> {
     state,
     updatedAt,
     isSynced,
+    version,
+    localRev,
+    isPinSynced,
     permission,
     shareIds,
     sharedById,
@@ -669,6 +782,9 @@ class Note extends DataClass implements Insertable<Note> {
           other.state == this.state &&
           other.updatedAt == this.updatedAt &&
           other.isSynced == this.isSynced &&
+          other.version == this.version &&
+          other.localRev == this.localRev &&
+          other.isPinSynced == this.isPinSynced &&
           other.permission == this.permission &&
           other.shareIds == this.shareIds &&
           other.sharedById == this.sharedById &&
@@ -687,6 +803,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
   final Value<String> state;
   final Value<DateTime?> updatedAt;
   final Value<bool> isSynced;
+  final Value<int?> version;
+  final Value<int> localRev;
+  final Value<bool> isPinSynced;
   final Value<String> permission;
   final Value<String?> shareIds;
   final Value<String?> sharedById;
@@ -704,6 +823,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.state = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.version = const Value.absent(),
+    this.localRev = const Value.absent(),
+    this.isPinSynced = const Value.absent(),
     this.permission = const Value.absent(),
     this.shareIds = const Value.absent(),
     this.sharedById = const Value.absent(),
@@ -722,6 +844,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
     this.state = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
+    this.version = const Value.absent(),
+    this.localRev = const Value.absent(),
+    this.isPinSynced = const Value.absent(),
     this.permission = const Value.absent(),
     this.shareIds = const Value.absent(),
     this.sharedById = const Value.absent(),
@@ -741,6 +866,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Expression<String>? state,
     Expression<DateTime>? updatedAt,
     Expression<bool>? isSynced,
+    Expression<int>? version,
+    Expression<int>? localRev,
+    Expression<bool>? isPinSynced,
     Expression<String>? permission,
     Expression<String>? shareIds,
     Expression<String>? sharedById,
@@ -759,6 +887,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
       if (state != null) 'state': state,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isSynced != null) 'is_synced': isSynced,
+      if (version != null) 'version': version,
+      if (localRev != null) 'local_rev': localRev,
+      if (isPinSynced != null) 'is_pin_synced': isPinSynced,
       if (permission != null) 'permission': permission,
       if (shareIds != null) 'share_ids': shareIds,
       if (sharedById != null) 'shared_by_id': sharedById,
@@ -780,6 +911,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
     Value<String>? state,
     Value<DateTime?>? updatedAt,
     Value<bool>? isSynced,
+    Value<int?>? version,
+    Value<int>? localRev,
+    Value<bool>? isPinSynced,
     Value<String>? permission,
     Value<String?>? shareIds,
     Value<String?>? sharedById,
@@ -798,6 +932,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
       state: state ?? this.state,
       updatedAt: updatedAt ?? this.updatedAt,
       isSynced: isSynced ?? this.isSynced,
+      version: version ?? this.version,
+      localRev: localRev ?? this.localRev,
+      isPinSynced: isPinSynced ?? this.isPinSynced,
       permission: permission ?? this.permission,
       shareIds: shareIds ?? this.shareIds,
       sharedById: sharedById ?? this.sharedById,
@@ -838,6 +975,15 @@ class NotesCompanion extends UpdateCompanion<Note> {
     if (isSynced.present) {
       map['is_synced'] = Variable<bool>(isSynced.value);
     }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (localRev.present) {
+      map['local_rev'] = Variable<int>(localRev.value);
+    }
+    if (isPinSynced.present) {
+      map['is_pin_synced'] = Variable<bool>(isPinSynced.value);
+    }
     if (permission.present) {
       map['permission'] = Variable<String>(permission.value);
     }
@@ -876,6 +1022,9 @@ class NotesCompanion extends UpdateCompanion<Note> {
           ..write('state: $state, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced, ')
+          ..write('version: $version, ')
+          ..write('localRev: $localRev, ')
+          ..write('isPinSynced: $isPinSynced, ')
           ..write('permission: $permission, ')
           ..write('shareIds: $shareIds, ')
           ..write('sharedById: $sharedById, ')
@@ -961,6 +1110,29 @@ class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _localRevMeta = const VerificationMeta(
+    'localRev',
+  );
+  @override
+  late final GeneratedColumn<int> localRev = GeneratedColumn<int>(
+    'local_rev',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -969,6 +1141,8 @@ class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
     updatedAt,
     isSynced,
     isDeleted,
+    version,
+    localRev,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1019,6 +1193,18 @@ class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
         isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta),
       );
     }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    }
+    if (data.containsKey('local_rev')) {
+      context.handle(
+        _localRevMeta,
+        localRev.isAcceptableOrUnknown(data['local_rev']!, _localRevMeta),
+      );
+    }
     return context;
   }
 
@@ -1052,6 +1238,14 @@ class $TagsTable extends Tags with TableInfo<$TagsTable, Tag> {
         DriftSqlType.bool,
         data['${effectivePrefix}is_deleted'],
       )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      ),
+      localRev: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}local_rev'],
+      )!,
     );
   }
 
@@ -1068,6 +1262,8 @@ class Tag extends DataClass implements Insertable<Tag> {
   final DateTime? updatedAt;
   final bool isSynced;
   final bool isDeleted;
+  final int? version;
+  final int localRev;
   const Tag({
     required this.id,
     required this.name,
@@ -1075,6 +1271,8 @@ class Tag extends DataClass implements Insertable<Tag> {
     this.updatedAt,
     required this.isSynced,
     required this.isDeleted,
+    this.version,
+    required this.localRev,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1089,6 +1287,10 @@ class Tag extends DataClass implements Insertable<Tag> {
     }
     map['is_synced'] = Variable<bool>(isSynced);
     map['is_deleted'] = Variable<bool>(isDeleted);
+    if (!nullToAbsent || version != null) {
+      map['version'] = Variable<int>(version);
+    }
+    map['local_rev'] = Variable<int>(localRev);
     return map;
   }
 
@@ -1104,6 +1306,10 @@ class Tag extends DataClass implements Insertable<Tag> {
           : Value(updatedAt),
       isSynced: Value(isSynced),
       isDeleted: Value(isDeleted),
+      version: version == null && nullToAbsent
+          ? const Value.absent()
+          : Value(version),
+      localRev: Value(localRev),
     );
   }
 
@@ -1119,6 +1325,8 @@ class Tag extends DataClass implements Insertable<Tag> {
       updatedAt: serializer.fromJson<DateTime?>(json['updatedAt']),
       isSynced: serializer.fromJson<bool>(json['isSynced']),
       isDeleted: serializer.fromJson<bool>(json['isDeleted']),
+      version: serializer.fromJson<int?>(json['version']),
+      localRev: serializer.fromJson<int>(json['localRev']),
     );
   }
   @override
@@ -1131,6 +1339,8 @@ class Tag extends DataClass implements Insertable<Tag> {
       'updatedAt': serializer.toJson<DateTime?>(updatedAt),
       'isSynced': serializer.toJson<bool>(isSynced),
       'isDeleted': serializer.toJson<bool>(isDeleted),
+      'version': serializer.toJson<int?>(version),
+      'localRev': serializer.toJson<int>(localRev),
     };
   }
 
@@ -1141,6 +1351,8 @@ class Tag extends DataClass implements Insertable<Tag> {
     Value<DateTime?> updatedAt = const Value.absent(),
     bool? isSynced,
     bool? isDeleted,
+    Value<int?> version = const Value.absent(),
+    int? localRev,
   }) => Tag(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -1148,6 +1360,8 @@ class Tag extends DataClass implements Insertable<Tag> {
     updatedAt: updatedAt.present ? updatedAt.value : this.updatedAt,
     isSynced: isSynced ?? this.isSynced,
     isDeleted: isDeleted ?? this.isDeleted,
+    version: version.present ? version.value : this.version,
+    localRev: localRev ?? this.localRev,
   );
   Tag copyWithCompanion(TagsCompanion data) {
     return Tag(
@@ -1157,6 +1371,8 @@ class Tag extends DataClass implements Insertable<Tag> {
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
       isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
       isDeleted: data.isDeleted.present ? data.isDeleted.value : this.isDeleted,
+      version: data.version.present ? data.version.value : this.version,
+      localRev: data.localRev.present ? data.localRev.value : this.localRev,
     );
   }
 
@@ -1168,14 +1384,24 @@ class Tag extends DataClass implements Insertable<Tag> {
           ..write('color: $color, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced, ')
-          ..write('isDeleted: $isDeleted')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('version: $version, ')
+          ..write('localRev: $localRev')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, color, updatedAt, isSynced, isDeleted);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    color,
+    updatedAt,
+    isSynced,
+    isDeleted,
+    version,
+    localRev,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1185,7 +1411,9 @@ class Tag extends DataClass implements Insertable<Tag> {
           other.color == this.color &&
           other.updatedAt == this.updatedAt &&
           other.isSynced == this.isSynced &&
-          other.isDeleted == this.isDeleted);
+          other.isDeleted == this.isDeleted &&
+          other.version == this.version &&
+          other.localRev == this.localRev);
 }
 
 class TagsCompanion extends UpdateCompanion<Tag> {
@@ -1195,6 +1423,8 @@ class TagsCompanion extends UpdateCompanion<Tag> {
   final Value<DateTime?> updatedAt;
   final Value<bool> isSynced;
   final Value<bool> isDeleted;
+  final Value<int?> version;
+  final Value<int> localRev;
   final Value<int> rowid;
   const TagsCompanion({
     this.id = const Value.absent(),
@@ -1203,6 +1433,8 @@ class TagsCompanion extends UpdateCompanion<Tag> {
     this.updatedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.version = const Value.absent(),
+    this.localRev = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TagsCompanion.insert({
@@ -1212,6 +1444,8 @@ class TagsCompanion extends UpdateCompanion<Tag> {
     this.updatedAt = const Value.absent(),
     this.isSynced = const Value.absent(),
     this.isDeleted = const Value.absent(),
+    this.version = const Value.absent(),
+    this.localRev = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name);
@@ -1222,6 +1456,8 @@ class TagsCompanion extends UpdateCompanion<Tag> {
     Expression<DateTime>? updatedAt,
     Expression<bool>? isSynced,
     Expression<bool>? isDeleted,
+    Expression<int>? version,
+    Expression<int>? localRev,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1231,6 +1467,8 @@ class TagsCompanion extends UpdateCompanion<Tag> {
       if (updatedAt != null) 'updated_at': updatedAt,
       if (isSynced != null) 'is_synced': isSynced,
       if (isDeleted != null) 'is_deleted': isDeleted,
+      if (version != null) 'version': version,
+      if (localRev != null) 'local_rev': localRev,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1242,6 +1480,8 @@ class TagsCompanion extends UpdateCompanion<Tag> {
     Value<DateTime?>? updatedAt,
     Value<bool>? isSynced,
     Value<bool>? isDeleted,
+    Value<int?>? version,
+    Value<int>? localRev,
     Value<int>? rowid,
   }) {
     return TagsCompanion(
@@ -1251,6 +1491,8 @@ class TagsCompanion extends UpdateCompanion<Tag> {
       updatedAt: updatedAt ?? this.updatedAt,
       isSynced: isSynced ?? this.isSynced,
       isDeleted: isDeleted ?? this.isDeleted,
+      version: version ?? this.version,
+      localRev: localRev ?? this.localRev,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1276,6 +1518,12 @@ class TagsCompanion extends UpdateCompanion<Tag> {
     if (isDeleted.present) {
       map['is_deleted'] = Variable<bool>(isDeleted.value);
     }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (localRev.present) {
+      map['local_rev'] = Variable<int>(localRev.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1291,6 +1539,8 @@ class TagsCompanion extends UpdateCompanion<Tag> {
           ..write('updatedAt: $updatedAt, ')
           ..write('isSynced: $isSynced, ')
           ..write('isDeleted: $isDeleted, ')
+          ..write('version: $version, ')
+          ..write('localRev: $localRev, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2225,6 +2475,1415 @@ class NoteAttachmentsCompanion extends UpdateCompanion<NoteAttachment> {
   }
 }
 
+class $NoteRevisionsTable extends NoteRevisions
+    with TableInfo<$NoteRevisionsTable, NoteRevisionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NoteRevisionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
+  @override
+  late final GeneratedColumn<String> noteId = GeneratedColumn<String>(
+    'note_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _versionMeta = const VerificationMeta(
+    'version',
+  );
+  @override
+  late final GeneratedColumn<int> version = GeneratedColumn<int>(
+    'version',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _titleMeta = const VerificationMeta('title');
+  @override
+  late final GeneratedColumn<String> title = GeneratedColumn<String>(
+    'title',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _contentMeta = const VerificationMeta(
+    'content',
+  );
+  @override
+  late final GeneratedColumn<String> content = GeneratedColumn<String>(
+    'content',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _causeMeta = const VerificationMeta('cause');
+  @override
+  late final GeneratedColumn<String> cause = GeneratedColumn<String>(
+    'cause',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+    defaultValue: const Constant('edit'),
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _authorIdMeta = const VerificationMeta(
+    'authorId',
+  );
+  @override
+  late final GeneratedColumn<String> authorId = GeneratedColumn<String>(
+    'author_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _authorNameMeta = const VerificationMeta(
+    'authorName',
+  );
+  @override
+  late final GeneratedColumn<String> authorName = GeneratedColumn<String>(
+    'author_name',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _authorEmailMeta = const VerificationMeta(
+    'authorEmail',
+  );
+  @override
+  late final GeneratedColumn<String> authorEmail = GeneratedColumn<String>(
+    'author_email',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _authorProfileImageMeta =
+      const VerificationMeta('authorProfileImage');
+  @override
+  late final GeneratedColumn<String> authorProfileImage =
+      GeneratedColumn<String>(
+        'author_profile_image',
+        aliasedName,
+        true,
+        type: DriftSqlType.string,
+        requiredDuringInsert: false,
+      );
+  static const VerificationMeta _isSyncedMeta = const VerificationMeta(
+    'isSynced',
+  );
+  @override
+  late final GeneratedColumn<bool> isSynced = GeneratedColumn<bool>(
+    'is_synced',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_synced" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    noteId,
+    version,
+    title,
+    content,
+    cause,
+    createdAt,
+    authorId,
+    authorName,
+    authorEmail,
+    authorProfileImage,
+    isSynced,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'note_revisions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NoteRevisionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('note_id')) {
+      context.handle(
+        _noteIdMeta,
+        noteId.isAcceptableOrUnknown(data['note_id']!, _noteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_noteIdMeta);
+    }
+    if (data.containsKey('version')) {
+      context.handle(
+        _versionMeta,
+        version.isAcceptableOrUnknown(data['version']!, _versionMeta),
+      );
+    }
+    if (data.containsKey('title')) {
+      context.handle(
+        _titleMeta,
+        title.isAcceptableOrUnknown(data['title']!, _titleMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_titleMeta);
+    }
+    if (data.containsKey('content')) {
+      context.handle(
+        _contentMeta,
+        content.isAcceptableOrUnknown(data['content']!, _contentMeta),
+      );
+    }
+    if (data.containsKey('cause')) {
+      context.handle(
+        _causeMeta,
+        cause.isAcceptableOrUnknown(data['cause']!, _causeMeta),
+      );
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('author_id')) {
+      context.handle(
+        _authorIdMeta,
+        authorId.isAcceptableOrUnknown(data['author_id']!, _authorIdMeta),
+      );
+    }
+    if (data.containsKey('author_name')) {
+      context.handle(
+        _authorNameMeta,
+        authorName.isAcceptableOrUnknown(data['author_name']!, _authorNameMeta),
+      );
+    }
+    if (data.containsKey('author_email')) {
+      context.handle(
+        _authorEmailMeta,
+        authorEmail.isAcceptableOrUnknown(
+          data['author_email']!,
+          _authorEmailMeta,
+        ),
+      );
+    }
+    if (data.containsKey('author_profile_image')) {
+      context.handle(
+        _authorProfileImageMeta,
+        authorProfileImage.isAcceptableOrUnknown(
+          data['author_profile_image']!,
+          _authorProfileImageMeta,
+        ),
+      );
+    }
+    if (data.containsKey('is_synced')) {
+      context.handle(
+        _isSyncedMeta,
+        isSynced.isAcceptableOrUnknown(data['is_synced']!, _isSyncedMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  NoteRevisionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NoteRevisionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      noteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note_id'],
+      )!,
+      version: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}version'],
+      )!,
+      title: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}title'],
+      )!,
+      content: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}content'],
+      ),
+      cause: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cause'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+      authorId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_id'],
+      ),
+      authorName: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_name'],
+      ),
+      authorEmail: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_email'],
+      ),
+      authorProfileImage: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_profile_image'],
+      ),
+      isSynced: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_synced'],
+      )!,
+    );
+  }
+
+  @override
+  $NoteRevisionsTable createAlias(String alias) {
+    return $NoteRevisionsTable(attachedDatabase, alias);
+  }
+}
+
+class NoteRevisionRow extends DataClass implements Insertable<NoteRevisionRow> {
+  final String id;
+  final String noteId;
+  final int version;
+  final String title;
+  final String? content;
+  final String cause;
+  final int createdAt;
+  final String? authorId;
+  final String? authorName;
+  final String? authorEmail;
+  final String? authorProfileImage;
+  final bool isSynced;
+  const NoteRevisionRow({
+    required this.id,
+    required this.noteId,
+    required this.version,
+    required this.title,
+    this.content,
+    required this.cause,
+    required this.createdAt,
+    this.authorId,
+    this.authorName,
+    this.authorEmail,
+    this.authorProfileImage,
+    required this.isSynced,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['note_id'] = Variable<String>(noteId);
+    map['version'] = Variable<int>(version);
+    map['title'] = Variable<String>(title);
+    if (!nullToAbsent || content != null) {
+      map['content'] = Variable<String>(content);
+    }
+    map['cause'] = Variable<String>(cause);
+    map['created_at'] = Variable<int>(createdAt);
+    if (!nullToAbsent || authorId != null) {
+      map['author_id'] = Variable<String>(authorId);
+    }
+    if (!nullToAbsent || authorName != null) {
+      map['author_name'] = Variable<String>(authorName);
+    }
+    if (!nullToAbsent || authorEmail != null) {
+      map['author_email'] = Variable<String>(authorEmail);
+    }
+    if (!nullToAbsent || authorProfileImage != null) {
+      map['author_profile_image'] = Variable<String>(authorProfileImage);
+    }
+    map['is_synced'] = Variable<bool>(isSynced);
+    return map;
+  }
+
+  NoteRevisionsCompanion toCompanion(bool nullToAbsent) {
+    return NoteRevisionsCompanion(
+      id: Value(id),
+      noteId: Value(noteId),
+      version: Value(version),
+      title: Value(title),
+      content: content == null && nullToAbsent
+          ? const Value.absent()
+          : Value(content),
+      cause: Value(cause),
+      createdAt: Value(createdAt),
+      authorId: authorId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorId),
+      authorName: authorName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorName),
+      authorEmail: authorEmail == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorEmail),
+      authorProfileImage: authorProfileImage == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorProfileImage),
+      isSynced: Value(isSynced),
+    );
+  }
+
+  factory NoteRevisionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NoteRevisionRow(
+      id: serializer.fromJson<String>(json['id']),
+      noteId: serializer.fromJson<String>(json['noteId']),
+      version: serializer.fromJson<int>(json['version']),
+      title: serializer.fromJson<String>(json['title']),
+      content: serializer.fromJson<String?>(json['content']),
+      cause: serializer.fromJson<String>(json['cause']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+      authorId: serializer.fromJson<String?>(json['authorId']),
+      authorName: serializer.fromJson<String?>(json['authorName']),
+      authorEmail: serializer.fromJson<String?>(json['authorEmail']),
+      authorProfileImage: serializer.fromJson<String?>(
+        json['authorProfileImage'],
+      ),
+      isSynced: serializer.fromJson<bool>(json['isSynced']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'noteId': serializer.toJson<String>(noteId),
+      'version': serializer.toJson<int>(version),
+      'title': serializer.toJson<String>(title),
+      'content': serializer.toJson<String?>(content),
+      'cause': serializer.toJson<String>(cause),
+      'createdAt': serializer.toJson<int>(createdAt),
+      'authorId': serializer.toJson<String?>(authorId),
+      'authorName': serializer.toJson<String?>(authorName),
+      'authorEmail': serializer.toJson<String?>(authorEmail),
+      'authorProfileImage': serializer.toJson<String?>(authorProfileImage),
+      'isSynced': serializer.toJson<bool>(isSynced),
+    };
+  }
+
+  NoteRevisionRow copyWith({
+    String? id,
+    String? noteId,
+    int? version,
+    String? title,
+    Value<String?> content = const Value.absent(),
+    String? cause,
+    int? createdAt,
+    Value<String?> authorId = const Value.absent(),
+    Value<String?> authorName = const Value.absent(),
+    Value<String?> authorEmail = const Value.absent(),
+    Value<String?> authorProfileImage = const Value.absent(),
+    bool? isSynced,
+  }) => NoteRevisionRow(
+    id: id ?? this.id,
+    noteId: noteId ?? this.noteId,
+    version: version ?? this.version,
+    title: title ?? this.title,
+    content: content.present ? content.value : this.content,
+    cause: cause ?? this.cause,
+    createdAt: createdAt ?? this.createdAt,
+    authorId: authorId.present ? authorId.value : this.authorId,
+    authorName: authorName.present ? authorName.value : this.authorName,
+    authorEmail: authorEmail.present ? authorEmail.value : this.authorEmail,
+    authorProfileImage: authorProfileImage.present
+        ? authorProfileImage.value
+        : this.authorProfileImage,
+    isSynced: isSynced ?? this.isSynced,
+  );
+  NoteRevisionRow copyWithCompanion(NoteRevisionsCompanion data) {
+    return NoteRevisionRow(
+      id: data.id.present ? data.id.value : this.id,
+      noteId: data.noteId.present ? data.noteId.value : this.noteId,
+      version: data.version.present ? data.version.value : this.version,
+      title: data.title.present ? data.title.value : this.title,
+      content: data.content.present ? data.content.value : this.content,
+      cause: data.cause.present ? data.cause.value : this.cause,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      authorId: data.authorId.present ? data.authorId.value : this.authorId,
+      authorName: data.authorName.present
+          ? data.authorName.value
+          : this.authorName,
+      authorEmail: data.authorEmail.present
+          ? data.authorEmail.value
+          : this.authorEmail,
+      authorProfileImage: data.authorProfileImage.present
+          ? data.authorProfileImage.value
+          : this.authorProfileImage,
+      isSynced: data.isSynced.present ? data.isSynced.value : this.isSynced,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NoteRevisionRow(')
+          ..write('id: $id, ')
+          ..write('noteId: $noteId, ')
+          ..write('version: $version, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('cause: $cause, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('authorId: $authorId, ')
+          ..write('authorName: $authorName, ')
+          ..write('authorEmail: $authorEmail, ')
+          ..write('authorProfileImage: $authorProfileImage, ')
+          ..write('isSynced: $isSynced')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    noteId,
+    version,
+    title,
+    content,
+    cause,
+    createdAt,
+    authorId,
+    authorName,
+    authorEmail,
+    authorProfileImage,
+    isSynced,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NoteRevisionRow &&
+          other.id == this.id &&
+          other.noteId == this.noteId &&
+          other.version == this.version &&
+          other.title == this.title &&
+          other.content == this.content &&
+          other.cause == this.cause &&
+          other.createdAt == this.createdAt &&
+          other.authorId == this.authorId &&
+          other.authorName == this.authorName &&
+          other.authorEmail == this.authorEmail &&
+          other.authorProfileImage == this.authorProfileImage &&
+          other.isSynced == this.isSynced);
+}
+
+class NoteRevisionsCompanion extends UpdateCompanion<NoteRevisionRow> {
+  final Value<String> id;
+  final Value<String> noteId;
+  final Value<int> version;
+  final Value<String> title;
+  final Value<String?> content;
+  final Value<String> cause;
+  final Value<int> createdAt;
+  final Value<String?> authorId;
+  final Value<String?> authorName;
+  final Value<String?> authorEmail;
+  final Value<String?> authorProfileImage;
+  final Value<bool> isSynced;
+  final Value<int> rowid;
+  const NoteRevisionsCompanion({
+    this.id = const Value.absent(),
+    this.noteId = const Value.absent(),
+    this.version = const Value.absent(),
+    this.title = const Value.absent(),
+    this.content = const Value.absent(),
+    this.cause = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.authorId = const Value.absent(),
+    this.authorName = const Value.absent(),
+    this.authorEmail = const Value.absent(),
+    this.authorProfileImage = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NoteRevisionsCompanion.insert({
+    required String id,
+    required String noteId,
+    this.version = const Value.absent(),
+    required String title,
+    this.content = const Value.absent(),
+    this.cause = const Value.absent(),
+    required int createdAt,
+    this.authorId = const Value.absent(),
+    this.authorName = const Value.absent(),
+    this.authorEmail = const Value.absent(),
+    this.authorProfileImage = const Value.absent(),
+    this.isSynced = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       noteId = Value(noteId),
+       title = Value(title),
+       createdAt = Value(createdAt);
+  static Insertable<NoteRevisionRow> custom({
+    Expression<String>? id,
+    Expression<String>? noteId,
+    Expression<int>? version,
+    Expression<String>? title,
+    Expression<String>? content,
+    Expression<String>? cause,
+    Expression<int>? createdAt,
+    Expression<String>? authorId,
+    Expression<String>? authorName,
+    Expression<String>? authorEmail,
+    Expression<String>? authorProfileImage,
+    Expression<bool>? isSynced,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (noteId != null) 'note_id': noteId,
+      if (version != null) 'version': version,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (cause != null) 'cause': cause,
+      if (createdAt != null) 'created_at': createdAt,
+      if (authorId != null) 'author_id': authorId,
+      if (authorName != null) 'author_name': authorName,
+      if (authorEmail != null) 'author_email': authorEmail,
+      if (authorProfileImage != null)
+        'author_profile_image': authorProfileImage,
+      if (isSynced != null) 'is_synced': isSynced,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NoteRevisionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? noteId,
+    Value<int>? version,
+    Value<String>? title,
+    Value<String?>? content,
+    Value<String>? cause,
+    Value<int>? createdAt,
+    Value<String?>? authorId,
+    Value<String?>? authorName,
+    Value<String?>? authorEmail,
+    Value<String?>? authorProfileImage,
+    Value<bool>? isSynced,
+    Value<int>? rowid,
+  }) {
+    return NoteRevisionsCompanion(
+      id: id ?? this.id,
+      noteId: noteId ?? this.noteId,
+      version: version ?? this.version,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      cause: cause ?? this.cause,
+      createdAt: createdAt ?? this.createdAt,
+      authorId: authorId ?? this.authorId,
+      authorName: authorName ?? this.authorName,
+      authorEmail: authorEmail ?? this.authorEmail,
+      authorProfileImage: authorProfileImage ?? this.authorProfileImage,
+      isSynced: isSynced ?? this.isSynced,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (noteId.present) {
+      map['note_id'] = Variable<String>(noteId.value);
+    }
+    if (version.present) {
+      map['version'] = Variable<int>(version.value);
+    }
+    if (title.present) {
+      map['title'] = Variable<String>(title.value);
+    }
+    if (content.present) {
+      map['content'] = Variable<String>(content.value);
+    }
+    if (cause.present) {
+      map['cause'] = Variable<String>(cause.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (authorId.present) {
+      map['author_id'] = Variable<String>(authorId.value);
+    }
+    if (authorName.present) {
+      map['author_name'] = Variable<String>(authorName.value);
+    }
+    if (authorEmail.present) {
+      map['author_email'] = Variable<String>(authorEmail.value);
+    }
+    if (authorProfileImage.present) {
+      map['author_profile_image'] = Variable<String>(authorProfileImage.value);
+    }
+    if (isSynced.present) {
+      map['is_synced'] = Variable<bool>(isSynced.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NoteRevisionsCompanion(')
+          ..write('id: $id, ')
+          ..write('noteId: $noteId, ')
+          ..write('version: $version, ')
+          ..write('title: $title, ')
+          ..write('content: $content, ')
+          ..write('cause: $cause, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('authorId: $authorId, ')
+          ..write('authorName: $authorName, ')
+          ..write('authorEmail: $authorEmail, ')
+          ..write('authorProfileImage: $authorProfileImage, ')
+          ..write('isSynced: $isSynced, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $NoteHistoryStateTable extends NoteHistoryState
+    with TableInfo<$NoteHistoryStateTable, NoteHistoryStateData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $NoteHistoryStateTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _noteIdMeta = const VerificationMeta('noteId');
+  @override
+  late final GeneratedColumn<String> noteId = GeneratedColumn<String>(
+    'note_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _cursorMeta = const VerificationMeta('cursor');
+  @override
+  late final GeneratedColumn<String> cursor = GeneratedColumn<String>(
+    'cursor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [noteId, cursor];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'note_history_state';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<NoteHistoryStateData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('note_id')) {
+      context.handle(
+        _noteIdMeta,
+        noteId.isAcceptableOrUnknown(data['note_id']!, _noteIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_noteIdMeta);
+    }
+    if (data.containsKey('cursor')) {
+      context.handle(
+        _cursorMeta,
+        cursor.isAcceptableOrUnknown(data['cursor']!, _cursorMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {noteId};
+  @override
+  NoteHistoryStateData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return NoteHistoryStateData(
+      noteId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}note_id'],
+      )!,
+      cursor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cursor'],
+      ),
+    );
+  }
+
+  @override
+  $NoteHistoryStateTable createAlias(String alias) {
+    return $NoteHistoryStateTable(attachedDatabase, alias);
+  }
+}
+
+class NoteHistoryStateData extends DataClass
+    implements Insertable<NoteHistoryStateData> {
+  final String noteId;
+  final String? cursor;
+  const NoteHistoryStateData({required this.noteId, this.cursor});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['note_id'] = Variable<String>(noteId);
+    if (!nullToAbsent || cursor != null) {
+      map['cursor'] = Variable<String>(cursor);
+    }
+    return map;
+  }
+
+  NoteHistoryStateCompanion toCompanion(bool nullToAbsent) {
+    return NoteHistoryStateCompanion(
+      noteId: Value(noteId),
+      cursor: cursor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cursor),
+    );
+  }
+
+  factory NoteHistoryStateData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return NoteHistoryStateData(
+      noteId: serializer.fromJson<String>(json['noteId']),
+      cursor: serializer.fromJson<String?>(json['cursor']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'noteId': serializer.toJson<String>(noteId),
+      'cursor': serializer.toJson<String?>(cursor),
+    };
+  }
+
+  NoteHistoryStateData copyWith({
+    String? noteId,
+    Value<String?> cursor = const Value.absent(),
+  }) => NoteHistoryStateData(
+    noteId: noteId ?? this.noteId,
+    cursor: cursor.present ? cursor.value : this.cursor,
+  );
+  NoteHistoryStateData copyWithCompanion(NoteHistoryStateCompanion data) {
+    return NoteHistoryStateData(
+      noteId: data.noteId.present ? data.noteId.value : this.noteId,
+      cursor: data.cursor.present ? data.cursor.value : this.cursor,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NoteHistoryStateData(')
+          ..write('noteId: $noteId, ')
+          ..write('cursor: $cursor')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(noteId, cursor);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is NoteHistoryStateData &&
+          other.noteId == this.noteId &&
+          other.cursor == this.cursor);
+}
+
+class NoteHistoryStateCompanion extends UpdateCompanion<NoteHistoryStateData> {
+  final Value<String> noteId;
+  final Value<String?> cursor;
+  final Value<int> rowid;
+  const NoteHistoryStateCompanion({
+    this.noteId = const Value.absent(),
+    this.cursor = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  NoteHistoryStateCompanion.insert({
+    required String noteId,
+    this.cursor = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : noteId = Value(noteId);
+  static Insertable<NoteHistoryStateData> custom({
+    Expression<String>? noteId,
+    Expression<String>? cursor,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (noteId != null) 'note_id': noteId,
+      if (cursor != null) 'cursor': cursor,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  NoteHistoryStateCompanion copyWith({
+    Value<String>? noteId,
+    Value<String?>? cursor,
+    Value<int>? rowid,
+  }) {
+    return NoteHistoryStateCompanion(
+      noteId: noteId ?? this.noteId,
+      cursor: cursor ?? this.cursor,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (noteId.present) {
+      map['note_id'] = Variable<String>(noteId.value);
+    }
+    if (cursor.present) {
+      map['cursor'] = Variable<String>(cursor.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('NoteHistoryStateCompanion(')
+          ..write('noteId: $noteId, ')
+          ..write('cursor: $cursor, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncStateTable extends SyncState
+    with TableInfo<$SyncStateTable, SyncStateData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncStateTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _cursorMeta = const VerificationMeta('cursor');
+  @override
+  late final GeneratedColumn<String> cursor = GeneratedColumn<String>(
+    'cursor',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _isSweepingMeta = const VerificationMeta(
+    'isSweeping',
+  );
+  @override
+  late final GeneratedColumn<bool> isSweeping = GeneratedColumn<bool>(
+    'is_sweeping',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_sweeping" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  @override
+  List<GeneratedColumn> get $columns => [id, cursor, isSweeping];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_state';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncStateData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('cursor')) {
+      context.handle(
+        _cursorMeta,
+        cursor.isAcceptableOrUnknown(data['cursor']!, _cursorMeta),
+      );
+    }
+    if (data.containsKey('is_sweeping')) {
+      context.handle(
+        _isSweepingMeta,
+        isSweeping.isAcceptableOrUnknown(data['is_sweeping']!, _isSweepingMeta),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  SyncStateData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncStateData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      cursor: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}cursor'],
+      ),
+      isSweeping: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_sweeping'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncStateTable createAlias(String alias) {
+    return $SyncStateTable(attachedDatabase, alias);
+  }
+}
+
+class SyncStateData extends DataClass implements Insertable<SyncStateData> {
+  final int id;
+  final String? cursor;
+  final bool isSweeping;
+  const SyncStateData({
+    required this.id,
+    this.cursor,
+    required this.isSweeping,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    if (!nullToAbsent || cursor != null) {
+      map['cursor'] = Variable<String>(cursor);
+    }
+    map['is_sweeping'] = Variable<bool>(isSweeping);
+    return map;
+  }
+
+  SyncStateCompanion toCompanion(bool nullToAbsent) {
+    return SyncStateCompanion(
+      id: Value(id),
+      cursor: cursor == null && nullToAbsent
+          ? const Value.absent()
+          : Value(cursor),
+      isSweeping: Value(isSweeping),
+    );
+  }
+
+  factory SyncStateData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncStateData(
+      id: serializer.fromJson<int>(json['id']),
+      cursor: serializer.fromJson<String?>(json['cursor']),
+      isSweeping: serializer.fromJson<bool>(json['isSweeping']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'cursor': serializer.toJson<String?>(cursor),
+      'isSweeping': serializer.toJson<bool>(isSweeping),
+    };
+  }
+
+  SyncStateData copyWith({
+    int? id,
+    Value<String?> cursor = const Value.absent(),
+    bool? isSweeping,
+  }) => SyncStateData(
+    id: id ?? this.id,
+    cursor: cursor.present ? cursor.value : this.cursor,
+    isSweeping: isSweeping ?? this.isSweeping,
+  );
+  SyncStateData copyWithCompanion(SyncStateCompanion data) {
+    return SyncStateData(
+      id: data.id.present ? data.id.value : this.id,
+      cursor: data.cursor.present ? data.cursor.value : this.cursor,
+      isSweeping: data.isSweeping.present
+          ? data.isSweeping.value
+          : this.isSweeping,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncStateData(')
+          ..write('id: $id, ')
+          ..write('cursor: $cursor, ')
+          ..write('isSweeping: $isSweeping')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, cursor, isSweeping);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncStateData &&
+          other.id == this.id &&
+          other.cursor == this.cursor &&
+          other.isSweeping == this.isSweeping);
+}
+
+class SyncStateCompanion extends UpdateCompanion<SyncStateData> {
+  final Value<int> id;
+  final Value<String?> cursor;
+  final Value<bool> isSweeping;
+  const SyncStateCompanion({
+    this.id = const Value.absent(),
+    this.cursor = const Value.absent(),
+    this.isSweeping = const Value.absent(),
+  });
+  SyncStateCompanion.insert({
+    this.id = const Value.absent(),
+    this.cursor = const Value.absent(),
+    this.isSweeping = const Value.absent(),
+  });
+  static Insertable<SyncStateData> custom({
+    Expression<int>? id,
+    Expression<String>? cursor,
+    Expression<bool>? isSweeping,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (cursor != null) 'cursor': cursor,
+      if (isSweeping != null) 'is_sweeping': isSweeping,
+    });
+  }
+
+  SyncStateCompanion copyWith({
+    Value<int>? id,
+    Value<String?>? cursor,
+    Value<bool>? isSweeping,
+  }) {
+    return SyncStateCompanion(
+      id: id ?? this.id,
+      cursor: cursor ?? this.cursor,
+      isSweeping: isSweeping ?? this.isSweeping,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (cursor.present) {
+      map['cursor'] = Variable<String>(cursor.value);
+    }
+    if (isSweeping.present) {
+      map['is_sweeping'] = Variable<bool>(isSweeping.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncStateCompanion(')
+          ..write('id: $id, ')
+          ..write('cursor: $cursor, ')
+          ..write('isSweeping: $isSweeping')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $SyncSweepTable extends SyncSweep
+    with TableInfo<$SyncSweepTable, SyncSweepData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $SyncSweepTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _entityTypeMeta = const VerificationMeta(
+    'entityType',
+  );
+  @override
+  late final GeneratedColumn<String> entityType = GeneratedColumn<String>(
+    'entity_type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _entityIdMeta = const VerificationMeta(
+    'entityId',
+  );
+  @override
+  late final GeneratedColumn<String> entityId = GeneratedColumn<String>(
+    'entity_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [entityType, entityId];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'sync_sweep';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<SyncSweepData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('entity_type')) {
+      context.handle(
+        _entityTypeMeta,
+        entityType.isAcceptableOrUnknown(data['entity_type']!, _entityTypeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityTypeMeta);
+    }
+    if (data.containsKey('entity_id')) {
+      context.handle(
+        _entityIdMeta,
+        entityId.isAcceptableOrUnknown(data['entity_id']!, _entityIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_entityIdMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {entityType, entityId};
+  @override
+  SyncSweepData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return SyncSweepData(
+      entityType: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_type'],
+      )!,
+      entityId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}entity_id'],
+      )!,
+    );
+  }
+
+  @override
+  $SyncSweepTable createAlias(String alias) {
+    return $SyncSweepTable(attachedDatabase, alias);
+  }
+}
+
+class SyncSweepData extends DataClass implements Insertable<SyncSweepData> {
+  final String entityType;
+  final String entityId;
+  const SyncSweepData({required this.entityType, required this.entityId});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['entity_type'] = Variable<String>(entityType);
+    map['entity_id'] = Variable<String>(entityId);
+    return map;
+  }
+
+  SyncSweepCompanion toCompanion(bool nullToAbsent) {
+    return SyncSweepCompanion(
+      entityType: Value(entityType),
+      entityId: Value(entityId),
+    );
+  }
+
+  factory SyncSweepData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return SyncSweepData(
+      entityType: serializer.fromJson<String>(json['entityType']),
+      entityId: serializer.fromJson<String>(json['entityId']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'entityType': serializer.toJson<String>(entityType),
+      'entityId': serializer.toJson<String>(entityId),
+    };
+  }
+
+  SyncSweepData copyWith({String? entityType, String? entityId}) =>
+      SyncSweepData(
+        entityType: entityType ?? this.entityType,
+        entityId: entityId ?? this.entityId,
+      );
+  SyncSweepData copyWithCompanion(SyncSweepCompanion data) {
+    return SyncSweepData(
+      entityType: data.entityType.present
+          ? data.entityType.value
+          : this.entityType,
+      entityId: data.entityId.present ? data.entityId.value : this.entityId,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncSweepData(')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(entityType, entityId);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is SyncSweepData &&
+          other.entityType == this.entityType &&
+          other.entityId == this.entityId);
+}
+
+class SyncSweepCompanion extends UpdateCompanion<SyncSweepData> {
+  final Value<String> entityType;
+  final Value<String> entityId;
+  final Value<int> rowid;
+  const SyncSweepCompanion({
+    this.entityType = const Value.absent(),
+    this.entityId = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  SyncSweepCompanion.insert({
+    required String entityType,
+    required String entityId,
+    this.rowid = const Value.absent(),
+  }) : entityType = Value(entityType),
+       entityId = Value(entityId);
+  static Insertable<SyncSweepData> custom({
+    Expression<String>? entityType,
+    Expression<String>? entityId,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (entityType != null) 'entity_type': entityType,
+      if (entityId != null) 'entity_id': entityId,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  SyncSweepCompanion copyWith({
+    Value<String>? entityType,
+    Value<String>? entityId,
+    Value<int>? rowid,
+  }) {
+    return SyncSweepCompanion(
+      entityType: entityType ?? this.entityType,
+      entityId: entityId ?? this.entityId,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (entityType.present) {
+      map['entity_type'] = Variable<String>(entityType.value);
+    }
+    if (entityId.present) {
+      map['entity_id'] = Variable<String>(entityId.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('SyncSweepCompanion(')
+          ..write('entityType: $entityType, ')
+          ..write('entityId: $entityId, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -2233,6 +3892,16 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $NoteTagsTable noteTags = $NoteTagsTable(this);
   late final $NoteAttachmentsTable noteAttachments = $NoteAttachmentsTable(
     this,
+  );
+  late final $NoteRevisionsTable noteRevisions = $NoteRevisionsTable(this);
+  late final $NoteHistoryStateTable noteHistoryState = $NoteHistoryStateTable(
+    this,
+  );
+  late final $SyncStateTable syncState = $SyncStateTable(this);
+  late final $SyncSweepTable syncSweep = $SyncSweepTable(this);
+  late final Index noteRevisionsNoteCreated = Index(
+    'note_revisions_note_created',
+    'CREATE INDEX note_revisions_note_created ON note_revisions (note_id, created_at)',
   );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
@@ -2243,6 +3912,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     tags,
     noteTags,
     noteAttachments,
+    noteRevisions,
+    noteHistoryState,
+    syncState,
+    syncSweep,
+    noteRevisionsNoteCreated,
   ];
 }
 
@@ -2257,6 +3931,9 @@ typedef $$NotesTableCreateCompanionBuilder =
       Value<String> state,
       Value<DateTime?> updatedAt,
       Value<bool> isSynced,
+      Value<int?> version,
+      Value<int> localRev,
+      Value<bool> isPinSynced,
       Value<String> permission,
       Value<String?> shareIds,
       Value<String?> sharedById,
@@ -2276,6 +3953,9 @@ typedef $$NotesTableUpdateCompanionBuilder =
       Value<String> state,
       Value<DateTime?> updatedAt,
       Value<bool> isSynced,
+      Value<int?> version,
+      Value<int> localRev,
+      Value<bool> isPinSynced,
       Value<String> permission,
       Value<String?> shareIds,
       Value<String?> sharedById,
@@ -2335,6 +4015,21 @@ class $$NotesTableFilterComposer extends Composer<_$AppDatabase, $NotesTable> {
 
   ColumnFilters<bool> get isSynced => $composableBuilder(
     column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get localRev => $composableBuilder(
+    column: $table.localRev,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isPinSynced => $composableBuilder(
+    column: $table.isPinSynced,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2423,6 +4118,21 @@ class $$NotesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get localRev => $composableBuilder(
+    column: $table.localRev,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isPinSynced => $composableBuilder(
+    column: $table.isPinSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<String> get permission => $composableBuilder(
     column: $table.permission,
     builder: (column) => ColumnOrderings(column),
@@ -2494,6 +4204,17 @@ class $$NotesTableAnnotationComposer
   GeneratedColumn<bool> get isSynced =>
       $composableBuilder(column: $table.isSynced, builder: (column) => column);
 
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<int> get localRev =>
+      $composableBuilder(column: $table.localRev, builder: (column) => column);
+
+  GeneratedColumn<bool> get isPinSynced => $composableBuilder(
+    column: $table.isPinSynced,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<String> get permission => $composableBuilder(
     column: $table.permission,
     builder: (column) => column,
@@ -2560,6 +4281,9 @@ class $$NotesTableTableManager
                 Value<String> state = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<int?> version = const Value.absent(),
+                Value<int> localRev = const Value.absent(),
+                Value<bool> isPinSynced = const Value.absent(),
                 Value<String> permission = const Value.absent(),
                 Value<String?> shareIds = const Value.absent(),
                 Value<String?> sharedById = const Value.absent(),
@@ -2577,6 +4301,9 @@ class $$NotesTableTableManager
                 state: state,
                 updatedAt: updatedAt,
                 isSynced: isSynced,
+                version: version,
+                localRev: localRev,
+                isPinSynced: isPinSynced,
                 permission: permission,
                 shareIds: shareIds,
                 sharedById: sharedById,
@@ -2596,6 +4323,9 @@ class $$NotesTableTableManager
                 Value<String> state = const Value.absent(),
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
+                Value<int?> version = const Value.absent(),
+                Value<int> localRev = const Value.absent(),
+                Value<bool> isPinSynced = const Value.absent(),
                 Value<String> permission = const Value.absent(),
                 Value<String?> shareIds = const Value.absent(),
                 Value<String?> sharedById = const Value.absent(),
@@ -2613,6 +4343,9 @@ class $$NotesTableTableManager
                 state: state,
                 updatedAt: updatedAt,
                 isSynced: isSynced,
+                version: version,
+                localRev: localRev,
+                isPinSynced: isPinSynced,
                 permission: permission,
                 shareIds: shareIds,
                 sharedById: sharedById,
@@ -2651,6 +4384,8 @@ typedef $$TagsTableCreateCompanionBuilder =
       Value<DateTime?> updatedAt,
       Value<bool> isSynced,
       Value<bool> isDeleted,
+      Value<int?> version,
+      Value<int> localRev,
       Value<int> rowid,
     });
 typedef $$TagsTableUpdateCompanionBuilder =
@@ -2661,6 +4396,8 @@ typedef $$TagsTableUpdateCompanionBuilder =
       Value<DateTime?> updatedAt,
       Value<bool> isSynced,
       Value<bool> isDeleted,
+      Value<int?> version,
+      Value<int> localRev,
       Value<int> rowid,
     });
 
@@ -2699,6 +4436,16 @@ class $$TagsTableFilterComposer extends Composer<_$AppDatabase, $TagsTable> {
 
   ColumnFilters<bool> get isDeleted => $composableBuilder(
     column: $table.isDeleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get localRev => $composableBuilder(
+    column: $table.localRev,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -2740,6 +4487,16 @@ class $$TagsTableOrderingComposer extends Composer<_$AppDatabase, $TagsTable> {
     column: $table.isDeleted,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get localRev => $composableBuilder(
+    column: $table.localRev,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TagsTableAnnotationComposer
@@ -2768,6 +4525,12 @@ class $$TagsTableAnnotationComposer
 
   GeneratedColumn<bool> get isDeleted =>
       $composableBuilder(column: $table.isDeleted, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<int> get localRev =>
+      $composableBuilder(column: $table.localRev, builder: (column) => column);
 }
 
 class $$TagsTableTableManager
@@ -2804,6 +4567,8 @@ class $$TagsTableTableManager
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
+                Value<int?> version = const Value.absent(),
+                Value<int> localRev = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TagsCompanion(
                 id: id,
@@ -2812,6 +4577,8 @@ class $$TagsTableTableManager
                 updatedAt: updatedAt,
                 isSynced: isSynced,
                 isDeleted: isDeleted,
+                version: version,
+                localRev: localRev,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2822,6 +4589,8 @@ class $$TagsTableTableManager
                 Value<DateTime?> updatedAt = const Value.absent(),
                 Value<bool> isSynced = const Value.absent(),
                 Value<bool> isDeleted = const Value.absent(),
+                Value<int?> version = const Value.absent(),
+                Value<int> localRev = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TagsCompanion.insert(
                 id: id,
@@ -2830,6 +4599,8 @@ class $$TagsTableTableManager
                 updatedAt: updatedAt,
                 isSynced: isSynced,
                 isDeleted: isDeleted,
+                version: version,
+                localRev: localRev,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3335,6 +5106,801 @@ typedef $$NoteAttachmentsTableProcessedTableManager =
       NoteAttachment,
       PrefetchHooks Function()
     >;
+typedef $$NoteRevisionsTableCreateCompanionBuilder =
+    NoteRevisionsCompanion Function({
+      required String id,
+      required String noteId,
+      Value<int> version,
+      required String title,
+      Value<String?> content,
+      Value<String> cause,
+      required int createdAt,
+      Value<String?> authorId,
+      Value<String?> authorName,
+      Value<String?> authorEmail,
+      Value<String?> authorProfileImage,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+typedef $$NoteRevisionsTableUpdateCompanionBuilder =
+    NoteRevisionsCompanion Function({
+      Value<String> id,
+      Value<String> noteId,
+      Value<int> version,
+      Value<String> title,
+      Value<String?> content,
+      Value<String> cause,
+      Value<int> createdAt,
+      Value<String?> authorId,
+      Value<String?> authorName,
+      Value<String?> authorEmail,
+      Value<String?> authorProfileImage,
+      Value<bool> isSynced,
+      Value<int> rowid,
+    });
+
+class $$NoteRevisionsTableFilterComposer
+    extends Composer<_$AppDatabase, $NoteRevisionsTable> {
+  $$NoteRevisionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get noteId => $composableBuilder(
+    column: $table.noteId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cause => $composableBuilder(
+    column: $table.cause,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authorId => $composableBuilder(
+    column: $table.authorId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authorName => $composableBuilder(
+    column: $table.authorName,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authorEmail => $composableBuilder(
+    column: $table.authorEmail,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authorProfileImage => $composableBuilder(
+    column: $table.authorProfileImage,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NoteRevisionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $NoteRevisionsTable> {
+  $$NoteRevisionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get noteId => $composableBuilder(
+    column: $table.noteId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get version => $composableBuilder(
+    column: $table.version,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get title => $composableBuilder(
+    column: $table.title,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get content => $composableBuilder(
+    column: $table.content,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cause => $composableBuilder(
+    column: $table.cause,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authorId => $composableBuilder(
+    column: $table.authorId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authorName => $composableBuilder(
+    column: $table.authorName,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authorEmail => $composableBuilder(
+    column: $table.authorEmail,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authorProfileImage => $composableBuilder(
+    column: $table.authorProfileImage,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSynced => $composableBuilder(
+    column: $table.isSynced,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NoteRevisionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NoteRevisionsTable> {
+  $$NoteRevisionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get noteId =>
+      $composableBuilder(column: $table.noteId, builder: (column) => column);
+
+  GeneratedColumn<int> get version =>
+      $composableBuilder(column: $table.version, builder: (column) => column);
+
+  GeneratedColumn<String> get title =>
+      $composableBuilder(column: $table.title, builder: (column) => column);
+
+  GeneratedColumn<String> get content =>
+      $composableBuilder(column: $table.content, builder: (column) => column);
+
+  GeneratedColumn<String> get cause =>
+      $composableBuilder(column: $table.cause, builder: (column) => column);
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<String> get authorId =>
+      $composableBuilder(column: $table.authorId, builder: (column) => column);
+
+  GeneratedColumn<String> get authorName => $composableBuilder(
+    column: $table.authorName,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get authorEmail => $composableBuilder(
+    column: $table.authorEmail,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get authorProfileImage => $composableBuilder(
+    column: $table.authorProfileImage,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<bool> get isSynced =>
+      $composableBuilder(column: $table.isSynced, builder: (column) => column);
+}
+
+class $$NoteRevisionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NoteRevisionsTable,
+          NoteRevisionRow,
+          $$NoteRevisionsTableFilterComposer,
+          $$NoteRevisionsTableOrderingComposer,
+          $$NoteRevisionsTableAnnotationComposer,
+          $$NoteRevisionsTableCreateCompanionBuilder,
+          $$NoteRevisionsTableUpdateCompanionBuilder,
+          (
+            NoteRevisionRow,
+            BaseReferences<_$AppDatabase, $NoteRevisionsTable, NoteRevisionRow>,
+          ),
+          NoteRevisionRow,
+          PrefetchHooks Function()
+        > {
+  $$NoteRevisionsTableTableManager(_$AppDatabase db, $NoteRevisionsTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NoteRevisionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NoteRevisionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NoteRevisionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> noteId = const Value.absent(),
+                Value<int> version = const Value.absent(),
+                Value<String> title = const Value.absent(),
+                Value<String?> content = const Value.absent(),
+                Value<String> cause = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<String?> authorId = const Value.absent(),
+                Value<String?> authorName = const Value.absent(),
+                Value<String?> authorEmail = const Value.absent(),
+                Value<String?> authorProfileImage = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NoteRevisionsCompanion(
+                id: id,
+                noteId: noteId,
+                version: version,
+                title: title,
+                content: content,
+                cause: cause,
+                createdAt: createdAt,
+                authorId: authorId,
+                authorName: authorName,
+                authorEmail: authorEmail,
+                authorProfileImage: authorProfileImage,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String noteId,
+                Value<int> version = const Value.absent(),
+                required String title,
+                Value<String?> content = const Value.absent(),
+                Value<String> cause = const Value.absent(),
+                required int createdAt,
+                Value<String?> authorId = const Value.absent(),
+                Value<String?> authorName = const Value.absent(),
+                Value<String?> authorEmail = const Value.absent(),
+                Value<String?> authorProfileImage = const Value.absent(),
+                Value<bool> isSynced = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NoteRevisionsCompanion.insert(
+                id: id,
+                noteId: noteId,
+                version: version,
+                title: title,
+                content: content,
+                cause: cause,
+                createdAt: createdAt,
+                authorId: authorId,
+                authorName: authorName,
+                authorEmail: authorEmail,
+                authorProfileImage: authorProfileImage,
+                isSynced: isSynced,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NoteRevisionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NoteRevisionsTable,
+      NoteRevisionRow,
+      $$NoteRevisionsTableFilterComposer,
+      $$NoteRevisionsTableOrderingComposer,
+      $$NoteRevisionsTableAnnotationComposer,
+      $$NoteRevisionsTableCreateCompanionBuilder,
+      $$NoteRevisionsTableUpdateCompanionBuilder,
+      (
+        NoteRevisionRow,
+        BaseReferences<_$AppDatabase, $NoteRevisionsTable, NoteRevisionRow>,
+      ),
+      NoteRevisionRow,
+      PrefetchHooks Function()
+    >;
+typedef $$NoteHistoryStateTableCreateCompanionBuilder =
+    NoteHistoryStateCompanion Function({
+      required String noteId,
+      Value<String?> cursor,
+      Value<int> rowid,
+    });
+typedef $$NoteHistoryStateTableUpdateCompanionBuilder =
+    NoteHistoryStateCompanion Function({
+      Value<String> noteId,
+      Value<String?> cursor,
+      Value<int> rowid,
+    });
+
+class $$NoteHistoryStateTableFilterComposer
+    extends Composer<_$AppDatabase, $NoteHistoryStateTable> {
+  $$NoteHistoryStateTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get noteId => $composableBuilder(
+    column: $table.noteId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cursor => $composableBuilder(
+    column: $table.cursor,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$NoteHistoryStateTableOrderingComposer
+    extends Composer<_$AppDatabase, $NoteHistoryStateTable> {
+  $$NoteHistoryStateTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get noteId => $composableBuilder(
+    column: $table.noteId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cursor => $composableBuilder(
+    column: $table.cursor,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$NoteHistoryStateTableAnnotationComposer
+    extends Composer<_$AppDatabase, $NoteHistoryStateTable> {
+  $$NoteHistoryStateTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get noteId =>
+      $composableBuilder(column: $table.noteId, builder: (column) => column);
+
+  GeneratedColumn<String> get cursor =>
+      $composableBuilder(column: $table.cursor, builder: (column) => column);
+}
+
+class $$NoteHistoryStateTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $NoteHistoryStateTable,
+          NoteHistoryStateData,
+          $$NoteHistoryStateTableFilterComposer,
+          $$NoteHistoryStateTableOrderingComposer,
+          $$NoteHistoryStateTableAnnotationComposer,
+          $$NoteHistoryStateTableCreateCompanionBuilder,
+          $$NoteHistoryStateTableUpdateCompanionBuilder,
+          (
+            NoteHistoryStateData,
+            BaseReferences<
+              _$AppDatabase,
+              $NoteHistoryStateTable,
+              NoteHistoryStateData
+            >,
+          ),
+          NoteHistoryStateData,
+          PrefetchHooks Function()
+        > {
+  $$NoteHistoryStateTableTableManager(
+    _$AppDatabase db,
+    $NoteHistoryStateTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$NoteHistoryStateTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$NoteHistoryStateTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$NoteHistoryStateTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> noteId = const Value.absent(),
+                Value<String?> cursor = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NoteHistoryStateCompanion(
+                noteId: noteId,
+                cursor: cursor,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String noteId,
+                Value<String?> cursor = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => NoteHistoryStateCompanion.insert(
+                noteId: noteId,
+                cursor: cursor,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$NoteHistoryStateTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $NoteHistoryStateTable,
+      NoteHistoryStateData,
+      $$NoteHistoryStateTableFilterComposer,
+      $$NoteHistoryStateTableOrderingComposer,
+      $$NoteHistoryStateTableAnnotationComposer,
+      $$NoteHistoryStateTableCreateCompanionBuilder,
+      $$NoteHistoryStateTableUpdateCompanionBuilder,
+      (
+        NoteHistoryStateData,
+        BaseReferences<
+          _$AppDatabase,
+          $NoteHistoryStateTable,
+          NoteHistoryStateData
+        >,
+      ),
+      NoteHistoryStateData,
+      PrefetchHooks Function()
+    >;
+typedef $$SyncStateTableCreateCompanionBuilder =
+    SyncStateCompanion Function({
+      Value<int> id,
+      Value<String?> cursor,
+      Value<bool> isSweeping,
+    });
+typedef $$SyncStateTableUpdateCompanionBuilder =
+    SyncStateCompanion Function({
+      Value<int> id,
+      Value<String?> cursor,
+      Value<bool> isSweeping,
+    });
+
+class $$SyncStateTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncStateTable> {
+  $$SyncStateTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get cursor => $composableBuilder(
+    column: $table.cursor,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isSweeping => $composableBuilder(
+    column: $table.isSweeping,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncStateTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncStateTable> {
+  $$SyncStateTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get cursor => $composableBuilder(
+    column: $table.cursor,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get isSweeping => $composableBuilder(
+    column: $table.isSweeping,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncStateTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncStateTable> {
+  $$SyncStateTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get cursor =>
+      $composableBuilder(column: $table.cursor, builder: (column) => column);
+
+  GeneratedColumn<bool> get isSweeping => $composableBuilder(
+    column: $table.isSweeping,
+    builder: (column) => column,
+  );
+}
+
+class $$SyncStateTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncStateTable,
+          SyncStateData,
+          $$SyncStateTableFilterComposer,
+          $$SyncStateTableOrderingComposer,
+          $$SyncStateTableAnnotationComposer,
+          $$SyncStateTableCreateCompanionBuilder,
+          $$SyncStateTableUpdateCompanionBuilder,
+          (
+            SyncStateData,
+            BaseReferences<_$AppDatabase, $SyncStateTable, SyncStateData>,
+          ),
+          SyncStateData,
+          PrefetchHooks Function()
+        > {
+  $$SyncStateTableTableManager(_$AppDatabase db, $SyncStateTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncStateTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncStateTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncStateTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String?> cursor = const Value.absent(),
+                Value<bool> isSweeping = const Value.absent(),
+              }) => SyncStateCompanion(
+                id: id,
+                cursor: cursor,
+                isSweeping: isSweeping,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<String?> cursor = const Value.absent(),
+                Value<bool> isSweeping = const Value.absent(),
+              }) => SyncStateCompanion.insert(
+                id: id,
+                cursor: cursor,
+                isSweeping: isSweeping,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncStateTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncStateTable,
+      SyncStateData,
+      $$SyncStateTableFilterComposer,
+      $$SyncStateTableOrderingComposer,
+      $$SyncStateTableAnnotationComposer,
+      $$SyncStateTableCreateCompanionBuilder,
+      $$SyncStateTableUpdateCompanionBuilder,
+      (
+        SyncStateData,
+        BaseReferences<_$AppDatabase, $SyncStateTable, SyncStateData>,
+      ),
+      SyncStateData,
+      PrefetchHooks Function()
+    >;
+typedef $$SyncSweepTableCreateCompanionBuilder =
+    SyncSweepCompanion Function({
+      required String entityType,
+      required String entityId,
+      Value<int> rowid,
+    });
+typedef $$SyncSweepTableUpdateCompanionBuilder =
+    SyncSweepCompanion Function({
+      Value<String> entityType,
+      Value<String> entityId,
+      Value<int> rowid,
+    });
+
+class $$SyncSweepTableFilterComposer
+    extends Composer<_$AppDatabase, $SyncSweepTable> {
+  $$SyncSweepTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$SyncSweepTableOrderingComposer
+    extends Composer<_$AppDatabase, $SyncSweepTable> {
+  $$SyncSweepTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get entityId => $composableBuilder(
+    column: $table.entityId,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$SyncSweepTableAnnotationComposer
+    extends Composer<_$AppDatabase, $SyncSweepTable> {
+  $$SyncSweepTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get entityType => $composableBuilder(
+    column: $table.entityType,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get entityId =>
+      $composableBuilder(column: $table.entityId, builder: (column) => column);
+}
+
+class $$SyncSweepTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $SyncSweepTable,
+          SyncSweepData,
+          $$SyncSweepTableFilterComposer,
+          $$SyncSweepTableOrderingComposer,
+          $$SyncSweepTableAnnotationComposer,
+          $$SyncSweepTableCreateCompanionBuilder,
+          $$SyncSweepTableUpdateCompanionBuilder,
+          (
+            SyncSweepData,
+            BaseReferences<_$AppDatabase, $SyncSweepTable, SyncSweepData>,
+          ),
+          SyncSweepData,
+          PrefetchHooks Function()
+        > {
+  $$SyncSweepTableTableManager(_$AppDatabase db, $SyncSweepTable table)
+    : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$SyncSweepTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$SyncSweepTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$SyncSweepTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> entityType = const Value.absent(),
+                Value<String> entityId = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => SyncSweepCompanion(
+                entityType: entityType,
+                entityId: entityId,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String entityType,
+                required String entityId,
+                Value<int> rowid = const Value.absent(),
+              }) => SyncSweepCompanion.insert(
+                entityType: entityType,
+                entityId: entityId,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$SyncSweepTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $SyncSweepTable,
+      SyncSweepData,
+      $$SyncSweepTableFilterComposer,
+      $$SyncSweepTableOrderingComposer,
+      $$SyncSweepTableAnnotationComposer,
+      $$SyncSweepTableCreateCompanionBuilder,
+      $$SyncSweepTableUpdateCompanionBuilder,
+      (
+        SyncSweepData,
+        BaseReferences<_$AppDatabase, $SyncSweepTable, SyncSweepData>,
+      ),
+      SyncSweepData,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -3346,6 +5912,14 @@ class $AppDatabaseManager {
       $$NoteTagsTableTableManager(_db, _db.noteTags);
   $$NoteAttachmentsTableTableManager get noteAttachments =>
       $$NoteAttachmentsTableTableManager(_db, _db.noteAttachments);
+  $$NoteRevisionsTableTableManager get noteRevisions =>
+      $$NoteRevisionsTableTableManager(_db, _db.noteRevisions);
+  $$NoteHistoryStateTableTableManager get noteHistoryState =>
+      $$NoteHistoryStateTableTableManager(_db, _db.noteHistoryState);
+  $$SyncStateTableTableManager get syncState =>
+      $$SyncStateTableTableManager(_db, _db.syncState);
+  $$SyncSweepTableTableManager get syncSweep =>
+      $$SyncSweepTableTableManager(_db, _db.syncSweep);
 }
 
 // **************************************************************************

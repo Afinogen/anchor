@@ -13,6 +13,7 @@ import { NoteState } from 'src/generated/prisma/enums';
 import { UserStatus } from 'src/generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { BCRYPT_SALT_ROUNDS } from '../auth/constants/auth.constants';
 import { t } from '../i18n/i18n.util';
 
 @Injectable()
@@ -130,7 +131,10 @@ export class AdminService {
       throw new ConflictException(t('admin.userAlreadyExists'));
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const hashedPassword = await bcrypt.hash(
+      createUserDto.password,
+      BCRYPT_SALT_ROUNDS,
+    );
 
     const user = await this.prisma.user.create({
       data: {
@@ -257,7 +261,7 @@ export class AdminService {
         .replace(/[+/=]/g, '')
         .slice(0, 16);
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await bcrypt.hash(password, BCRYPT_SALT_ROUNDS);
 
     await this.prisma.user.update({
       where: { id },

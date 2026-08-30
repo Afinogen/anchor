@@ -3,16 +3,18 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/settings_card.dart';
+import '../../../core/widgets/large_title_app_bar.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/features/auth/presentation/auth_controller.dart';
 import 'package:anchor/features/auth/data/repository/auth_repository.dart';
 import 'package:anchor/features/auth/domain/user.dart';
+import '../../../core/theme/context_extensions.dart';
+import '../../../core/theme/tokens/app_radius.dart';
 
 class EditProfileScreen extends ConsumerStatefulWidget {
   const EditProfileScreen({super.key});
@@ -112,10 +114,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           _shouldRemoveImage = false;
         });
 
-        AppSnackbar.showSuccess(
-          context,
-          message: context.l10n.profileUpdated,
-        );
+        AppSnackbar.showSuccess(context, message: context.l10n.profileUpdated);
         context.pop();
       }
     } catch (e) {
@@ -149,6 +148,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     bool isDestructive = false,
   }) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final color = isDestructive
         ? theme.colorScheme.error
         : isPrimary
@@ -159,21 +159,21 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
       color: Colors.transparent,
       child: InkWell(
         onTap: onPressed,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.smBorder,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: dims.md, vertical: 10),
           decoration: BoxDecoration(
             color: color.withValues(
               alpha: isDestructive || isPrimary ? 0.1 : 0.05,
             ),
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: AppRadius.smBorder,
             border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(icon, size: 18, color: color),
-              const SizedBox(width: 8),
+              SizedBox(width: dims.xs),
               Text(
                 label,
                 style: theme.textTheme.bodyMedium?.copyWith(
@@ -191,7 +191,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
     final userAsync = ref.watch(authControllerProvider);
     final serverUrl = ref.watch(serverUrlProvider);
 
@@ -214,64 +214,19 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [const Color(0xFF1C1E26), const Color(0xFF262A36)]
-                : [const Color(0xFFF8F9FC), const Color(0xFFEEF1F8)],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: context.colorTokens.pageGradient),
         child: CustomScrollView(
           slivers: [
             // App Bar
-            SliverAppBar(
-              backgroundColor: Colors.transparent,
-              floating: true,
-              pinned: true,
-              expandedHeight: 120,
-              scrolledUnderElevation: 0,
-              leading: IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withValues(alpha: 0.8),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    LucideIcons.arrowLeft,
-                    size: 20,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                onPressed: () => context.pop(),
-              ),
-              flexibleSpace: FlexibleSpaceBar(
-                centerTitle: Platform.isIOS,
-                titlePadding: EdgeInsets.only(
-                  left: 56,
-                  right: Platform.isIOS ? 56 : 0,
-                  bottom: 12,
-                ),
-                title: Text(
-                  context.l10n.editProfile,
-                  style: GoogleFonts.playfairDisplay(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-              ),
-            ),
+            LargeTitleAppBar(title: context.l10n.editProfile),
 
             // Form Content
             SliverPadding(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(dims.md),
               sliver: SliverToBoxAdapter(
                 child: SettingsCard(
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: EdgeInsets.all(dims.md),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -303,10 +258,10 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                                     : null,
                               ),
                             ),
-                            const SizedBox(height: 20),
+                            SizedBox(height: dims.lg),
                             Wrap(
-                              spacing: 12,
-                              runSpacing: 12,
+                              spacing: dims.sm,
+                              runSpacing: dims.sm,
                               alignment: WrapAlignment.center,
                               children: [
                                 _buildImageActionButton(
@@ -331,7 +286,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           ],
                         ),
 
-                        const SizedBox(height: 32),
+                        SizedBox(height: dims.xxl),
 
                         // Divider
                         Divider(
@@ -342,7 +297,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 24),
+                        SizedBox(height: dims.xl),
 
                         // Name Input Section
                         Text(
@@ -353,7 +308,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 24),
+                        SizedBox(height: dims.xl),
                         TextField(
                           controller: _nameController,
                           textInputAction: TextInputAction.done,
@@ -363,23 +318,20 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                             hintText: context.l10n.enterYourName,
                             prefixIcon: const Icon(LucideIcons.user),
                             filled: true,
-                            fillColor: isDark
-                                ? Colors.white.withValues(alpha: 0.03)
-                                : Colors.white.withValues(alpha: 0.6),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
+                            border: const OutlineInputBorder(
+                              borderRadius: AppRadius.mdBorder,
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.all(16),
+                            contentPadding: EdgeInsets.all(dims.md),
                           ),
                         ),
-                        const SizedBox(height: 32),
+                        SizedBox(height: dims.xxl),
                         FilledButton(
                           onPressed: _isSaving ? null : _saveProfile,
                           style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
+                            padding: EdgeInsets.symmetric(vertical: dims.md),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.buttonBorder,
                             ),
                           ),
                           child: _isSaving

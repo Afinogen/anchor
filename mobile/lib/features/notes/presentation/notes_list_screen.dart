@@ -12,12 +12,21 @@ import 'package:anchor/core/widgets/app_drawer.dart';
 import 'package:anchor/features/tags/presentation/tags_controller.dart';
 import 'package:anchor/features/tags/domain/tag.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
+import 'package:anchor/features/notes/presentation/widgets/notes_search_bar.dart';
 import 'package:anchor/features/notes/presentation/widgets/selection_app_bar_actions.dart';
-import 'package:anchor/features/notes/presentation/widgets/empty_states.dart';
+import 'package:anchor/core/widgets/app_empty_state.dart';
+import 'package:anchor/core/widgets/gradient_background.dart';
 import 'package:anchor/features/notes/domain/note.dart';
+import 'package:anchor/features/sync/presentation/sync_warning.dart';
 import 'notes_controller.dart';
 import 'notes_view_options.dart';
 import 'widgets/view_options_sheet.dart';
+import '../../../core/theme/context_extensions.dart';
+import '../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../core/theme/tokens/app_radius.dart';
+import 'package:anchor/core/widgets/app_bottom_sheet.dart';
+import 'package:anchor/core/widgets/app_bar_scrim.dart';
+import 'package:anchor/core/widgets/large_title_app_bar.dart';
 
 class NotesListScreen extends ConsumerStatefulWidget {
   const NotesListScreen({super.key});
@@ -28,6 +37,13 @@ class NotesListScreen extends ConsumerStatefulWidget {
 
 class _NotesListScreenState extends ConsumerState<NotesListScreen> {
   final _searchController = TextEditingController();
+
+  /// Height of an extended FAB, which Material does not export.
+  static const double _extendedFabHeight = 56;
+
+  /// Room under the last card for the FAB floating over it.
+  static const double _fabClearance =
+      _extendedFabHeight + kFloatingActionButtonMargin;
 
   @override
   void initState() {
@@ -91,6 +107,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
     final viewOptionsAsync = ref.watch(notesViewOptionsProvider);
     final viewOptions = viewOptionsAsync.value;
     final theme = Theme.of(context);
+    final dims = context.dims;
 
     // Get selected tag
     Tag? selectedTag;
@@ -109,36 +126,24 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
       },
       child: Scaffold(
         drawer: const AppDrawer(),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Theme.of(context).colorScheme.surface,
-                Theme.of(
-                  context,
-                ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-              ],
-            ),
-          ),
+        body: ContentBackground(
           child: RefreshIndicator.adaptive(
             onRefresh: _onRefresh,
             displacement: 20,
-            edgeOffset: 120, // Position below the pinned app bar
+            edgeOffset: dims.appBarExpandedHeight,
             color: theme.colorScheme.primary,
             child: CustomScrollView(
               keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
                 SliverAppBar(
-                  backgroundColor: theme.colorScheme.surface.withValues(
-                    alpha: 0.9,
-                  ),
+                  backgroundColor: Colors.transparent,
                   floating: true,
                   pinned: true,
-                  expandedHeight: isSelectionMode ? 56 : 80,
-                  toolbarHeight: 56,
+                  expandedHeight: isSelectionMode
+                      ? kToolbarHeight
+                      : dims.appBarExpandedHeight,
+                  toolbarHeight: kToolbarHeight,
                   scrolledUnderElevation: 0,
                   leading: isSelectionMode
                       ? IconButton(
@@ -153,14 +158,21 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                             tooltip: context.l10n.menu,
                           ),
                         ),
-                  flexibleSpace: isSelectionMode
-                      ? null
-                      : FlexibleSpaceBar(
+                  flexibleSpace: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      const AppBarScrim(),
+                      if (!isSelectionMode)
+                        FlexibleSpaceBar(
                           centerTitle: Platform.isIOS,
+                          expandedTitleScale:
+                              LargeTitleAppBar.expandedTitleScale,
                           titlePadding: EdgeInsets.only(
-                            left: 56,
-                            right: Platform.isIOS ? 56 : 0,
-                            bottom: 12,
+                            left: LargeTitleAppBar.titleInset,
+                            right: Platform.isIOS
+                                ? LargeTitleAppBar.titleInset
+                                : 0,
+                            bottom: dims.sm,
                           ),
                           title: Text(
                             'Anchor',
@@ -171,6 +183,8 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                             ),
                           ),
                         ),
+                    ],
+                  ),
                   title: isSelectionMode
                       ? Text(
                           selectedNoteIds.isEmpty
@@ -192,7 +206,7 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                       // Only show sync indicator when actively syncing
                       if (isSyncing)
                         Padding(
-                          padding: const EdgeInsets.only(right: 8),
+                          padding: EdgeInsets.only(right: dims.xs),
                           child: Center(child: _SyncIndicator(theme: theme)),
                         ),
                       if (viewOptions != null)
@@ -204,11 +218,9 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                           ),
                           tooltip: context.l10n.viewOptions,
                           onPressed: () {
-                            showModalBottomSheet(
-                              context: context,
+                            AppBottomSheet.show(
+                              context,
                               builder: (context) => const ViewOptionsSheet(),
-                              useSafeArea: true,
-                              isScrollControlled: true,
                             );
                           },
                         ),
@@ -216,49 +228,30 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                   ],
                 ),
                 SliverPadding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+                  padding: EdgeInsets.fromLTRB(
+                    dims.screenGutter,
+                    dims.xs,
+                    dims.screenGutter,
+                    0,
                   ),
                   sliver: SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SearchBar(
+                        const SyncWarning(),
+                        NotesSearchBar(
                           controller: _searchController,
-                          elevation: WidgetStateProperty.all(0),
-                          backgroundColor: WidgetStateProperty.all(
-                            Theme.of(context)
-                                .colorScheme
-                                .surfaceContainerHighest
-                                .withValues(alpha: 0.5),
-                          ),
-                          hintText: context.l10n.searchHint,
-                          leading: const Icon(LucideIcons.search),
-                          trailing: [
-                            if (searchQuery.isNotEmpty)
-                              IconButton(
-                                icon: const Icon(LucideIcons.x),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  ref
-                                      .read(searchQueryProvider.notifier)
-                                      .set('');
-                                },
-                              ),
-                          ],
-                          shape: WidgetStateProperty.all(
-                            RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          onChanged: (value) {
-                            ref.read(searchQueryProvider.notifier).set(value);
+                          query: searchQuery,
+                          onChanged: (value) =>
+                              ref.read(searchQueryProvider.notifier).set(value),
+                          onClear: () {
+                            _searchController.clear();
+                            ref.read(searchQueryProvider.notifier).set('');
                           },
                         ),
                         // Tag filter indicator
                         if (selectedTag != null) ...[
-                          const SizedBox(height: 12),
+                          SizedBox(height: dims.sm),
                           _TagFilterChip(
                             tag: selectedTag,
                             onClear: () {
@@ -286,45 +279,34 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
 
                     if (filteredNotes.isEmpty) {
                       if (searchQuery.isNotEmpty) {
-                        return const EmptySearchState();
+                        return const SliverAppEmptyState(
+                          icon: LucideIcons.search,
+                          message: 'No matching notes found',
+                        );
                       }
-                      return const EmptyNotesState();
+                      return const SliverAppEmptyState(
+                        icon: LucideIcons.sparkles,
+                        message: 'Capture your ideas here',
+                      );
                     }
 
                     if (viewOptions == null) {
                       return const SliverToBoxAdapter(child: SizedBox.shrink());
                     }
 
-                    // Apply sorting
-                    filteredNotes.sort((a, b) {
-                      // Pinned notes stay on top regardless of sort.
-                      if (a.isPinned != b.isPinned) {
-                        return a.isPinned ? -1 : 1;
-                      }
-
-                      int compare;
-                      switch (viewOptions.sortOption) {
-                        case SortOption.dateModified:
-                          compare = (a.updatedAt ?? DateTime(0)).compareTo(
-                            b.updatedAt ?? DateTime(0),
-                          );
-                          break;
-                        case SortOption.title:
-                          compare = a.title.toLowerCase().compareTo(
-                            b.title.toLowerCase(),
-                          );
-                          break;
-                      }
-                      return viewOptions.isAscending ? compare : -compare;
-                    });
+                    filteredNotes.sort(noteComparator(viewOptions));
 
                     return SliverPadding(
-                      padding: const EdgeInsets.all(16),
+                      padding: dims.screenInsets.copyWith(
+                        bottom:
+                            dims.screenGutter +
+                            (isSelectionMode ? 0 : _fabClearance),
+                      ),
                       sliver: viewOptions.viewType == ViewType.grid
                           ? SliverMasonryGrid.count(
                               crossAxisCount: 2,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
+                              mainAxisSpacing: dims.gridSpacing,
+                              crossAxisSpacing: dims.gridSpacing,
                               childCount: filteredNotes.length,
                               itemBuilder: (context, index) {
                                 return _buildNoteItem(
@@ -340,7 +322,9 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                                 index,
                               ) {
                                 return Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
+                                  padding: EdgeInsets.only(
+                                    bottom: dims.listItemSpacing,
+                                  ),
                                   child: _buildNoteItem(
                                     filteredNotes[index],
                                     isSelectionMode,
@@ -356,7 +340,9 @@ class _NotesListScreenState extends ConsumerState<NotesListScreen> {
                   ),
                   error: (err, stack) => SliverFillRemaining(
                     child: Center(
-                      child: Text(context.l10n.errorWithMessage(err.toString())),
+                      child: Text(
+                        context.l10n.errorWithMessage(err.toString()),
+                      ),
                     ),
                   ),
                 ),
@@ -385,16 +371,17 @@ class _TagFilterChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final tagColor = parseTagColor(
       tag.color,
       fallback: theme.colorScheme.primary,
     );
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: dims.xxs, vertical: dims.xxs),
       decoration: BoxDecoration(
         color: tagColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.smBorder,
         border: Border.all(color: tagColor.withValues(alpha: 0.2)),
       ),
       child: Row(
@@ -405,7 +392,11 @@ class _TagFilterChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(LucideIcons.filter, size: 14, color: tagColor),
+                Icon(
+                  LucideIcons.filter,
+                  size: AppIconSizes.xs,
+                  color: tagColor,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   context.l10n.filteringBy,
@@ -415,8 +406,8 @@ class _TagFilterChip extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: dims.xs,
                     vertical: 2,
                   ),
                   decoration: BoxDecoration(
@@ -443,15 +434,15 @@ class _TagFilterChip extends StatelessWidget {
           ),
           Material(
             color: Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.xsBorder,
             child: InkWell(
               onTap: onClear,
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: AppRadius.xsBorder,
               child: Padding(
                 padding: const EdgeInsets.all(6),
                 child: Icon(
                   LucideIcons.x,
-                  size: 16,
+                  size: AppIconSizes.sm,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                 ),
               ),
@@ -503,7 +494,7 @@ class _SyncIndicatorState extends State<_SyncIndicator>
       turns: _rotation,
       child: Icon(
         LucideIcons.refreshCw,
-        size: 20,
+        size: AppIconSizes.md,
         color: widget.theme.colorScheme.onSurface,
       ),
     );

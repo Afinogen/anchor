@@ -1,5 +1,6 @@
 {
   "noteNotFound": "Note not found",
+  "revisionNotFound": "Revision not found",
   "userNotFound": "User not found",
   "shareNotFound": "Share not found",
   "onlyOwnerCanShare": "Only note owner can share notes",

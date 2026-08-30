@@ -2,6 +2,12 @@ import { NotesService } from './notes.service';
 import { NoteAccessService } from './note-access.service';
 import { NoteAttachmentsService } from './note-attachments.service';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  createMockSyncEmitter,
+  createMockNoteRevisions,
+  asSyncEmitter,
+  asNoteRevisions,
+} from '../../../test/sync-mocks';
 
 /**
  * Regression tests for the "tags disappearing from shared notes" bug.
@@ -138,6 +144,8 @@ describe('NotesService tag reconciliation (shared notes)', () => {
       prisma,
       noteAccess,
       {} as unknown as NoteAttachmentsService,
+      asSyncEmitter(createMockSyncEmitter()),
+      asNoteRevisions(createMockNoteRevisions()),
     );
     jest.clearAllMocks();
   });

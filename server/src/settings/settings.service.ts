@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { t } from '../i18n/i18n.util';
@@ -92,7 +96,7 @@ export class SettingsService {
     }
 
     if (!['disabled', 'enabled', 'review'].includes(mode)) {
-      throw new Error('Invalid registration mode');
+      throw new BadRequestException('Invalid registration mode');
     }
 
     // Upsert the setting

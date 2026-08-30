@@ -2,10 +2,6 @@
  * Constants for OIDC module
  */
 
-// Profile image storage
-export const UPLOADS_DIR = '/data/uploads/profiles';
-export const UPLOADS_PROFILES_PATH = '/uploads/profiles/';
-
 // Standard user fields for OIDC user queries
 export const OIDC_USER_SELECT = {
   id: true,

@@ -1,23 +1,26 @@
-import { Injectable, Logger, ConflictException } from '@nestjs/common';
-import * as fs from 'fs';
+import { Inject, Injectable, Logger, ConflictException } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
+import * as fs from 'fs/promises';
 import * as path from 'path';
+import { deleteFileIfExists } from '../../common/utils/file-system.util';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserStatus } from '../../generated/prisma/enums';
 import type { OidcUserClaims } from './oidc.types';
-import {
-  UPLOADS_DIR,
-  UPLOADS_PROFILES_PATH,
-  OIDC_USER_SELECT,
-  CONTENT_TYPE_EXT_MAP,
-} from './oidc.constants';
+import { OIDC_USER_SELECT, CONTENT_TYPE_EXT_MAP } from './oidc.constants';
+import { StorageConfig } from '../../config/configuration';
+import { PUBLIC_PROFILES_PREFIX } from '../../config/storage.constants';
 import { t } from '../../i18n/i18n.util';
 
 @Injectable()
 export class OidcUserService {
   private readonly logger = new Logger(OidcUserService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Inject(StorageConfig.KEY)
+    private readonly storageConfig: ConfigType<typeof StorageConfig>,
+  ) {}
 
   /**
    * Find or create user based on OIDC claims.
@@ -204,31 +207,22 @@ export class OidcUserService {
         ? (CONTENT_TYPE_EXT_MAP[contentType] ?? '.jpg')
         : '.jpg';
       const filename = `${userId}-oidc-${Date.now()}${ext}`;
-      const filePath = path.join(UPLOADS_DIR, filename);
-      const imagePath = `/uploads/profiles/${filename}`;
+      const profilesDir = this.storageConfig.profilesDir;
+      const filePath = path.join(profilesDir, filename);
+      const imagePath = `${PUBLIC_PROFILES_PREFIX}/${filename}`;
 
-      if (!fs.existsSync(UPLOADS_DIR)) {
-        fs.mkdirSync(UPLOADS_DIR, { recursive: true });
-      }
-      fs.writeFileSync(filePath, Buffer.from(await response.arrayBuffer()));
+      await fs.mkdir(profilesDir, { recursive: true });
+      await fs.writeFile(filePath, Buffer.from(await response.arrayBuffer()));
 
       if (
-        oldProfileImagePath?.startsWith(UPLOADS_PROFILES_PATH) &&
+        oldProfileImagePath?.startsWith(PUBLIC_PROFILES_PREFIX) &&
         oldProfileImagePath.includes('-oidc-')
       ) {
         const oldFullPath = path.join(
-          UPLOADS_DIR,
+          profilesDir,
           path.basename(oldProfileImagePath),
         );
-        if (fs.existsSync(oldFullPath)) {
-          try {
-            fs.unlinkSync(oldFullPath);
-          } catch {
-            this.logger.warn(
-              `Failed to delete old profile image: ${oldFullPath}`,
-            );
-          }
-        }
+        await deleteFileIfExists(oldFullPath, this.logger);
       }
 
       this.logger.log(`Downloaded OIDC avatar for user ${userId}`);

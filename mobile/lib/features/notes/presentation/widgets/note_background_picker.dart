@@ -1,7 +1,11 @@
+import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
-import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/features/notes/presentation/widgets/note_background.dart';
+import '../../../../core/theme/context_extensions.dart';
+import '../../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../../core/theme/tokens/app_radius.dart';
+import '../../../../core/widgets/app_bottom_sheet.dart';
 
 class NoteBackgroundPicker extends StatefulWidget {
   final String? selectedColor;
@@ -57,216 +61,130 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final dims = context.dims;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: keyboardHeight),
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [const Color(0xFF262A36), const Color(0xFF1C1E26)]
-                : [Colors.white, const Color(0xFFF8F9FC)],
-          ),
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.15),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Handle bar
-              Container(
-                margin: const EdgeInsets.only(top: 12),
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-
-              // Header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 20, 16, 24),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        LucideIcons.palette,
-                        color: theme.colorScheme.primary,
-                        size: 20,
+    return AppBottomSheet(
+      avoidKeyboard: true,
+      icon: LucideIcons.palette,
+      title: context.l10n.background,
+      subtitle: context.l10n.customizeNote,
+      showDone: true,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Content
+          Flexible(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Colors Section
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: dims.xl,
+                      vertical: dims.xs,
+                    ),
+                    child: Text(
+                      context.l10n.color,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            context.l10n.background,
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: theme.colorScheme.onSurface,
-                            ),
-                          ),
-                          Text(
-                            context.l10n.customizeNote,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.6,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    FilledButton.tonal(
-                      onPressed: () => Navigator.pop(context),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text(context.l10n.done),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Content
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // 1. Colors Section
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 8,
-                        ),
-                        child: Text(
-                          context.l10n.color,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 80,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          physics: const BouncingScrollPhysics(),
-                          children: [
-                            // None / Default option
-                            _buildOptionItem(
-                              context: context,
-                              isSelected: _selectedColor == null,
-                              onTap: () => _onColorSelected(null),
-                              child: Icon(
-                                Icons.format_color_reset_outlined,
-                                color: theme.colorScheme.onSurfaceVariant,
-                                size: 24,
-                              ),
-                              color: theme.colorScheme.surfaceContainerHighest,
-                              hasBorder: true,
-                            ),
-
-                            const SizedBox(width: 12),
-
-                            // Solid Colors
-                            ..._solidColors.map((style) {
-                              final isSelected = _selectedColor == style.id;
-                              final color = isDark
-                                  ? style.darkColor
-                                  : style.lightColor;
-                              return Padding(
-                                padding: const EdgeInsets.only(right: 12),
-                                child: _buildOptionItem(
-                                  context: context,
-                                  isSelected: isSelected,
-                                  onTap: () => _onColorSelected(style.id),
-                                  child: isSelected
-                                      ? Icon(
-                                          Icons.check,
-                                          color: color.computeLuminance() > 0.5
-                                              ? Colors.black
-                                              : Colors.white,
-                                        )
-                                      : null,
-                                  color: color,
-                                ),
-                              );
-                            }),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // 2. Backgrounds Section
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 8,
-                        ),
-                        child: Text(
-                          context.l10n.background,
-                          style: theme.textTheme.labelMedium?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      SizedBox(
-                        height: 80,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          physics: const BouncingScrollPhysics(),
-                          children: _patterns.map((style) {
-                            final isSelected = _selectedColor == style.id;
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: _buildBackgroundItem(
-                                context: context,
-                                style: style,
-                                isSelected: isSelected,
-                                onTap: () => _onColorSelected(style.id),
-                              ),
-                            );
-                          }).toList(),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                    ],
                   ),
-                ),
+                  SizedBox(
+                    height: 80,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.symmetric(horizontal: dims.md),
+                      physics: const BouncingScrollPhysics(),
+                      children: [
+                        // None / Default option
+                        _buildOptionItem(
+                          context: context,
+                          isSelected: _selectedColor == null,
+                          onTap: () => _onColorSelected(null),
+                          child: Icon(
+                            Icons.format_color_reset_outlined,
+                            color: theme.colorScheme.onSurfaceVariant,
+                            size: AppIconSizes.lg,
+                          ),
+                          color: theme.colorScheme.surfaceContainerHighest,
+                          hasBorder: true,
+                        ),
+
+                        SizedBox(width: dims.sm),
+
+                        // Solid Colors
+                        ..._solidColors.map((style) {
+                          final isSelected = _selectedColor == style.id;
+                          final color = isDark
+                              ? style.darkColor
+                              : style.lightColor;
+                          return Padding(
+                            padding: EdgeInsets.only(right: dims.sm),
+                            child: _buildOptionItem(
+                              context: context,
+                              isSelected: isSelected,
+                              onTap: () => _onColorSelected(style.id),
+                              child: isSelected
+                                  ? Icon(
+                                      Icons.check,
+                                      color: color.computeLuminance() > 0.5
+                                          ? Colors.black
+                                          : Colors.white,
+                                    )
+                                  : null,
+                              color: color,
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+
+                  SizedBox(height: dims.md),
+
+                  // 2. Backgrounds Section
+                  Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: dims.xl,
+                      vertical: dims.xs,
+                    ),
+                    child: Text(
+                      context.l10n.background,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    height: 80,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      padding: EdgeInsets.symmetric(horizontal: dims.md),
+                      physics: const BouncingScrollPhysics(),
+                      children: _patterns.map((style) {
+                        final isSelected = _selectedColor == style.id;
+                        return Padding(
+                          padding: EdgeInsets.only(right: dims.sm),
+                          child: _buildBackgroundItem(
+                            context: context,
+                            style: style,
+                            isSelected: isSelected,
+                            onTap: () => _onColorSelected(style.id),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  SizedBox(height: dims.xxl),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
@@ -323,12 +241,12 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
 
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadius.mdBorder,
       child: Container(
         width: 60,
         height: 60,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.mdBorder,
           border: Border.all(
             color: isSelected
                 ? theme.colorScheme.primary
@@ -346,13 +264,13 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
               : null,
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.buttonBorder,
           child: NoteBackground(
             styleId: style.id,
             child: isSelected
                 ? Center(
                     child: Container(
-                      padding: const EdgeInsets.all(4),
+                      padding: EdgeInsets.all(context.dims.xxs),
                       decoration: const BoxDecoration(
                         color: Colors.white54,
                         shape: BoxShape.circle,
@@ -360,7 +278,7 @@ class _NoteBackgroundPickerState extends State<NoteBackgroundPicker> {
                       child: const Icon(
                         Icons.check,
                         color: Colors.black,
-                        size: 20,
+                        size: AppIconSizes.md,
                       ),
                     ),
                   )

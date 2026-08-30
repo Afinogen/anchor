@@ -98,7 +98,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String serverUnreachable(String url) {
-    return "Can't reach $url";
+    return 'Can\'t reach $url';
   }
 
   @override
@@ -716,7 +716,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get notSharedYet => 'Not shared yet';
 
   @override
-  String get searchToInvite => 'Search by name or email to invite collaborators';
+  String get searchToInvite =>
+      'Search by name or email to invite collaborators';
 
   @override
   String get collaborators => 'Collaborators';
@@ -1071,23 +1072,23 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String logEntriesCopied(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count entries copied',
-      one: '$count entry copied',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String sharedWithCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
       other: 'Shared with $count people',
       one: 'Shared with $count person',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String logEntriesCopied(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count entries copied',
+      one: '$count entry copied',
     );
     return '$_temp0';
   }
@@ -1120,7 +1121,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get recentlySharedWith => 'Recently shared with';
 
   @override
-  String get couldNotOpenLink => "Couldn't open link";
+  String get couldNotOpenLink => 'Couldn\'t open link';
 
   @override
   String get logViewerSessionInfo =>
@@ -1137,4 +1138,141 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get logLevelError => 'Error';
+
+  @override
+  String get today => 'Today';
+
+  @override
+  String get yesterday => 'Yesterday';
+
+  @override
+  String dayAtTime(String day, String time) {
+    return '$day at $time';
+  }
+
+  @override
+  String get revisionCauseEdit => 'Earlier version';
+
+  @override
+  String get revisionCauseConflict => 'Not saved';
+
+  @override
+  String get revisionCauseRestore => 'Before a restore';
+
+  @override
+  String get revisionHintConflict => 'Not saved. The note had already changed.';
+
+  @override
+  String get revisionHintRestore => 'What the note said before a restore.';
+
+  @override
+  String get revisionAuthorSomeone => 'Someone';
+
+  @override
+  String get revisionAuthorYou => 'You';
+
+  @override
+  String get history => 'History';
+
+  @override
+  String get currentVersion => 'Current version';
+
+  @override
+  String get historyUnreadFailed =>
+      'Couldn\'t check for versions from your other devices.';
+
+  @override
+  String get historyRetention => 'Edits older than 90 days are removed.';
+
+  @override
+  String get tryAgain => 'Try again';
+
+  @override
+  String get historyCheckFailed => 'Couldn\'t check for earlier versions';
+
+  @override
+  String get historyEmpty => 'No earlier versions yet';
+
+  @override
+  String get historyOfflineHint =>
+      'Versions kept on your other devices need a connection.';
+
+  @override
+  String get historyEmptyHint =>
+      'Edits to this note are kept here, so you can always go back.';
+
+  @override
+  String get restoreVersionTitle => 'Restore this version?';
+
+  @override
+  String get restoreVersionMessage =>
+      'The note goes back to this version. What it says now is kept in the history.';
+
+  @override
+  String get versionRestored => 'This version is back on the note';
+
+  @override
+  String get versionRestoreFailed => 'Failed to restore this version';
+
+  @override
+  String get versionSameAsNext => 'Same text as the version after this one.';
+
+  @override
+  String get versionSameAsCurrent => 'Same text as the note as it is now.';
+
+  @override
+  String get versionNoText => 'This version has no text.';
+
+  @override
+  String get versionTitle => 'Version';
+
+  @override
+  String get versionGone => 'This version is no longer here.';
+
+  @override
+  String get serverNeedsUpdatingTitle => 'Server needs updating';
+
+  @override
+  String get appNeedsUpdatingTitle => 'App needs updating';
+
+  @override
+  String get serverNeedsUpdatingMessage =>
+      'Your Anchor server is too old to sync with this app. Update the server to continue.';
+
+  @override
+  String get appNeedsUpdatingMessage =>
+      'This app is too old to sync with your Anchor server. Update the app to continue.';
+
+  @override
+  String get syncWarningNotesStay =>
+      'Your notes stay available on this device in the meantime.';
+
+  @override
+  String get gotIt => 'Got it';
+
+  @override
+  String get connectAnyway => 'Connect anyway';
+
+  @override
+  String serverVersionMismatch(String version, String reason) {
+    return 'Anchor v$version. $reason';
+  }
+
+  @override
+  String get syncPausedIncompatible => 'Sync paused, versions incompatible';
+
+  @override
+  String get displayDensity => 'Display density';
+
+  @override
+  String get densityStandard => 'Default';
+
+  @override
+  String get densityCompact => 'Compact';
+
+  @override
+  String get densityStandardSubtitle => 'More breathing room';
+
+  @override
+  String get densityCompactSubtitle => 'Fit more on screen';
 }

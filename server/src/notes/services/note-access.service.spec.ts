@@ -66,6 +66,7 @@ describe('NoteAccessService', () => {
         hasAccess: true,
         isOwner: true,
         permission: 'owner',
+        state: 'active',
       });
     });
 
@@ -87,6 +88,7 @@ describe('NoteAccessService', () => {
         hasAccess: true,
         isOwner: false,
         permission: 'viewer',
+        state: 'active',
       });
     });
 
@@ -97,6 +99,7 @@ describe('NoteAccessService', () => {
         hasAccess: false,
         isOwner: false,
         permission: 'viewer',
+        state: 'active',
       });
     });
 
@@ -107,6 +110,7 @@ describe('NoteAccessService', () => {
         hasAccess: true,
         isOwner: false,
         permission: 'editor',
+        state: 'active',
       });
     });
   });

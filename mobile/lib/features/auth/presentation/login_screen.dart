@@ -5,11 +5,15 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/core/network/server_config_provider.dart';
 import 'package:anchor/core/extensions/build_context_l10n.dart';
+import 'package:anchor/core/theme/context_extensions.dart';
+import 'package:anchor/core/theme/tokens/app_icon_sizes.dart';
+import 'package:anchor/core/theme/tokens/app_radius.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/language_toggle_button.dart';
 import 'package:anchor/features/auth/presentation/providers/oidc_config_provider.dart';
 import 'package:anchor/features/auth/presentation/providers/registration_mode_provider.dart';
 import 'auth_controller.dart';
+import 'package:anchor/core/theme/tokens/app_opacity.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -64,176 +68,188 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final signupDisabled =
         registrationModeAsync.hasValue &&
         registrationModeAsync.value == 'disabled';
+    final dims = context.dims;
 
     return Scaffold(
       body: Stack(
         children: [
+          Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(dims.xl),
+              child: AutofillGroup(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Server URL indicator
+                      _ServerUrlChip(
+                        serverUrl: serverUrl,
+                        onChangeServer: () {
+                          context.push(
+                            AppRoutes.serverConfig,
+                            extra: serverUrl,
+                          );
+                        },
+                      ),
+                      SizedBox(height: dims.xl),
+                      Text(
+                        context.l10n.welcomeBack,
+                        style: Theme.of(context).textTheme.displaySmall
+                            ?.copyWith(fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center,
+                      ),
+                      SizedBox(height: dims.xs),
+                      Text(
+                        context.l10n.signInToContinue,
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface
+                              .withValues(alpha: AppOpacity.secondary),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 40),
+                      // OIDC Login button
+                      if (oidcConfigLoading)
+                        Center(
+                          child: Padding(
+                            padding: EdgeInsets.all(dims.xl),
+                            child: const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          ),
+                        )
+                      else if (oidcConfig?.enabled == true) ...[
+                        FilledButton.icon(
+                          onPressed: isLoading ? null : _loginWithOidc,
+                          icon: const Icon(
+                            LucideIcons.logIn,
+                            size: AppIconSizes.md,
+                          ),
+                          label: Text(
+                            context.l10n.loginWithProvider(
+                              oidcConfig!.providerName,
+                            ),
+                          ),
+                          style: FilledButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: dims.md),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.buttonBorder,
+                            ),
+                          ),
+                        ),
+                        if (showLocalLogin) ...[
+                          SizedBox(height: dims.md),
+                          const _OrDivider(),
+                          SizedBox(height: dims.md),
+                        ],
+                      ],
+                      if (showLocalLogin) ...[
+                        TextFormField(
+                          controller: _emailController,
+                          autofillHints: const [AutofillHints.email],
+                          textInputAction: TextInputAction.next,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: context.l10n.email,
+                            prefixIcon: const Icon(LucideIcons.mail),
+                            border: const OutlineInputBorder(
+                              borderRadius: AppRadius.mdBorder,
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return context.l10n.pleaseEnterEmail;
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: dims.md),
+                        TextFormField(
+                          controller: _passwordController,
+                          onChanged: (_) => setState(() {}),
+                          autofillHints: const [AutofillHints.password],
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _login(),
+                          decoration: InputDecoration(
+                            labelText: context.l10n.password,
+                            prefixIcon: const Icon(LucideIcons.lock),
+                            suffixIcon: _passwordController.text.isEmpty
+                                ? null
+                                : IconButton(
+                                    icon: Icon(
+                                      _isPasswordVisible
+                                          ? LucideIcons.eyeOff
+                                          : LucideIcons.eye,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface
+                                          .withValues(alpha: 0.4),
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _isPasswordVisible =
+                                            !_isPasswordVisible;
+                                      });
+                                    },
+                                  ),
+                            border: const OutlineInputBorder(
+                              borderRadius: AppRadius.mdBorder,
+                            ),
+                          ),
+                          obscureText: !_isPasswordVisible,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return context.l10n.pleaseEnterPassword;
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: dims.xl),
+                        FilledButton(
+                          onPressed: isLoading ? null : _login,
+                          style: FilledButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: dims.md),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: AppRadius.buttonBorder,
+                            ),
+                          ),
+                          child: isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Text(context.l10n.signIn),
+                        ),
+                        if (!signupDisabled) ...[
+                          SizedBox(height: dims.md),
+                          TextButton(
+                            onPressed: () => context.push(AppRoutes.register),
+                            child: Text(context.l10n.createAnAccount),
+                          ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
           SafeArea(
             child: Align(
               alignment: Alignment.topRight,
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: EdgeInsets.all(context.dims.sm),
                 child: const LanguageToggleButton(),
               ),
             ),
-          ),
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: AutofillGroup(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Server URL indicator
-                  _ServerUrlChip(
-                    serverUrl: serverUrl,
-                    onChangeServer: () {
-                      context.push(AppRoutes.serverConfig, extra: serverUrl);
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    context.l10n.welcomeBack,
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    context.l10n.signInToContinue,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).hintColor,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-                  // OIDC Login button
-                  if (oidcConfigLoading)
-                    const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      ),
-                    )
-                  else if (oidcConfig?.enabled == true) ...[
-                    FilledButton.icon(
-                      onPressed: isLoading ? null : _loginWithOidc,
-                      icon: const Icon(LucideIcons.logIn, size: 20),
-                      label: Text(
-                        context.l10n.loginWithProvider(oidcConfig!.providerName),
-                      ),
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                    ),
-                    if (showLocalLogin) ...[
-                      const SizedBox(height: 16),
-                      const _OrDivider(),
-                      const SizedBox(height: 16),
-                    ],
-                  ],
-                  if (showLocalLogin) ...[
-                    TextFormField(
-                      controller: _emailController,
-                      autofillHints: const [AutofillHints.email],
-                      textInputAction: TextInputAction.next,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        labelText: context.l10n.email,
-                        prefixIcon: const Icon(LucideIcons.mail),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return context.l10n.pleaseEnterEmail;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _passwordController,
-                      onChanged: (_) => setState(() {}),
-                      autofillHints: const [AutofillHints.password],
-                      textInputAction: TextInputAction.done,
-                      onFieldSubmitted: (_) => _login(),
-                      decoration: InputDecoration(
-                        labelText: context.l10n.password,
-                        prefixIcon: const Icon(LucideIcons.lock),
-                        suffixIcon: _passwordController.text.isEmpty
-                            ? null
-                            : IconButton(
-                                icon: Icon(
-                                  _isPasswordVisible
-                                      ? LucideIcons.eyeOff
-                                      : LucideIcons.eye,
-                                  color: Theme.of(context).colorScheme.onSurface
-                                      .withValues(alpha: 0.4),
-                                ),
-                                onPressed: () {
-                                  setState(() {
-                                    _isPasswordVisible = !_isPasswordVisible;
-                                  });
-                                },
-                              ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      obscureText: !_isPasswordVisible,
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return context.l10n.pleaseEnterPassword;
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                    FilledButton(
-                      onPressed: isLoading ? null : _login,
-                      style: FilledButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      child: isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
-                              ),
-                            )
-                          : Text(context.l10n.signIn),
-                    ),
-                    if (!signupDisabled) ...[
-                      const SizedBox(height: 16),
-                      TextButton(
-                        onPressed: () => context.push(AppRoutes.register),
-                        child: Text(context.l10n.createAnAccount),
-                      ),
-                    ],
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
           ),
         ],
       ),
@@ -250,12 +266,14 @@ class _OrDivider extends StatelessWidget {
       children: [
         const Expanded(child: Divider()),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.symmetric(horizontal: context.dims.md),
           child: Text(
             context.l10n.orContinueWith,
-            style: Theme.of(
-              context,
-            ).textTheme.bodySmall?.copyWith(color: Theme.of(context).hintColor),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: AppOpacity.secondary),
+            ),
           ),
         ),
         const Expanded(child: Divider()),
@@ -273,6 +291,7 @@ class _ServerUrlChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
 
     if (serverUrl == null) return const SizedBox.shrink();
 
@@ -289,21 +308,21 @@ class _ServerUrlChip extends StatelessWidget {
     return Center(
       child: InkWell(
         onTap: onChangeServer,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: AppRadius.lgBorder,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: dims.sm, vertical: dims.xs),
           decoration: BoxDecoration(
             color: theme.colorScheme.surfaceContainerHighest.withValues(
               alpha: 0.5,
             ),
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: AppRadius.lgBorder,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 LucideIcons.server,
-                size: 14,
+                size: AppIconSizes.xs,
                 color: theme.colorScheme.primary,
               ),
               const SizedBox(width: 6),
@@ -314,10 +333,10 @@ class _ServerUrlChip extends StatelessWidget {
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
                 ),
               ),
-              const SizedBox(width: 4),
+              SizedBox(width: dims.xxs),
               Icon(
                 LucideIcons.chevronDown,
-                size: 14,
+                size: AppIconSizes.xs,
                 color: theme.colorScheme.onSurface.withValues(alpha: 0.5),
               ),
             ],

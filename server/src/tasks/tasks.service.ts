@@ -3,6 +3,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { NotesService } from '../notes/services/notes.service';
 import { TagsService } from '../tags/tags.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { SyncMaintenanceService } from '../sync/sync-maintenance.service';
 
 @Injectable()
 export class TasksService {
@@ -12,6 +13,7 @@ export class TasksService {
     private readonly notesService: NotesService,
     private readonly tagsService: TagsService,
     private readonly prisma: PrismaService,
+    private readonly syncMaintenance: SyncMaintenanceService,
   ) {}
 
   // Run daily at 2:00 AM to clean up expired refresh tokens
@@ -54,6 +56,24 @@ export class TasksService {
       );
     } catch (error) {
       this.logger.error('Tombstone purge failed:', error);
+    }
+  }
+
+  // Run daily at 4:00 AM to prune the sync feed index and note history
+  @Cron(CronExpression.EVERY_DAY_AT_4AM)
+  async handleSyncMaintenance() {
+    this.logger.log('Starting scheduled sync maintenance...');
+
+    try {
+      const changeLog = await this.syncMaintenance.pruneChangeLog();
+      const revisions = await this.syncMaintenance.pruneNoteRevisions();
+
+      this.logger.log(
+        `Sync maintenance completed. Pruned ${changeLog.prunedChangeLogCount} changelog remove rows, ` +
+          `${revisions.agedEditRevisionCount} aged edit revisions, and ${revisions.cappedRevisionCount} over-cap revisions.`,
+      );
+    } catch (error) {
+      this.logger.error('Sync maintenance failed:', error);
     }
   }
 }

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:anchor/features/notes/domain/note.dart';
 import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
-import 'package:anchor/features/notes/presentation/widgets/note_card.dart';
+import 'package:anchor/features/notes/presentation/widgets/note_list_page.dart';
 import 'notes_controller.dart';
 
 class ArchiveScreen extends ConsumerWidget {
@@ -48,83 +47,20 @@ class ArchiveScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final archiveAsync = ref.watch(archiveControllerProvider);
-    final theme = Theme.of(context);
-
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.8),
-        leading: IconButton(
-          icon: const Icon(LucideIcons.chevronLeft),
-          onPressed: () => context.pop(),
+    return NoteListPage(
+      title: context.l10n.archive,
+      notes: ref.watch(archiveControllerProvider),
+      emptyIcon: LucideIcons.archive,
+      emptyMessage: context.l10n.archiveEmpty,
+      datePrefix: context.l10n.archivedPrefix,
+      trailingActions: (note) => [
+        IconButton(
+          icon: const Icon(LucideIcons.archiveRestore),
+          onPressed: () => _showUnarchiveDialog(context, ref, note),
+          tooltip: context.l10n.unarchive,
+          visualDensity: VisualDensity.compact,
         ),
-        title: Text(
-          context.l10n.archive,
-          style: theme.textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              theme.colorScheme.surface,
-              theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-            ],
-          ),
-        ),
-        child: archiveAsync.when(
-          data: (notes) {
-            if (notes.isEmpty) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(LucideIcons.archive, size: 64, color: theme.hintColor),
-                    const SizedBox(height: 16),
-                    Text(
-                      context.l10n.archiveEmpty,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        color: theme.hintColor,
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: notes.length,
-              itemBuilder: (context, index) {
-                final note = notes[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: NoteCard(
-                    note: note,
-                    datePrefix: context.l10n.archivedPrefix,
-                    onTap: () => context.push('/note/${note.id}', extra: note),
-                    trailingActions: [
-                      IconButton(
-                        icon: const Icon(LucideIcons.archiveRestore),
-                        onPressed: () =>
-                            _showUnarchiveDialog(context, ref, note),
-                        tooltip: context.l10n.unarchive,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (err, stack) =>
-              Center(child: Text(context.l10n.errorWithMessage(err.toString()))),
-        ),
-      ),
+      ],
     );
   }
 }

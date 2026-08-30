@@ -1,11 +1,12 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import type { Response } from 'express';
 import archiver from 'archiver';
 import * as fs from 'fs';
 import * as path from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { NoteState } from 'src/generated/prisma/enums';
-import { attachmentFilePath } from '../notes/constants/notes.constants';
+import { StorageConfig } from '../config/configuration';
 import { t } from '../i18n/i18n.util';
 import {
   buildManifest,
@@ -45,7 +46,11 @@ const NOTE_EXPORT_INCLUDE = {
 export class ExportService {
   private readonly logger = new Logger(ExportService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(StorageConfig.KEY)
+    private storageConfig: ConfigType<typeof StorageConfig>,
+  ) {}
 
   async streamExport(userId: string, res: Response): Promise<void> {
     const { manifest, diskPathByAttachmentId } =
@@ -186,7 +191,11 @@ export class ExportService {
       for (const attachment of note.attachments) {
         const storedFilename = storedFilenames.get(attachment.id);
         const filePath = storedFilename
-          ? attachmentFilePath(note.id, storedFilename)
+          ? path.join(
+              this.storageConfig.attachmentsDir,
+              note.id,
+              storedFilename,
+            )
           : null;
         if (filePath && fs.existsSync(filePath)) {
           diskPaths.set(attachment.id, filePath);

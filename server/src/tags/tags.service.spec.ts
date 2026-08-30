@@ -1,11 +1,10 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
 import { TagsService } from './tags.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { createMockSyncEmitter, asSyncEmitter } from '../../test/sync-mocks';
 
 /**
- * TagsService against an in-memory tag store: name-uniqueness rules for
- * CRUD, and sync conflict resolution (tags use `updatedAt` as their sync
- * watermark, unlike notes which use `syncedAt`).
+ * TagsService against an in-memory tag store: name-uniqueness rules for CRUD.
  */
 describe('TagsService', () => {
   const USER = 'user-1';
@@ -72,6 +71,15 @@ describe('TagsService', () => {
     const tag = tags.get(where.id);
     return Promise.resolve(tag ? withCount(tag) : null);
   });
+
+  const tagFindUniqueOrThrow = jest.fn(
+    ({ where }: { where: { id: string } }) => {
+      const tag = tags.get(where.id);
+      return tag
+        ? Promise.resolve(withCount(tag))
+        : Promise.reject(new Error('Tag not found'));
+    },
+  );
 
   const tagCreate = jest.fn(
     ({
@@ -168,9 +176,11 @@ describe('TagsService', () => {
   );
 
   const prisma = {
+    $transaction: (cb: (tx: PrismaService) => unknown) => cb(prisma),
     tag: {
       findFirst: tagFindFirst,
       findUnique: tagFindUnique,
+      findUniqueOrThrow: tagFindUniqueOrThrow,
       findMany: tagFindMany,
       create: tagCreate,
       update: tagUpdate,
@@ -180,7 +190,7 @@ describe('TagsService', () => {
 
   beforeEach(() => {
     tags = new Map();
-    service = new TagsService(prisma);
+    service = new TagsService(prisma, asSyncEmitter(createMockSyncEmitter()));
     jest.clearAllMocks();
   });
 
@@ -230,154 +240,6 @@ describe('TagsService', () => {
       await service.remove(USER, 'tag-1');
       expect(tags.get('tag-1')!.isDeleted).toBe(true);
       expect(tags.has('tag-1')).toBe(true);
-    });
-  });
-
-  describe('sync', () => {
-    it('creates a tag the server has never seen', async () => {
-      const result = await service.sync(USER, {
-        changes: [{ id: 'tag-new', name: 'Fresh', color: null }],
-      });
-      expect(tags.get('tag-new')?.name).toBe('Fresh');
-      expect(result.processedIds).toEqual(['tag-new']);
-    });
-
-    it('skips a new tag whose name collides, without failing the sync', async () => {
-      makeTag({ id: 'tag-1', name: 'Work' });
-      const result = await service.sync(USER, {
-        changes: [{ id: 'tag-new', name: 'Work', color: null }],
-      });
-      expect(tags.has('tag-new')).toBe(false);
-      expect(result.processedIds).toEqual([]);
-    });
-
-    it('applies a newer client rename', async () => {
-      makeTag({ id: 'tag-1', name: 'Old name' });
-      const result = await service.sync(USER, {
-        changes: [
-          {
-            id: 'tag-1',
-            name: 'New name',
-            color: null,
-            updatedAt: '2026-07-02T00:00:00.000Z',
-          },
-        ],
-      });
-      expect(tags.get('tag-1')!.name).toBe('New name');
-      expect(result.processedIds).toEqual(['tag-1']);
-    });
-
-    it('treats an equal-timestamp change as a server win', async () => {
-      makeTag({ id: 'tag-1', name: 'Server name' });
-      const result = await service.sync(USER, {
-        changes: [
-          {
-            id: 'tag-1',
-            name: 'Same-instant rename',
-            color: null,
-            updatedAt: baseAt.toISOString(),
-          },
-        ],
-      });
-      expect(tags.get('tag-1')!.name).toBe('Server name');
-      expect(result.serverChanges.map((t) => t.id)).toContain('tag-1');
-    });
-
-    it('falls back to server when a sync rename collides with another tag name', async () => {
-      makeTag({ id: 'tag-1', name: 'Old name' });
-      makeTag({ id: 'tag-2', name: 'Taken' });
-      const result = await service.sync(USER, {
-        changes: [
-          {
-            id: 'tag-1',
-            name: 'Taken',
-            color: null,
-            updatedAt: '2026-07-02T00:00:00.000Z',
-          },
-        ],
-      });
-      // The unique-index violation is swallowed; server copy is echoed back.
-      expect(tags.get('tag-1')!.name).toBe('Old name');
-      expect(result.processedIds).toEqual(['tag-1']);
-      expect(result.serverChanges.map((t) => t.id)).toContain('tag-1');
-    });
-
-    it('rejects a stale client change and echoes the server copy back', async () => {
-      makeTag({ id: 'tag-1', name: 'Server name' });
-      const result = await service.sync(USER, {
-        lastSyncedAt: '2026-07-03T00:00:00.000Z',
-        changes: [
-          {
-            id: 'tag-1',
-            name: 'Stale rename',
-            color: null,
-            updatedAt: '2026-07-01T00:00:00.000Z',
-          },
-        ],
-      });
-      expect(tags.get('tag-1')!.name).toBe('Server name');
-      // Forced back to the client even though updatedAt predates the window.
-      expect(result.serverChanges.map((t) => t.id)).toContain('tag-1');
-    });
-
-    it('applies a client delete via the optimistic guard', async () => {
-      makeTag({ id: 'tag-1' });
-      const result = await service.sync(USER, {
-        changes: [
-          {
-            id: 'tag-1',
-            name: 'irrelevant',
-            color: null,
-            isDeleted: true,
-            updatedAt: baseAt.toISOString(),
-          },
-        ],
-      });
-      expect(tags.get('tag-1')!.isDeleted).toBe(true);
-      expect(result.processedIds).toEqual(['tag-1']);
-    });
-
-    it("ignores changes to another user's tag", async () => {
-      makeTag({ id: 'tag-1', userId: OTHER, name: 'Theirs' });
-      const result = await service.sync(USER, {
-        changes: [
-          {
-            id: 'tag-1',
-            name: 'Hijack',
-            color: null,
-            updatedAt: '2026-07-05T00:00:00.000Z',
-          },
-        ],
-      });
-      expect(tags.get('tag-1')!.name).toBe('Theirs');
-      expect(result.processedIds).toEqual([]);
-    });
-
-    it("ignores a delete for another user's tag", async () => {
-      makeTag({ id: 'tag-1', userId: OTHER });
-      const result = await service.sync(USER, {
-        changes: [
-          {
-            id: 'tag-1',
-            name: 'irrelevant',
-            color: null,
-            isDeleted: true,
-            updatedAt: '2026-07-05T00:00:00.000Z',
-          },
-        ],
-      });
-      expect(tags.get('tag-1')!.isDeleted).toBe(false);
-      expect(result.processedIds).toEqual([]);
-    });
-
-    it('only returns tags updated after the lastSyncedAt watermark', async () => {
-      makeTag({ id: 'old', updatedAt: new Date('2026-07-01T00:00:00Z') });
-      makeTag({ id: 'fresh', updatedAt: new Date('2026-07-03T00:00:00Z') });
-      const result = await service.sync(USER, {
-        lastSyncedAt: '2026-07-02T00:00:00.000Z',
-        changes: [],
-      });
-      expect(result.serverChanges.map((t) => t.id)).toEqual(['fresh']);
     });
   });
 });

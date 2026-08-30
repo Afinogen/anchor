@@ -1,6 +1,5 @@
 {
   "@@locale": "en",
-
   "settingsTitle": "Settings",
   "appearance": "Appearance",
   "themeSystem": "System",
@@ -9,14 +8,11 @@
   "themeLightSubtitle": "Always use light theme",
   "themeDark": "Dark",
   "themeDarkSubtitle": "Always use dark theme",
-
   "language": "Language",
   "languageSystemSubtitle": "Choose the interface language",
-
   "editor": "Editor",
   "sortChecklistItems": "Sort checklist items",
   "sortChecklistItemsSubtitle": "Automatically move checked checklist items to the bottom",
-
   "account": "Account",
   "editProfile": "Edit Profile",
   "editProfileSubtitle": "Update your name and profile image",
@@ -26,36 +22,48 @@
   "viewLogsSubtitle": "Diagnostic logs for support and debugging",
   "logOut": "Log Out",
   "logOutSubtitle": "Sign out of your account",
-
   "appVersion": "App v{version}",
   "@appVersion": {
-    "placeholders": { "version": { "type": "String" } }
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
   },
   "serverVersion": "Server v{version}",
   "@serverVersion": {
-    "placeholders": { "version": { "type": "String" } }
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
   },
   "serverVersionLoading": "Server v...",
   "serverVersionUnknown": "Server v—",
   "connectedTo": "Connected to {url}",
   "@connectedTo": {
-    "placeholders": { "url": { "type": "String" } }
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
   },
   "serverUnreachable": "Can't reach {url}",
   "@serverUnreachable": {
-    "placeholders": { "url": { "type": "String" } }
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
   },
-
   "logoutDialogTitle": "Log Out",
   "logoutDialogMessage": "Are you sure you want to log out? Your unsynced notes will stay safe on this device.",
   "stay": "Stay",
-
   "cancel": "Cancel",
   "save": "Save",
   "delete": "Delete",
   "confirm": "Confirm",
   "retry": "Retry",
-
   "errorConnectionTimeout": "Connection timeout. Please check your internet connection and try again.",
   "errorSendTimeout": "Request timeout. Please try again.",
   "errorReceiveTimeout": "Response timeout. Please try again.",
@@ -70,15 +78,17 @@
   "errorRequestFailed": "Request failed. Please try again.",
   "errorCancelled": "Request cancelled.",
   "errorUnexpected": "An unexpected error occurred. Please try again.",
-
   "languageEnglish": "English",
   "languageRussian": "Русский",
-
   "welcomeBack": "Welcome Back",
   "signInToContinue": "Sign in to continue",
   "loginWithProvider": "Login with {provider}",
   "@loginWithProvider": {
-    "placeholders": { "provider": { "type": "String" } }
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
   },
   "orContinueWith": "Or continue with",
   "email": "Email",
@@ -87,7 +97,6 @@
   "pleaseEnterPassword": "Please enter password",
   "signIn": "Sign In",
   "createAnAccount": "Create an account",
-
   "createAccount": "Create Account",
   "startCapturingIdeas": "Start capturing your ideas",
   "name": "Name",
@@ -98,7 +107,6 @@
   "passwordsDoNotMatch": "Passwords do not match",
   "registrationSuccessful": "Registration successful!",
   "registrationPendingApproval": "Registration successful! Your account is pending approval.",
-
   "connectToServer": "Connect to Server",
   "enterServerUrl": "Enter your Anchor server URL to get started",
   "serverUrl": "Server URL",
@@ -119,16 +127,17 @@
   "failedToConnect": "Failed to connect to server",
   "serverRunningVersion": "Server is running! Version: {version}",
   "@serverRunningVersion": {
-    "placeholders": { "version": { "type": "String" } }
+    "placeholders": {
+      "version": {
+        "type": "String"
+      }
+    }
   },
   "invalidServerResponse": "Invalid server response. Is this an Anchor server?",
-
   "create": "Create",
   "rename": "Rename",
-
   "captureIdeasHere": "Capture your ideas here",
   "noMatchingNotes": "No matching notes found",
-
   "allNotes": "All Notes",
   "archive": "Archive",
   "trash": "Trash",
@@ -144,15 +153,22 @@
   "deleteTagTitle": "Delete Tag",
   "deleteTagConfirm": "Delete \"{name}\"? This will remove it from all notes.",
   "@deleteTagConfirm": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "newTagTitle": "New Tag",
   "createTagSubtitle": "Create a tag to organize your notes",
   "tagNotesCount": "{count, plural, one{{count} note} other{{count} notes}}",
   "@tagNotesCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
-
   "menu": "Menu",
   "newNote": "New Note",
   "searchHint": "Search your thoughts...",
@@ -161,13 +177,20 @@
   "selectNotes": "Select notes",
   "notesCount": "{count, plural, one{{count} note} other{{count} notes}}",
   "@notesCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "errorWithMessage": "Error: {message}",
   "@errorWithMessage": {
-    "placeholders": { "message": { "type": "String" } }
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
   },
-
   "viewOptionsTitle": "View Options",
   "customizeDisplay": "Customize display",
   "done": "Done",
@@ -182,43 +205,55 @@
   "aToZ": "A to Z",
   "newestFirst": "Newest first",
   "zToA": "Z to A",
-
   "archiveNotesTitle": "Archive Notes",
   "archiveNotesConfirm": "{count, plural, one{Archive {count} note?} other{Archive {count} notes?}}",
   "@archiveNotesConfirm": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "notesArchived": "{count, plural, one{{count} note archived} other{{count} notes archived}}",
   "@notesArchived": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "failedToArchiveNotes": "Failed to archive notes",
   "deleteNotesTitle": "Delete Notes",
   "deleteNotesConfirm": "{count, plural, one{Delete {count} note? This action cannot be undone.} other{Delete {count} notes? This action cannot be undone.}}",
   "@deleteNotesConfirm": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "notesDeleted": "{count, plural, one{{count} note deleted} other{{count} notes deleted}}",
   "@notesDeleted": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "failedToDeleteNotes": "Failed to delete notes",
   "deselectAll": "Deselect all",
   "selectAll": "Select all",
-
   "moreOptions": "More Options",
   "moreOptionsSubtitle": "Customize and manage your note",
   "background": "Background",
   "attachment": "Attachment",
   "unarchive": "Unarchive",
-
   "unarchiveNoteTitle": "Unarchive Note",
   "noteMovedBack": "This note will be moved back to your notes.",
   "noteUnarchived": "Note unarchived",
   "failedToUnarchive": "Failed to unarchive note",
   "archiveEmpty": "Archive is empty",
   "archivedPrefix": "Archived",
-
   "restoreNoteTitle": "Restore Note",
   "restore": "Restore",
   "noteRestored": "Note restored",
@@ -229,7 +264,6 @@
   "failedToDeleteNote": "Failed to delete note",
   "trashEmpty": "Trash is empty",
   "movedToTrashPrefix": "Moved to trash",
-
   "archiveNoteTitle": "Archive Note",
   "noteWillBeArchived": "This note will be moved to archive.",
   "noteArchived": "Note archived",
@@ -244,7 +278,11 @@
   "deleteForeverMessageLong": "This action cannot be undone. This note will be permanently deleted and cannot be recovered.",
   "sharedBy": "Shared by {name}",
   "@sharedBy": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "pinNote": "Pin Note",
   "unpinNote": "Unpin Note",
@@ -255,7 +293,6 @@
   "untitledNote": "Untitled",
   "moreOptionsTooltip": "More options",
   "startTyping": "Start typing...",
-
   "tags": "Tags",
   "addTag": "Add tag",
   "selectTags": "Select Tags",
@@ -264,17 +301,24 @@
   "availableTags": "Available Tags",
   "noTagsYet": "No tags yet",
   "createFirstTagAbove": "Create your first tag above",
-
   "failedToLoadShares": "Failed to load shares",
   "sharedWithUser": "Shared with {name}",
   "@sharedWithUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "failedToShare": "Failed to share",
   "failedToUpdate": "Failed to update",
   "removedUser": "Removed {name}",
   "@removedUser": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "failedToRemove": "Failed to remove",
   "collaborateWithOthers": "Collaborate with others",
@@ -285,14 +329,16 @@
   "collaborators": "Collaborators",
   "shareWithName": "Share with {name}",
   "@shareWithName": {
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "changePermission": "Change permission",
   "viewer": "Viewer",
   "viewerDesc": "Can view but not edit",
-  "editor": "Editor",
   "editorDesc": "Can view and edit",
-
   "passwordChangedSuccess": "Password changed successfully",
   "changePasswordSubtitleLong": "Update your password to keep your account secure",
   "currentPassword": "Current Password",
@@ -301,24 +347,23 @@
   "pleaseEnterNewPassword": "Please enter a new password",
   "confirmNewPassword": "Confirm New Password",
   "pleaseConfirmPassword": "Please confirm your new password",
-
   "userNotFound": "User not found",
   "failedToPickImage": "Failed to pick image: {error}",
   "@failedToPickImage": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "profileUpdated": "Profile updated successfully",
-  "editProfile": "Edit Profile",
   "changePhoto": "Change Photo",
   "remove": "Remove",
   "updateProfileInfo": "Update your profile information",
   "enterYourName": "Enter your name",
   "saveProfile": "Save Profile",
-
-  "save": "Save",
   "color": "Color",
   "customizeNote": "Customize your note",
-
   "fmtUndo": "Undo",
   "fmtRedo": "Redo",
   "fmtBold": "Bold",
@@ -335,7 +380,6 @@
   "fmtCodeBlock": "Code Block",
   "fmtLink": "Link",
   "fmtEditLink": "Edit link",
-
   "linkTextLabel": "Text",
   "linkTextHint": "Link text",
   "urlLabel": "URL",
@@ -346,13 +390,15 @@
   "linkOpen": "Open",
   "linkCopy": "Copy link",
   "linkEdit": "Edit",
-
   "splashTagline": "Secure your thoughts",
-
   "deleteAttachmentTitle": "Delete attachment?",
   "deleteAttachmentMessage": "This will permanently delete \"{filename}\".",
   "@deleteAttachmentMessage": {
-    "placeholders": { "filename": { "type": "String" } }
+    "placeholders": {
+      "filename": {
+        "type": "String"
+      }
+    }
   },
   "availableWhenOnline": "Available when online",
   "pending": "Pending",
@@ -360,18 +406,25 @@
   "failedToRenderImage": "Failed to render image",
   "playbackError": "Playback error: {error}",
   "@playbackError": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "couldNotPlayAudio": "Could not play audio: {error}",
   "@couldNotPlayAudio": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "failedToLoadAudio": "Failed to load audio",
   "deleteAudioTitle": "Delete audio?",
   "tapToReplay": "Tap to replay",
   "tapToPlay": "Tap to play",
   "deleteAudioTooltip": "Delete audio",
-
   "microphonePermissionRequired": "Microphone permission required",
   "unsupportedAudioFormat": "Unsupported audio format. Allowed: mp3, wav, m4a, ogg, aac",
   "addAttachment": "Add Attachment",
@@ -386,16 +439,23 @@
   "recordingPreview": "Recording preview",
   "discard": "Discard",
   "reRecord": "Re-record",
-
   "logsCopied": "Logs copied to clipboard",
   "saveLogs": "Save logs",
   "exportFailed": "Export failed: {error}",
   "@exportFailed": {
-    "placeholders": { "error": { "type": "String" } }
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
   },
   "savedFile": "Saved {filename}",
   "@savedFile": {
-    "placeholders": { "filename": { "type": "String" } }
+    "placeholders": {
+      "filename": {
+        "type": "String"
+      }
+    }
   },
   "clearLogsTitle": "Clear Logs",
   "clearLogsMessage": "This will delete all stored logs from this device. Continue?",
@@ -404,7 +464,11 @@
   "cancelSelection": "Cancel selection",
   "copyCount": "Copy ({count})",
   "@copyCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "clearLogsTooltip": "Clear logs",
   "exportToFile": "Export to file",
@@ -415,30 +479,48 @@
   "searchMessagesAndTags": "Search messages and tags",
   "clearSearch": "Clear search",
   "filterAll": "All",
-
   "invalidLink": "Invalid link",
   "linkCopied": "Link copied",
   "copy": "Copy",
-
   "notesPinned": "{count, plural, one{{count} note pinned} other{{count} notes pinned}}",
   "@notesPinned": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "notesUnpinned": "{count, plural, one{{count} note unpinned} other{{count} notes unpinned}}",
   "@notesUnpinned": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "notesTagged": "{count, plural, one{Tagged {count} note} other{Tagged {count} notes}}",
   "@notesTagged": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "sharedWithCount": "{count, plural, one{Shared with {count} person} other{Shared with {count} people}}",
   "@sharedWithCount": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "logEntriesCopied": "{count, plural, one{{count} entry copied} other{{count} entries copied}}",
   "@logEntriesCopied": {
-    "placeholders": { "count": { "type": "int" } }
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "failedToUpdatePins": "Failed to update pins",
   "failedToAddTags": "Failed to add tags",
@@ -454,5 +536,67 @@
   "logLevelDebug": "Debug",
   "logLevelInfo": "Info",
   "logLevelWarn": "Warn",
-  "logLevelError": "Error"
+  "logLevelError": "Error",
+  "today": "Today",
+  "yesterday": "Yesterday",
+  "dayAtTime": "{day} at {time}",
+  "@dayAtTime": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "revisionCauseEdit": "Earlier version",
+  "revisionCauseConflict": "Not saved",
+  "revisionCauseRestore": "Before a restore",
+  "revisionHintConflict": "Not saved. The note had already changed.",
+  "revisionHintRestore": "What the note said before a restore.",
+  "revisionAuthorSomeone": "Someone",
+  "revisionAuthorYou": "You",
+  "history": "History",
+  "currentVersion": "Current version",
+  "historyUnreadFailed": "Couldn't check for versions from your other devices.",
+  "historyRetention": "Edits older than 90 days are removed.",
+  "tryAgain": "Try again",
+  "historyCheckFailed": "Couldn't check for earlier versions",
+  "historyEmpty": "No earlier versions yet",
+  "historyOfflineHint": "Versions kept on your other devices need a connection.",
+  "historyEmptyHint": "Edits to this note are kept here, so you can always go back.",
+  "restoreVersionTitle": "Restore this version?",
+  "restoreVersionMessage": "The note goes back to this version. What it says now is kept in the history.",
+  "versionRestored": "This version is back on the note",
+  "versionRestoreFailed": "Failed to restore this version",
+  "versionSameAsNext": "Same text as the version after this one.",
+  "versionSameAsCurrent": "Same text as the note as it is now.",
+  "versionNoText": "This version has no text.",
+  "versionTitle": "Version",
+  "versionGone": "This version is no longer here.",
+  "serverNeedsUpdatingTitle": "Server needs updating",
+  "appNeedsUpdatingTitle": "App needs updating",
+  "serverNeedsUpdatingMessage": "Your Anchor server is too old to sync with this app. Update the server to continue.",
+  "appNeedsUpdatingMessage": "This app is too old to sync with your Anchor server. Update the app to continue.",
+  "syncWarningNotesStay": "Your notes stay available on this device in the meantime.",
+  "gotIt": "Got it",
+  "connectAnyway": "Connect anyway",
+  "serverVersionMismatch": "Anchor v{version}. {reason}",
+  "@serverVersionMismatch": {
+    "placeholders": {
+      "version": {
+        "type": "String"
+      },
+      "reason": {
+        "type": "String"
+      }
+    }
+  },
+  "syncPausedIncompatible": "Sync paused, versions incompatible",
+  "displayDensity": "Display density",
+  "densityStandard": "Default",
+  "densityCompact": "Compact",
+  "densityStandardSubtitle": "More breathing room",
+  "densityCompactSubtitle": "Fit more on screen"
 }

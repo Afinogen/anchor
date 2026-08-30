@@ -1319,7 +1319,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchByEmail.
   ///
   /// In en, this message translates to:
-  /// **'Search by email...'**
+  /// **'Search by name or email...'**
   String get searchByEmail;
 
   /// No description provided for @results.
@@ -1337,7 +1337,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchToInvite.
   ///
   /// In en, this message translates to:
-  /// **'Search by email to invite collaborators'**
+  /// **'Search by name or email to invite collaborators'**
   String get searchToInvite;
 
   /// No description provided for @collaborators.
@@ -1958,17 +1958,17 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{Tagged {count} note} other{Tagged {count} notes}}'**
   String notesTagged(int count);
 
-  /// No description provided for @logEntriesCopied.
-  ///
-  /// In en, this message translates to:
-  /// **'{count, plural, one{{count} entry copied} other{{count} entries copied}}'**
-  String logEntriesCopied(int count);
-
   /// No description provided for @sharedWithCount.
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{Shared with {count} person} other{Shared with {count} people}}'**
   String sharedWithCount(int count);
+
+  /// No description provided for @logEntriesCopied.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{{count} entry copied} other{{count} entries copied}}'**
+  String logEntriesCopied(int count);
 
   /// No description provided for @failedToUpdatePins.
   ///
@@ -2059,6 +2059,258 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Error'**
   String get logLevelError;
+
+  /// No description provided for @today.
+  ///
+  /// In en, this message translates to:
+  /// **'Today'**
+  String get today;
+
+  /// No description provided for @yesterday.
+  ///
+  /// In en, this message translates to:
+  /// **'Yesterday'**
+  String get yesterday;
+
+  /// No description provided for @dayAtTime.
+  ///
+  /// In en, this message translates to:
+  /// **'{day} at {time}'**
+  String dayAtTime(String day, String time);
+
+  /// No description provided for @revisionCauseEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Earlier version'**
+  String get revisionCauseEdit;
+
+  /// No description provided for @revisionCauseConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Not saved'**
+  String get revisionCauseConflict;
+
+  /// No description provided for @revisionCauseRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'Before a restore'**
+  String get revisionCauseRestore;
+
+  /// No description provided for @revisionHintConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Not saved. The note had already changed.'**
+  String get revisionHintConflict;
+
+  /// No description provided for @revisionHintRestore.
+  ///
+  /// In en, this message translates to:
+  /// **'What the note said before a restore.'**
+  String get revisionHintRestore;
+
+  /// No description provided for @revisionAuthorSomeone.
+  ///
+  /// In en, this message translates to:
+  /// **'Someone'**
+  String get revisionAuthorSomeone;
+
+  /// No description provided for @revisionAuthorYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get revisionAuthorYou;
+
+  /// No description provided for @history.
+  ///
+  /// In en, this message translates to:
+  /// **'History'**
+  String get history;
+
+  /// No description provided for @currentVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Current version'**
+  String get currentVersion;
+
+  /// No description provided for @historyUnreadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check for versions from your other devices.'**
+  String get historyUnreadFailed;
+
+  /// No description provided for @historyRetention.
+  ///
+  /// In en, this message translates to:
+  /// **'Edits older than 90 days are removed.'**
+  String get historyRetention;
+
+  /// No description provided for @tryAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Try again'**
+  String get tryAgain;
+
+  /// No description provided for @historyCheckFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check for earlier versions'**
+  String get historyCheckFailed;
+
+  /// No description provided for @historyEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No earlier versions yet'**
+  String get historyEmpty;
+
+  /// No description provided for @historyOfflineHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Versions kept on your other devices need a connection.'**
+  String get historyOfflineHint;
+
+  /// No description provided for @historyEmptyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Edits to this note are kept here, so you can always go back.'**
+  String get historyEmptyHint;
+
+  /// No description provided for @restoreVersionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Restore this version?'**
+  String get restoreVersionTitle;
+
+  /// No description provided for @restoreVersionMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'The note goes back to this version. What it says now is kept in the history.'**
+  String get restoreVersionMessage;
+
+  /// No description provided for @versionRestored.
+  ///
+  /// In en, this message translates to:
+  /// **'This version is back on the note'**
+  String get versionRestored;
+
+  /// No description provided for @versionRestoreFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to restore this version'**
+  String get versionRestoreFailed;
+
+  /// No description provided for @versionSameAsNext.
+  ///
+  /// In en, this message translates to:
+  /// **'Same text as the version after this one.'**
+  String get versionSameAsNext;
+
+  /// No description provided for @versionSameAsCurrent.
+  ///
+  /// In en, this message translates to:
+  /// **'Same text as the note as it is now.'**
+  String get versionSameAsCurrent;
+
+  /// No description provided for @versionNoText.
+  ///
+  /// In en, this message translates to:
+  /// **'This version has no text.'**
+  String get versionNoText;
+
+  /// No description provided for @versionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get versionTitle;
+
+  /// No description provided for @versionGone.
+  ///
+  /// In en, this message translates to:
+  /// **'This version is no longer here.'**
+  String get versionGone;
+
+  /// No description provided for @serverNeedsUpdatingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Server needs updating'**
+  String get serverNeedsUpdatingTitle;
+
+  /// No description provided for @appNeedsUpdatingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'App needs updating'**
+  String get appNeedsUpdatingTitle;
+
+  /// No description provided for @serverNeedsUpdatingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your Anchor server is too old to sync with this app. Update the server to continue.'**
+  String get serverNeedsUpdatingMessage;
+
+  /// No description provided for @appNeedsUpdatingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'This app is too old to sync with your Anchor server. Update the app to continue.'**
+  String get appNeedsUpdatingMessage;
+
+  /// No description provided for @syncWarningNotesStay.
+  ///
+  /// In en, this message translates to:
+  /// **'Your notes stay available on this device in the meantime.'**
+  String get syncWarningNotesStay;
+
+  /// No description provided for @gotIt.
+  ///
+  /// In en, this message translates to:
+  /// **'Got it'**
+  String get gotIt;
+
+  /// No description provided for @connectAnyway.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect anyway'**
+  String get connectAnyway;
+
+  /// No description provided for @serverVersionMismatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Anchor v{version}. {reason}'**
+  String serverVersionMismatch(String version, String reason);
+
+  /// No description provided for @syncPausedIncompatible.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync paused, versions incompatible'**
+  String get syncPausedIncompatible;
+
+  /// No description provided for @displayDensity.
+  ///
+  /// In en, this message translates to:
+  /// **'Display density'**
+  String get displayDensity;
+
+  /// No description provided for @densityStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get densityStandard;
+
+  /// No description provided for @densityCompact.
+  ///
+  /// In en, this message translates to:
+  /// **'Compact'**
+  String get densityCompact;
+
+  /// No description provided for @densityStandardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'More breathing room'**
+  String get densityStandardSubtitle;
+
+  /// No description provided for @densityCompactSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Fit more on screen'**
+  String get densityCompactSubtitle;
 }
 
 class _AppLocalizationsDelegate

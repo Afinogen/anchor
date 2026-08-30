@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+
+import '../theme/context_extensions.dart';
+import '../theme/tokens/app_icon_sizes.dart';
 
 /// A single line in the preview with optional list/checklist state.
 class _PreviewLine {
@@ -10,7 +12,10 @@ class _PreviewLine {
   final String?
   listType; // 'checked' | 'unchecked' | 'ordered' | 'bullet' | null
 
-  const _PreviewLine({required this.text, this.listType});
+  /// Nesting level (0 = top level).
+  final int indent;
+
+  const _PreviewLine({required this.text, this.listType, this.indent = 0});
 
   bool get isChecklist => listType == 'checked' || listType == 'unchecked';
   bool get isChecked => listType == 'checked';
@@ -39,6 +44,7 @@ class QuillPreview extends StatelessWidget {
     }
 
     final theme = Theme.of(context);
+    final dims = context.dims;
     final lines = _parseQuillContentToPreviewLines(content);
 
     if (lines.isEmpty) {
@@ -47,7 +53,7 @@ class QuillPreview extends StatelessWidget {
 
     final effectiveStyle =
         style ??
-        GoogleFonts.dmSans(
+        theme.textTheme.bodyMedium!.copyWith(
           fontSize: 14,
           height: 1.5,
           color: theme.textTheme.bodyMedium?.color?.withValues(alpha: 0.8),
@@ -58,27 +64,30 @@ class QuillPreview extends StatelessWidget {
         .take(maxLines)
         .toList();
 
-    var orderedListIndex = 0;
+    final orderedMarkers = OrderedMarkerCounter();
     final children = <Widget>[];
 
     for (final line in displayLines) {
       final lineText = line.text.trim();
+      final marker = orderedMarkers.markerFor(
+        listType: line.listType,
+        indent: line.indent,
+      );
 
       if (line.isChecklist) {
-        orderedListIndex = 0;
         children.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 2),
+            padding: EdgeInsets.only(bottom: 2, left: line.indent * 12.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(right: 8, top: 2),
+                  padding: EdgeInsets.only(right: dims.xs, top: 2),
                   child: Icon(
                     line.isChecked
                         ? LucideIcons.checkSquare
                         : LucideIcons.square,
-                    size: 16,
+                    size: AppIconSizes.sm,
                     color: line.isChecked
                         ? theme.colorScheme.primary
                         : theme.textTheme.bodyMedium?.color?.withValues(
@@ -108,23 +117,22 @@ class QuillPreview extends StatelessWidget {
           ),
         );
       } else if (line.isOrderedList) {
-        orderedListIndex++;
         children.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 2),
+            padding: EdgeInsets.only(bottom: 2, left: line.indent * 12.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SizedBox(
                   width: 20,
                   child: Text(
-                    '$orderedListIndex.',
+                    marker!,
                     style: effectiveStyle,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const SizedBox(width: 4),
+                SizedBox(width: dims.xxs),
                 Expanded(
                   child: Text(
                     lineText,
@@ -138,15 +146,14 @@ class QuillPreview extends StatelessWidget {
           ),
         );
       } else if (line.isBulletList) {
-        orderedListIndex = 0;
         children.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 2),
+            padding: EdgeInsets.only(bottom: 2, left: line.indent * 12.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(right: 8, top: 2),
+                  padding: EdgeInsets.only(right: dims.xs, top: 2),
                   child: Text('•', style: effectiveStyle),
                 ),
                 Expanded(
@@ -162,10 +169,9 @@ class QuillPreview extends StatelessWidget {
           ),
         );
       } else {
-        orderedListIndex = 0;
         children.add(
           Padding(
-            padding: const EdgeInsets.only(bottom: 2),
+            padding: EdgeInsets.only(bottom: 2, left: line.indent * 12.0),
             child: Text(
               lineText,
               style: effectiveStyle,
@@ -183,6 +189,66 @@ class QuillPreview extends StatelessWidget {
       children: children,
     );
   }
+}
+
+/// Numbering state for ordered list lines. Feed every line through in order:
+/// deeper levels reset when the list returns to a shallower one, and a
+/// level's own count continues across nested runs, matching the editor.
+class OrderedMarkerCounter {
+  final _countByLevel = <int, int>{};
+
+  /// The marker for an ordered line, null for any other.
+  String? markerFor({required String? listType, required int indent}) {
+    if (listType == null) {
+      _countByLevel.clear();
+      return null;
+    }
+    _countByLevel.removeWhere((level, _) => level > indent);
+    if (listType != 'ordered') return null;
+
+    final count = (_countByLevel[indent] ?? 0) + 1;
+    _countByLevel[indent] = count;
+    return orderedListMarker(count, indent);
+  }
+}
+
+/// Marker for an ordered item, cycling number styles by depth like the
+/// editor: 1. at the top level, then a., then i.
+String orderedListMarker(int count, int indent) {
+  return switch (indent % 3) {
+    1 => '${_alpha(count)}.',
+    2 => '${_roman(count)}.',
+    _ => '$count.',
+  };
+}
+
+String _alpha(int count) => String.fromCharCode(97 + (count - 1) % 26);
+
+String _roman(int count) {
+  const pairs = [
+    (1000, 'm'),
+    (900, 'cm'),
+    (500, 'd'),
+    (400, 'cd'),
+    (100, 'c'),
+    (90, 'xc'),
+    (50, 'l'),
+    (40, 'xl'),
+    (10, 'x'),
+    (9, 'ix'),
+    (5, 'v'),
+    (4, 'iv'),
+    (1, 'i'),
+  ];
+  var value = count;
+  final buffer = StringBuffer();
+  for (final (threshold, numeral) in pairs) {
+    while (value >= threshold) {
+      buffer.write(numeral);
+      value -= threshold;
+    }
+  }
+  return buffer.toString();
 }
 
 /// Parses Quill Delta JSON into preview lines with checklist state.
@@ -213,7 +279,10 @@ List<_PreviewLine> _parseQuillContentToPreviewLines(String? content) {
         if (i < parts.length - 1) {
           final lineText = currentLineParts.join();
           final listType = op.attributes?['list'] as String?;
-          result.add(_PreviewLine(text: lineText, listType: listType));
+          final indent = op.attributes?['indent'] as int? ?? 0;
+          result.add(
+            _PreviewLine(text: lineText, listType: listType, indent: indent),
+          );
           currentLineParts = [];
         }
       }

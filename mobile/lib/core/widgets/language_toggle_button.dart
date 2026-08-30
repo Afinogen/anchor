@@ -20,8 +20,18 @@ class LanguageToggleButton extends ConsumerWidget {
       onSelected: (value) =>
           ref.read(localeControllerProvider.notifier).setLocale(value),
       itemBuilder: (context) => [
-        _item(context, const Locale('en'), context.l10n.languageEnglish, locale),
-        _item(context, const Locale('ru'), context.l10n.languageRussian, locale),
+        _item(
+          context,
+          const Locale('en'),
+          context.l10n.languageEnglish,
+          locale,
+        ),
+        _item(
+          context,
+          const Locale('ru'),
+          context.l10n.languageRussian,
+          locale,
+        ),
       ],
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -34,7 +44,11 @@ class LanguageToggleButton extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(LucideIcons.languages, size: 16, color: theme.colorScheme.primary),
+            Icon(
+              LucideIcons.languages,
+              size: 16,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(width: 6),
             Text(
               locale.languageCode.toUpperCase(),

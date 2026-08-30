@@ -1,4 +1,5 @@
 import {
+  Inject,
   Injectable,
   UnauthorizedException,
   ConflictException,
@@ -6,6 +7,7 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
@@ -16,12 +18,19 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UserStatus } from '../generated/prisma/enums';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 import * as path from 'path';
 import { generateApiToken } from './utils/generate-api-token';
+import { deleteFileIfExists } from '../common/utils/file-system.util';
+import { StorageConfig } from '../config/configuration';
+import { PUBLIC_PROFILES_PREFIX } from '../config/storage.constants';
+import {
+  API_TOKEN_MAX_GENERATION_RETRIES,
+  BCRYPT_SALT_ROUNDS,
+  REFRESH_TOKEN_BYTES,
+  REFRESH_TOKEN_VALIDITY_DAYS,
+} from './constants/auth.constants';
 import { t } from '../i18n/i18n.util';
-
-const REFRESH_TOKEN_VALIDITY_DAYS = 90;
 
 @Injectable()
 export class AuthService {
@@ -31,6 +40,8 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private settingsService: SettingsService,
+    @Inject(StorageConfig.KEY)
+    private storageConfig: ConfigType<typeof StorageConfig>,
   ) {}
 
   async getRegistrationMode() {
@@ -54,7 +65,10 @@ export class AuthService {
       throw new ConflictException(t('auth.userAlreadyExists'));
     }
 
-    const hashedPassword = await bcrypt.hash(registerDto.password, 10);
+    const hashedPassword = await bcrypt.hash(
+      registerDto.password,
+      BCRYPT_SALT_ROUNDS,
+    );
 
     // Check if this is the first user (no admins exist)
     const adminCount = await this.prisma.user.count({
@@ -298,7 +312,10 @@ export class AuthService {
     }
 
     // Hash and update password
-    const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
+    const hashedPassword = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      BCRYPT_SALT_ROUNDS,
+    );
 
     await this.prisma.user.update({
       where: { id: userId },
@@ -350,26 +367,22 @@ export class AuthService {
       throw new ForbiddenException(t('auth.userNotFound'));
     }
 
-    // Ensure uploads directory exists
-    const uploadsDir = '/data/uploads/profiles';
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
+    const uploadsDir = this.storageConfig.profilesDir;
+    await fs.mkdir(uploadsDir, { recursive: true });
 
     // File validation is handled at controller level with ParseFilePipe
-    // Generate unique filename
     const timestamp = Date.now();
     const ext = path.extname(file.originalname);
     const filename = `${userId}-${timestamp}${ext}`;
     const filePath = path.join(uploadsDir, filename);
-    const imagePath = `/uploads/profiles/${filename}`;
+    const imagePath = `${PUBLIC_PROFILES_PREFIX}/${filename}`;
 
     const oldImagePath: string | null = user.profileImage || null;
     let fileSaved = false;
 
     try {
       // Save new file first
-      fs.writeFileSync(filePath, file.buffer);
+      await fs.writeFile(filePath, file.buffer);
       fileSaved = true;
 
       // Update database with new image path
@@ -390,20 +403,14 @@ export class AuthService {
 
       // Delete old image only after successful database update
       if (oldImagePath && oldImagePath !== imagePath) {
-        this.deleteProfileImage(oldImagePath);
+        await this.deleteProfileImage(oldImagePath);
       }
 
       return updatedUser;
     } catch {
       // If database update fails, delete the newly uploaded file
-      if (fileSaved && fs.existsSync(filePath)) {
-        try {
-          fs.unlinkSync(filePath);
-        } catch {
-          this.logger.error(
-            `Failed to delete newly uploaded file after DB error: ${filePath}`,
-          );
-        }
+      if (fileSaved) {
+        await deleteFileIfExists(filePath, this.logger);
       }
       throw new BadRequestException(t('auth.uploadImageFailed'));
     }
@@ -439,7 +446,7 @@ export class AuthService {
 
       // Delete old image only after successful database update
       if (oldImagePath) {
-        this.deleteProfileImage(oldImagePath);
+        await this.deleteProfileImage(oldImagePath);
       }
 
       return updatedUser;
@@ -448,34 +455,20 @@ export class AuthService {
     }
   }
 
-  private deleteProfileImage(profileImagePath: string): void {
+  private async deleteProfileImage(profileImagePath: string): Promise<void> {
     if (!profileImagePath) return;
-
-    try {
-      // Remove /uploads prefix to get actual file path
-      const relativePath = profileImagePath.startsWith('/uploads/')
-        ? profileImagePath.substring('/uploads/'.length)
-        : profileImagePath;
-
-      const fullPath = path.join('/data', relativePath);
-      if (fs.existsSync(fullPath)) {
-        fs.unlinkSync(fullPath);
-      }
-    } catch {
-      this.logger.error(
-        `Failed to delete old profile image at ${profileImagePath}`,
-      );
-    }
+    const fullPath = path.join(this.storageConfig.root, profileImagePath);
+    await deleteFileIfExists(fullPath, this.logger);
   }
 
   // Generate a secure random refresh token
   private generateRefreshTokenString(): string {
-    return crypto.randomBytes(64).toString('hex');
+    return crypto.randomBytes(REFRESH_TOKEN_BYTES).toString('hex');
   }
 
   private async generateUniqueApiToken(): Promise<string> {
     // Retry a few times to avoid edge-case collisions on the unique column.
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < API_TOKEN_MAX_GENERATION_RETRIES; i++) {
       const candidate = generateApiToken();
       const existingUser = await this.prisma.user.findUnique({
         where: { apiToken: candidate },

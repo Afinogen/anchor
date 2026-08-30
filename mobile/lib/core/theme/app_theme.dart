@@ -2,154 +2,153 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
+import 'app_typography.dart';
+import 'tokens/app_color_tokens.dart';
+import 'tokens/app_dimensions.dart';
+import 'tokens/app_opacity.dart';
+import 'tokens/app_palette.dart';
+import 'tokens/app_radius.dart';
+
+/// Builds the app's [ThemeData], including the component themes.
 class AppTheme {
-  // A unique, sophisticated palette
-  // Deep Ocean & Sand theme
-  static const _primaryLight = Color(0xFF2D3142); // Dark Slate
-  static const _primaryDark = Color(0xFFEAEAEA); // Off-white text for dark mode
+  AppTheme._();
 
-  static const _bgLight = Color(0xFFF0F4F8); // Cool Gray/Blue tint
-  static const _bgDark = Color(0xFF1C1E26); // Deep Blue-Black
+  static final Map<(Brightness, DisplayDensity), ThemeData> _cache = {};
 
-  static const _surfaceLight = Color(0xFFFFFFFF);
-  static const _surfaceDark = Color(0xFF262A36);
+  static ThemeData light([DisplayDensity density = DisplayDensity.standard]) =>
+      _cache.putIfAbsent((
+        Brightness.light,
+        density,
+      ), () => _build(Brightness.light, density));
 
-  static const _accent = Color(0xFFEF8354); // Burnt Orange for interaction
-  static const _secondary = Color(0xFF4F5D75); // Slate Blue
+  static ThemeData dark([DisplayDensity density = DisplayDensity.standard]) =>
+      _cache.putIfAbsent((
+        Brightness.dark,
+        density,
+      ), () => _build(Brightness.dark, density));
 
-  static TextTheme _buildTextTheme(TextTheme base) {
-    return GoogleFonts.dmSansTextTheme(base).copyWith(
-      displayLarge: GoogleFonts.playfairDisplay(
-        textStyle: base.displayLarge,
-        fontWeight: FontWeight.bold,
-      ),
-      displayMedium: GoogleFonts.playfairDisplay(
-        textStyle: base.displayMedium,
-        fontWeight: FontWeight.bold,
-      ),
-      headlineMedium: GoogleFonts.playfairDisplay(
-        textStyle: base.headlineMedium,
-        fontWeight: FontWeight.w600,
-      ),
-      titleLarge: GoogleFonts.dmSans(
-        textStyle: base.titleLarge,
-        fontWeight: FontWeight.bold,
-        letterSpacing: -0.5,
-      ),
+  static ThemeData _build(Brightness brightness, DisplayDensity density) {
+    final isDark = brightness == Brightness.dark;
+    final base = isDark ? ThemeData.dark() : ThemeData.light();
+    final primary = isDark ? AppPalette.offWhite : AppPalette.slate;
+    final background = isDark ? AppPalette.bgDark : AppPalette.bgLight;
+    final container = isDark ? AppPalette.surfaceDark : AppPalette.surfaceLight;
+    final dims = AppDimensions.of(density);
+    final tokens = AppColorTokens.of(brightness);
+
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: AppPalette.slateBlue,
+      primary: primary,
+      secondary: AppPalette.slateBlue,
+      tertiary: AppPalette.burntOrange,
+      surface: background,
+      onSurface: primary,
+      brightness: brightness,
     );
-  }
 
-  static ThemeData get lightTheme {
-    final base = ThemeData.light();
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.light,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: _secondary,
-        primary: _primaryLight,
-        secondary: _secondary,
-        tertiary: _accent,
-        surface: _bgLight,
-        onSurface: _primaryLight,
-        brightness: Brightness.light,
-      ),
-      scaffoldBackgroundColor: _bgLight,
-      textTheme: _buildTextTheme(base.textTheme),
+      brightness: brightness,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: background,
+      textTheme: AppTypography.buildTextTheme(base.textTheme),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: Platform.isIOS,
         scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: _primaryLight),
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarBrightness: Brightness.light, // iOS: light background
-          statusBarIconBrightness: Brightness.dark, // Android: dark icons
+        iconTheme: IconThemeData(color: primary),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarBrightness: brightness, // iOS
+          statusBarIconBrightness: isDark
+              ? Brightness.light
+              : Brightness.dark, // Android
           statusBarColor: Colors.transparent,
         ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: _surfaceLight,
+        color: container,
         margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24), // More organic roundness
-          side: BorderSide.none, // Cleaner look without borders
-        ),
-      ),
-      floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: _primaryLight,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: _surfaceLight,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.all(20),
-        hintStyle: TextStyle(color: _secondary.withValues(alpha: 0.5)),
-      ),
-    );
-  }
-
-  static ThemeData get darkTheme {
-    final base = ThemeData.dark();
-    return ThemeData(
-      useMaterial3: true,
-      brightness: Brightness.dark,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: _secondary,
-        primary: _primaryDark,
-        secondary: _secondary,
-        tertiary: _accent,
-        surface: _bgDark,
-        onSurface: _primaryDark,
-        brightness: Brightness.dark,
-      ),
-      scaffoldBackgroundColor: _bgDark,
-      textTheme: _buildTextTheme(base.textTheme),
-      appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        centerTitle: Platform.isIOS,
-        scrolledUnderElevation: 0,
-        iconTheme: const IconThemeData(color: _primaryDark),
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarBrightness: Brightness.dark, // iOS: dark background
-          statusBarIconBrightness: Brightness.light, // Android: light icons
-          statusBarColor: Colors.transparent,
-        ),
-      ),
-      cardTheme: CardThemeData(
-        elevation: 0,
-        color: _surfaceDark,
-        margin: EdgeInsets.zero,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppRadius.lgBorder,
           side: BorderSide.none,
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
-        backgroundColor: _accent,
+        backgroundColor: isDark ? AppPalette.burntOrange : AppPalette.slate,
         foregroundColor: Colors.white,
         elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        shape: const RoundedRectangleBorder(borderRadius: AppRadius.fabBorder),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          padding: dims.buttonPadding,
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.buttonBorder,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          padding: dims.buttonPadding,
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.buttonBorder,
+          ),
+          side: BorderSide(color: primary.withValues(alpha: AppOpacity.border)),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.buttonBorder,
+          ),
+        ),
+      ),
+      dividerTheme: DividerThemeData(
+        space: 1,
+        thickness: 1,
+        color: tokens.subtleBorder,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: container,
+        surfaceTintColor: Colors.transparent,
+        shape: const RoundedRectangleBorder(
+          borderRadius: AppRadius.sheetBorder,
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: Colors.transparent,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        modalElevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.sheetTopBorder),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: container,
+        behavior: SnackBarBehavior.floating,
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.xlBorder,
+          side: BorderSide(
+            color: primary.withValues(alpha: AppOpacity.hairline),
+          ),
+        ),
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: _surfaceDark,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+        fillColor: tokens.inputFill,
+        border: const OutlineInputBorder(
+          borderRadius: AppRadius.mdBorder,
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.all(20),
-        hintStyle: TextStyle(color: _secondary.withValues(alpha: 0.5)),
+        contentPadding: EdgeInsets.all(dims.lg),
+        hintStyle: TextStyle(
+          color: AppPalette.slateBlue.withValues(alpha: 0.5),
+        ),
       ),
+      extensions: [dims, tokens],
     );
   }
 }

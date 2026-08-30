@@ -6,12 +6,26 @@ import 'package:path/path.dart' as path;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/notes/data/local/notes_table.dart';
 import '../../features/notes/data/local/attachments_table.dart';
+import '../../features/notes/data/local/note_history_state_table.dart';
+import '../../features/notes/data/local/note_revisions_table.dart';
+import '../../features/sync/data/local/sync_tables.dart';
 import '../../features/tags/data/local/tags_table.dart';
 import '../providers/active_user_id_provider.dart';
 
 part 'app_database.g.dart';
 
-@DriftDatabase(tables: [Notes, Tags, NoteTags, NoteAttachments])
+@DriftDatabase(
+  tables: [
+    Notes,
+    Tags,
+    NoteTags,
+    NoteAttachments,
+    NoteRevisions,
+    NoteHistoryState,
+    SyncState,
+    SyncSweep,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(String userId) : super(_openConnection(userId));
 
@@ -19,7 +33,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 7;
+  int get schemaVersion => 9;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -45,6 +59,25 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 7) {
         await m.createTable(noteAttachments);
+      }
+      if (from < 8) {
+        await m.addColumn(notes, notes.version);
+        await m.addColumn(notes, notes.localRev);
+        await m.addColumn(notes, notes.isPinSynced);
+        await m.addColumn(tags, tags.version);
+        await m.addColumn(tags, tags.localRev);
+        await m.createTable(syncState);
+        await m.createTable(syncSweep);
+
+        await (update(notes)..where(
+              (tbl) => tbl.isSynced.equals(false) & tbl.isPinned.equals(true),
+            ))
+            .write(const NotesCompanion(isPinSynced: Value(false)));
+      }
+      if (from < 9) {
+        await m.createTable(noteRevisions);
+        await m.createTable(noteHistoryState);
+        await m.createIndex(noteRevisionsNoteCreated);
       }
     },
   );

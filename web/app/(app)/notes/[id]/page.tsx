@@ -3,32 +3,64 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useAuth } from "@/features/auth";
-import type { CreateNoteDto, Note, UpdateNoteDto } from "@/features/notes";
+import type {
+  ConflictResolution,
+  CreateNoteDto,
+  Note,
+  NoteDraft,
+  NoteSaveQueue,
+  SaveFailure,
+} from "@/features/notes";
 import {
   ArchiveDialog,
   archiveNote,
   createNote,
+  createNoteSaveQueue,
   DeleteDialog,
   deleteNote,
+  flushNoteUpdate,
   getNote,
   isStoredContentEmpty,
   NoteBackground,
   NoteEditorContent,
   NoteEditorHeader,
+  NoteHistorySheet,
+  noteDraftsEqual,
+  noteToDraft,
   PermanentDeleteDialog,
   permanentDeleteNote,
   ReadOnlyBanner,
   RestoreDialog,
   restoreNote,
   ShareDialog,
+  saveNote,
   unarchiveNote,
-  updateNote,
 } from "@/features/notes";
 import type { RichTextEditorHandle } from "@/features/notes/components/editor";
-import { useTranslation } from "@/lib/i18n";
+import { type TranslationKey, useTranslation } from "@/lib/i18n";
+
+const autoSaveDelayMs = 1000;
+
+const conflictToastId = "note-conflict";
+const saveErrorToastId = "note-save-error";
+
+function saveFailureMessage(
+  failure: SaveFailure,
+  t: (key: TranslationKey) => string,
+): string {
+  if (failure.retryable) {
+    return t("notes.editor.saveUnreachable");
+  }
+
+  if (failure.httpStatus === 403 || failure.httpStatus === 404) {
+    return t("notes.editor.saveGone");
+  }
+
+  return t("notes.editor.saveFailed");
+}
 
 type PendingFocusRestore =
   | {
@@ -44,6 +76,22 @@ type PendingFocusRestore =
 
 function getFocusRestoreStorageKey(noteId: string) {
   return `note-focus-restore-${noteId}`;
+}
+
+function getStoredNoteKey(noteId: string) {
+  return `note-${noteId}`;
+}
+
+// Written by the note card so the editor can paint before the fetch lands.
+function readStoredNote(noteId: string): Note | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const stored = sessionStorage.getItem(getStoredNoteKey(noteId));
+    return stored ? (JSON.parse(stored) as Note) : null;
+  } catch {
+    return null;
+  }
 }
 
 export default function NoteEditorPage() {
@@ -63,15 +111,17 @@ export default function NoteEditorPage() {
   const [isArchived, setIsArchived] = useState(false);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [background, setBackground] = useState<string | null>(null);
+  const [lastSaved, setLastSaved] = useState<NoteDraft | null>(null);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isSaveStuck, setIsSaveStuck] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [archiveDialogOpen, setArchiveDialogOpen] = useState(false);
   const [restoreDialogOpen, setRestoreDialogOpen] = useState(false);
   const [permanentDeleteDialogOpen, setPermanentDeleteDialogOpen] =
     useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const restoreFocusFrameRef = useRef<number | null>(null);
   const titleInputRef = useRef<HTMLInputElement | null>(null);
   const contentEditorRef = useRef<RichTextEditorHandle | null>(null);
@@ -80,40 +130,46 @@ export default function NoteEditorPage() {
   const autoFocusedNewNoteRef = useRef(false);
   const pendingFocusRestoreRef = useRef<PendingFocusRestore | null>(null);
   const pendingCreateNoteRef = useRef<Promise<Note> | null>(null);
-  const lastSavedRef = useRef<{
-    title: string;
-    content: string;
-    isPinned: boolean;
-    tagIds: string[];
-    background: string | null;
-  } | null>(null);
+  const noteVersionRef = useRef<number | undefined>(undefined);
 
-  // Try to get note from sessionStorage first (passed from note card)
-  const [noteFromStorage, setNoteFromStorage] = useState<Note | null>(null);
+  // The queue outlives every render and reaches the current handlers here.
+  const live = useRef({
+    noteId,
+    t,
+    onSaved: (_draft: NoteDraft, _note: Note) => {},
+    onConflict: (_serverNote: Note, _canRetry: boolean) =>
+      "adopt" as ConflictResolution,
+    save: () => {},
+    flush: () => {},
+  });
+
+  const queueRef = useRef<NoteSaveQueue | null>(null);
+  queueRef.current ??= createNoteSaveQueue({
+    save: (draft, baseVersion) =>
+      saveNote(live.current.noteId, { ...draft, baseVersion }),
+    onSaved: (draft, note) => live.current.onSaved(draft, note),
+    onConflict: (serverNote, _draft, canRetry) =>
+      live.current.onConflict(serverNote, canRetry),
+    onFailed: (failure) => {
+      setIsSaveStuck(failure.retryable);
+      toast.error(saveFailureMessage(failure, live.current.t), {
+        id: saveErrorToastId,
+        duration: failure.retryable ? Number.POSITIVE_INFINITY : undefined,
+      });
+    },
+    onBusyChange: setIsSavingDraft,
+  });
+  const queue = queueRef.current;
+
+  const [storedNote] = useState<Note | null>(() =>
+    isNew ? null : readStoredNote(noteId),
+  );
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || isNew) return;
+    sessionStorage.removeItem(getStoredNoteKey(noteId));
+  }, [isNew, noteId]);
 
-    if (isNew) {
-      setNoteFromStorage(null);
-      return;
-    }
-
-    try {
-      setNoteFromStorage(null);
-      const stored = sessionStorage.getItem(`note-${noteId}`);
-      if (stored) {
-        const note = JSON.parse(stored) as Note;
-        // Clean up after reading
-        sessionStorage.removeItem(`note-${noteId}`);
-        setNoteFromStorage(note);
-      }
-    } catch (error) {
-      console.error("Failed to parse note from sessionStorage:", error);
-    }
-  }, [noteId, isNew]);
-
-  // Fetch existing note (only if not in sessionStorage)
   const {
     data: noteFromApi,
     isLoading,
@@ -121,11 +177,13 @@ export default function NoteEditorPage() {
   } = useQuery({
     queryKey: ["notes", noteId],
     queryFn: () => getNote(noteId),
-    enabled: !isNew && !noteFromStorage,
+    enabled: !isNew,
+    placeholderData: storedNote ?? undefined,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
-  // Use note from storage if available, otherwise use API data
-  const note = isNew ? null : noteFromStorage || noteFromApi;
+  const note = isNew ? null : (noteFromApi ?? null);
 
   // Check permissions
   const isOwner = note ? note.permission === "owner" : true;
@@ -136,10 +194,21 @@ export default function NoteEditorPage() {
   const isReadOnly = note ? note.state === "trashed" || isViewer : false;
   const canUpload = isOwner || isEditor;
 
-  // Persist the trimmed title; blank stays blank (cards render the "Untitled" placeholder).
-  const getTitleForSave = useCallback(() => {
-    return title.trim();
-  }, [title]);
+  const draft = useMemo<NoteDraft>(
+    () => ({
+      // Blank stays blank; cards render the "Untitled" placeholder.
+      title: title.trim(),
+      content,
+      isPinned,
+      background,
+      tagIds: selectedTagIds,
+    }),
+    [title, content, isPinned, background, selectedTagIds],
+  );
+
+  const hasUnsavedChanges = lastSaved
+    ? !noteDraftsEqual(draft, lastSaved)
+    : isNew && (draft.title !== "" || !isStoredContentEmpty(content));
 
   const capturePendingFocusRestore =
     useCallback((): PendingFocusRestore | null => {
@@ -173,6 +242,21 @@ export default function NoteEditorPage() {
       return null;
     }, []);
 
+  const applyServerNote = useCallback(
+    (serverNote: Note) => {
+      const incoming = noteToDraft(serverNote);
+      setTitle(incoming.title);
+      setContent(incoming.content);
+      setIsPinned(incoming.isPinned);
+      setBackground(incoming.background);
+      setSelectedTagIds(incoming.tagIds);
+      setLastSaved(incoming);
+      noteVersionRef.current = serverNote.version;
+      queue.setBaseVersion(serverNote.version);
+    },
+    [queue],
+  );
+
   // Initialize brand-new note state once per /new session.
   useEffect(() => {
     if (!isNew) {
@@ -185,8 +269,9 @@ export default function NoteEditorPage() {
 
     initializedNewNoteRef.current = true;
     hydratedNoteIdRef.current = null;
-    lastSavedRef.current = null;
+    noteVersionRef.current = undefined;
     pendingFocusRestoreRef.current = null;
+    setLastSaved(null);
     setTitle("");
     setContent("");
     setIsPinned(false);
@@ -242,21 +327,34 @@ export default function NoteEditorPage() {
   useEffect(() => {
     if (!note || hydratedNoteIdRef.current === note.id) return;
 
-    const tagIds = note.tagIds || note.tags?.map((t) => t.id) || [];
-    setTitle(note.title);
-    setContent(note.content || "");
-    setIsPinned(note.isPinned);
-    setSelectedTagIds(tagIds);
-    setBackground(note.background || null);
-    lastSavedRef.current = {
-      title: note.title,
-      content: note.content || "",
-      isPinned: note.isPinned,
-      tagIds,
-      background: note.background || null,
-    };
+    const hydrated = noteToDraft(note);
+    setTitle(hydrated.title);
+    setContent(hydrated.content);
+    setIsPinned(hydrated.isPinned);
+    setSelectedTagIds(hydrated.tagIds);
+    setBackground(hydrated.background);
+    setLastSaved(hydrated);
+    noteVersionRef.current = note.version;
+    queue.setBaseVersion(note.version);
     hydratedNoteIdRef.current = note.id;
-  }, [note]);
+  }, [note, queue]);
+
+  // A newer copy arrived from somewhere else: it replaces what is on screen,
+  // unless there is an unsaved edit, which is re-based onto it and goes up next.
+  useEffect(() => {
+    if (!note || hydratedNoteIdRef.current !== note.id) return;
+
+    const base = noteVersionRef.current;
+    if (base !== undefined && note.version <= base) return;
+
+    if (hasUnsavedChanges) {
+      noteVersionRef.current = note.version;
+      queue.setBaseVersion(note.version);
+      return;
+    }
+
+    applyServerNote(note);
+  }, [note, hasUnsavedChanges, applyServerNote, queue]);
 
   // Keep lightweight metadata in sync with fresh query data.
   useEffect(() => {
@@ -274,6 +372,13 @@ export default function NoteEditorPage() {
       queryClient.setQueryData(["notes", newNote.id], newNote);
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
+
+      // Anything typed while the note was being created stays and goes up next.
+      hydratedNoteIdRef.current = newNote.id;
+      noteVersionRef.current = newNote.version;
+      queue.setBaseVersion(newNote.version);
+      setLastSaved(noteToDraft(newNote));
+
       if (typeof window !== "undefined" && pendingFocusRestoreRef.current) {
         sessionStorage.setItem(
           getFocusRestoreStorageKey(newNote.id),
@@ -302,11 +407,11 @@ export default function NoteEditorPage() {
       pendingFocusRestoreRef.current = focusRestore;
 
       const createPromise = createMutation.mutateAsync({
-        title: getTitleForSave(),
-        content: content || undefined,
-        isPinned,
-        background,
-        tagIds: selectedTagIds,
+        title: draft.title,
+        content: draft.content || undefined,
+        isPinned: draft.isPinned,
+        background: draft.background,
+        tagIds: draft.tagIds,
       });
 
       pendingCreateNoteRef.current = createPromise.finally(() => {
@@ -315,144 +420,134 @@ export default function NoteEditorPage() {
 
       return pendingCreateNoteRef.current;
     },
-    [
-      background,
-      content,
-      createMutation,
-      getTitleForSave,
-      isNew,
-      isPinned,
-      note,
-      selectedTagIds,
-    ],
+    [createMutation, draft, isNew, note],
   );
 
-  // Update note mutation
-  const updateMutation = useMutation({
-    mutationFn: (data: UpdateNoteDto) => updateNote(noteId, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      setHasUnsavedChanges(false);
-      lastSavedRef.current = {
-        title,
-        content,
-        isPinned,
-        tagIds: selectedTagIds,
-        background,
-      };
-    },
-    onError: () => {
-      toast.error(t("notes.editor.saveFailed"));
-    },
-  });
-
-  // Delete note mutation
-  const deleteMutation = useMutation({
-    mutationFn: () => deleteNote(noteId),
-    onSuccess: () => {
+  const handleSaved = useCallback(
+    (savedDraft: NoteDraft, savedNote: Note) => {
+      setLastSaved(savedDraft);
+      noteVersionRef.current = savedNote.version;
+      setIsSaveStuck(false);
+      toast.dismiss(saveErrorToastId);
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["tags"] });
-      toast.success(t("notes.editor.movedToTrash"));
-      router.back();
     },
-    onError: () => {
-      toast.error(t("notes.editor.deleteFailed"));
-    },
-  });
+    [queryClient],
+  );
 
-  // Archive note mutation
-  const archiveMutation = useMutation({
-    mutationFn: () => archiveNote(noteId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", "archive"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      setIsArchived(true);
-      toast.success(t("notes.editor.archived"));
-      router.back();
-    },
-    onError: () => {
-      toast.error(t("notes.editor.archiveFailed"));
-    },
-  });
+  const handleConflict = useCallback(
+    (serverNote: Note, canRetry: boolean): ConflictResolution => {
+      const serverWins =
+        !canRetry ||
+        serverNote.permission === "viewer" ||
+        serverNote.state !== "active";
 
-  // Unarchive note mutation
-  const unarchiveMutation = useMutation({
-    mutationFn: () => unarchiveNote(noteId),
-    onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", "archive"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      setIsArchived(false);
-      // Clear noteFromStorage so the query can refetch
-      setNoteFromStorage(null);
-      // Refetch the note to get updated data
-      await refetchNote();
-      toast.success(t("notes.editor.unarchived"));
-    },
-    onError: () => {
-      toast.error(t("notes.editor.unarchiveFailed"));
-    },
-  });
+      if (serverWins) {
+        applyServerNote(serverNote);
+        toast.info(t("notes.editor.conflictReloaded"), {
+          id: conflictToastId,
+        });
+        return "adopt";
+      }
 
-  // Restore note mutation (for trashed notes)
-  const restoreMutation = useMutation({
-    mutationFn: () => restoreNote(noteId),
-    onSuccess: async () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      // Clear noteFromStorage so the query can refetch
-      setNoteFromStorage(null);
-      // Refetch the note to get updated data
-      await refetchNote();
-      toast.success(t("notes.editor.restored"));
+      noteVersionRef.current = serverNote.version;
+      toast.info(t("notes.editor.conflictKeptYours"), {
+        id: conflictToastId,
+      });
+      return "retry";
     },
-    onError: () => {
-      toast.error(t("notes.editor.restoreFailed"));
-    },
-  });
+    [applyServerNote, t],
+  );
 
-  // Permanent delete mutation (for trashed notes)
-  const permanentDeleteMutation = useMutation({
-    mutationFn: () => permanentDeleteNote(noteId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
-      queryClient.invalidateQueries({ queryKey: ["tags"] });
-      toast.success(t("notes.editor.permanentlyDeleted"));
-      router.back();
-    },
-    onError: () => {
-      toast.error(t("notes.editor.deleteFailed"));
-    },
-  });
+  const save = useCallback(() => {
+    if (isReadOnly || !hasUnsavedChanges) return;
 
-  // Check for unsaved changes
-  const checkUnsavedChanges = useCallback(() => {
-    if (!lastSavedRef.current && isNew) {
-      return title.trim() !== "" || !isStoredContentEmpty(content);
+    if (isNew) {
+      void createNewNote(capturePendingFocusRestore());
+      return;
     }
-    if (!lastSavedRef.current) return false;
 
-    return (
-      title !== lastSavedRef.current.title ||
-      content !== lastSavedRef.current.content ||
-      isPinned !== lastSavedRef.current.isPinned ||
-      background !== lastSavedRef.current.background ||
-      JSON.stringify([...selectedTagIds].sort()) !==
-        JSON.stringify([...lastSavedRef.current.tagIds].sort())
-    );
-  }, [title, content, isPinned, selectedTagIds, background, isNew]);
+    pendingFocusRestoreRef.current = null;
+    queue.push(draft);
+  }, [
+    capturePendingFocusRestore,
+    createNewNote,
+    draft,
+    hasUnsavedChanges,
+    isNew,
+    isReadOnly,
+    queue,
+  ]);
+
+  const flush = useCallback(() => {
+    if (isNew || isReadOnly || !hasUnsavedChanges) return;
+
+    flushNoteUpdate(noteId, draft);
+  }, [draft, hasUnsavedChanges, isNew, isReadOnly, noteId]);
 
   useEffect(() => {
-    setHasUnsavedChanges(checkUnsavedChanges());
-  }, [checkUnsavedChanges]);
+    live.current = {
+      noteId,
+      t,
+      onSaved: handleSaved,
+      onConflict: handleConflict,
+      save,
+      flush,
+    };
+  });
+
+  const ensureNoteIdForAttachmentUpload = useCallback(async () => {
+    if (isReadOnly || !canUpload) {
+      return null;
+    }
+
+    if (!isNew) {
+      return noteId;
+    }
+
+    const newNote = await createNewNote(null);
+    return newNote?.id ?? null;
+  }, [canUpload, createNewNote, isNew, isReadOnly, noteId]);
+
+  useEffect(() => {
+    if (!hasUnsavedChanges || isReadOnly) return;
+
+    const timeout = setTimeout(save, autoSaveDelayMs);
+
+    return () => clearTimeout(timeout);
+  }, [hasUnsavedChanges, isReadOnly, save]);
+
+  useEffect(() => {
+    const save = () => live.current.save();
+    const flush = () => live.current.flush();
+    const saveWhenHidden = () => {
+      if (document.visibilityState === "hidden") live.current.save();
+    };
+
+    window.addEventListener("pagehide", flush);
+    window.addEventListener("online", save);
+    document.addEventListener("visibilitychange", saveWhenHidden);
+
+    return () => {
+      window.removeEventListener("pagehide", flush);
+      window.removeEventListener("online", save);
+      document.removeEventListener("visibilitychange", saveWhenHidden);
+      live.current.save();
+      if (restoreFocusFrameRef.current !== null) {
+        window.cancelAnimationFrame(restoreFocusFrameRef.current);
+      }
+    };
+  }, []);
+
+  // Closing now would drop the text the retries have not managed to send.
+  useEffect(() => {
+    if (!isSaveStuck) return;
+
+    const warn = (event: BeforeUnloadEvent) => event.preventDefault();
+    window.addEventListener("beforeunload", warn);
+
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [isSaveStuck]);
 
   useEffect(() => {
     if (typeof window === "undefined" || isNew || !note) return;
@@ -528,96 +623,105 @@ export default function NoteEditorPage() {
     };
   }, [isNew, note]);
 
-  // Auto-save with debounce
-  const save = useCallback(() => {
-    if (isReadOnly) return;
-    if (createMutation.isPending || updateMutation.isPending) return;
-    if (!title.trim() && isStoredContentEmpty(content)) return;
+  // Delete note mutation
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteNote(noteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      toast.success(t("notes.editor.movedToTrash"));
+      router.back();
+    },
+    onError: () => {
+      toast.error(t("notes.editor.deleteFailed"));
+    },
+  });
 
-    if (isNew) {
-      void createNewNote(capturePendingFocusRestore());
-    } else {
-      pendingFocusRestoreRef.current = null;
-      updateMutation.mutate({
-        title: getTitleForSave(),
-        content: content || undefined,
-        isPinned,
-        background: background,
-        tagIds: selectedTagIds,
-      });
-    }
-  }, [
-    background,
-    capturePendingFocusRestore,
-    content,
-    createMutation.isPending,
-    createNewNote,
-    getTitleForSave,
-    isNew,
-    isPinned,
-    isReadOnly,
-    selectedTagIds,
-    title,
-    updateMutation,
-  ]);
+  // Archive note mutation
+  const archiveMutation = useMutation({
+    mutationFn: () => archiveNote(noteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", "archive"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      setIsArchived(true);
+      toast.success(t("notes.editor.archived"));
+      router.back();
+    },
+    onError: () => {
+      toast.error(t("notes.editor.archiveFailed"));
+    },
+  });
 
-  const ensureNoteIdForAttachmentUpload = useCallback(async () => {
-    if (isReadOnly || !canUpload) {
-      return null;
-    }
+  // Unarchive note mutation
+  const unarchiveMutation = useMutation({
+    mutationFn: () => unarchiveNote(noteId),
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", "archive"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      setIsArchived(false);
+      await refetchNote();
+      toast.success(t("notes.editor.unarchived"));
+    },
+    onError: () => {
+      toast.error(t("notes.editor.unarchiveFailed"));
+    },
+  });
 
-    if (!isNew) {
-      return noteId;
-    }
+  // Restore note mutation (for trashed notes)
+  const restoreMutation = useMutation({
+    mutationFn: () => restoreNote(noteId),
+    onSuccess: async () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", noteId] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      await refetchNote();
+      toast.success(t("notes.editor.restored"));
+    },
+    onError: () => {
+      toast.error(t("notes.editor.restoreFailed"));
+    },
+  });
 
-    const newNote = await createNewNote(null);
-    return newNote?.id ?? null;
-  }, [canUpload, createNewNote, isNew, isReadOnly, noteId]);
-
-  // Debounced auto-save (disabled when read-only)
-  useEffect(() => {
-    if (!hasUnsavedChanges || isReadOnly) return;
-
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-
-    saveTimeoutRef.current = setTimeout(() => {
-      save();
-    }, 1000); // Auto-save after 1 second of inactivity
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [hasUnsavedChanges, save, isReadOnly]);
-
-  // Save on unmount if there are changes
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      if (restoreFocusFrameRef.current !== null) {
-        window.cancelAnimationFrame(restoreFocusFrameRef.current);
-      }
-    };
-  }, []);
+  // Permanent delete mutation (for trashed notes)
+  const permanentDeleteMutation = useMutation({
+    mutationFn: () => permanentDeleteNote(noteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["notes", "trash"] });
+      queryClient.invalidateQueries({ queryKey: ["tags"] });
+      toast.success(t("notes.editor.permanentlyDeleted"));
+      router.back();
+    },
+    onError: () => {
+      toast.error(t("notes.editor.deleteFailed"));
+    },
+  });
 
   const handleBack = () => {
-    if (hasUnsavedChanges) {
-      save();
-    }
+    save();
     router.back();
+  };
+
+  const openHistory = () => {
+    save();
+    setHistoryOpen(true);
+  };
+
+  const handleRestored = (restored: Note) => {
+    applyServerNote(restored);
   };
 
   const togglePin = () => {
     setIsPinned((prev) => !prev);
   };
 
-  // Only show loading if we don't have note from storage and are fetching from API
-  if (isLoading && !isNew && !noteFromStorage) {
+  // Only show loading if we have nothing to render yet
+  if (isLoading && !isNew) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-3">
@@ -630,7 +734,7 @@ export default function NoteEditorPage() {
     );
   }
 
-  const isSaving = updateMutation.isPending || createMutation.isPending;
+  const isSaving = isSavingDraft || createMutation.isPending;
   const isSaved = !hasUnsavedChanges && !isSaving && !isNew;
 
   return (
@@ -659,6 +763,7 @@ export default function NoteEditorPage() {
         onRestoreClick={() => setRestoreDialogOpen(true)}
         onPermanentDeleteClick={() => setPermanentDeleteDialogOpen(true)}
         onShareClick={!isNew ? () => setShareDialogOpen(true) : undefined}
+        onHistoryClick={!isNew && !isViewer ? openHistory : undefined}
         restorePending={restoreMutation.isPending}
         permanentDeletePending={permanentDeleteMutation.isPending}
       />
@@ -735,6 +840,18 @@ export default function NoteEditorPage() {
           open={shareDialogOpen}
           onOpenChange={setShareDialogOpen}
           noteId={noteId}
+        />
+      )}
+
+      {!isNew && (
+        <NoteHistorySheet
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          noteId={noteId}
+          note={note}
+          currentUserId={user?.id ?? null}
+          isSaving={isSaving || hasUnsavedChanges}
+          onRestored={handleRestored}
         />
       )}
 

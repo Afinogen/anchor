@@ -8,6 +8,7 @@ import '../app_initializer.dart' as app_init;
 import '../logging/app_logger.dart';
 import '../logging/dio_logging_interceptor.dart';
 import 'server_config_provider.dart';
+import 'anchor_protocol.dart';
 
 part 'dio_provider.g.dart';
 
@@ -49,6 +50,7 @@ Dio dio(Ref ref) {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
     'Accept-Language': app_init.currentAppLocale.languageCode,
+    anchorProtocolHeader: '$anchorProtocol',
   };
 
   // Allow self-signed certificates when the user has enabled the setting
@@ -244,6 +246,9 @@ DioException _transformError(DioException e) {
           break;
         case 404:
           message = l10n.errorNotFound;
+          break;
+        case upgradeRequiredStatus:
+          message = 'App and server versions are incompatible.';
           break;
         case 500:
           message = l10n.errorServer;

@@ -1,20 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
-import 'package:google_fonts/google_fonts.dart';
+
+import '../../theme/app_typography.dart';
 
 /// Creates custom styles for the Quill editor matching the app theme
 DefaultStyles getEditorStyles(BuildContext context) {
   final theme = Theme.of(context);
 
-  // Use DM Sans for body text (matching app theme)
-  final baseStyle = GoogleFonts.dmSans(
+  // Editor keeps its own type scale; styles come straight from
+  // AppTypography so note rendering is independent of UI theme tweaks.
+  final baseStyle = AppTypography.editorBody(
     color: theme.colorScheme.onSurface,
-    fontSize: 18,
-    height: 1.48,
   );
 
-  // Use Playfair Display for headers (matching app theme)
-  final headerStyle = GoogleFonts.playfairDisplay(
+  final headerStyle = AppTypography.serif(
     color: theme.colorScheme.onSurface,
     fontWeight: FontWeight.bold,
   );
@@ -28,14 +27,14 @@ DefaultStyles getEditorStyles(BuildContext context) {
       null,
     ),
     h1: DefaultTextBlockStyle(
-      headerStyle.copyWith(fontSize: 28, height: 1.3),
+      headerStyle.copyWith(fontSize: AppTypography.editorH1Size, height: 1.3),
       const HorizontalSpacing(0, 0),
       const VerticalSpacing(16, 8),
       const VerticalSpacing(0, 0),
       null,
     ),
     h2: DefaultTextBlockStyle(
-      headerStyle.copyWith(fontSize: 24, height: 1.3),
+      headerStyle.copyWith(fontSize: AppTypography.editorH2Size, height: 1.3),
       const HorizontalSpacing(0, 0),
       const VerticalSpacing(12, 6),
       const VerticalSpacing(0, 0),
@@ -43,7 +42,7 @@ DefaultStyles getEditorStyles(BuildContext context) {
     ),
     h3: DefaultTextBlockStyle(
       headerStyle.copyWith(
-        fontSize: 20,
+        fontSize: AppTypography.editorH3Size,
         fontWeight: FontWeight.w600,
         height: 1.3,
       ),
@@ -69,10 +68,20 @@ DefaultStyles getEditorStyles(BuildContext context) {
       const VerticalSpacing(0, 0),
       null,
     ),
+    // Every indented run is its own block and pulls spacing from `indent`,
+    // not `lists`; keeping bottom+top across any seam equal to the in-block
+    // line gap (8) makes the rhythm uniform at every nesting boundary.
+    indent: DefaultTextBlockStyle(
+      baseStyle.copyWith(height: 1.2),
+      const HorizontalSpacing(0, 0),
+      const VerticalSpacing(0, 8),
+      const VerticalSpacing(8, 0),
+      null,
+    ),
     lists: DefaultListBlockStyle(
       baseStyle.copyWith(height: 1.2),
       const HorizontalSpacing(0, 0),
-      const VerticalSpacing(0, 10),
+      const VerticalSpacing(0, 8),
       const VerticalSpacing(8, 0),
       null,
       null,
@@ -81,18 +90,22 @@ DefaultStyles getEditorStyles(BuildContext context) {
         final listAttr = attrs[Attribute.list.key];
         final isOrdered = listAttr?.value == 'ordered';
         final isBullet = listAttr?.value == 'bullet';
+        // Lines with an indent attribute form their own block; the nesting
+        // offset must come from this builder.
+        final indentLevel = attrs[Attribute.indent.key]?.value as int? ?? 0;
+        final nesting = 24.0 * indentLevel;
 
         if (attrs.containsKey(Attribute.blockQuote.key)) {
-          return HorizontalSpacing(16, 0);
+          return HorizontalSpacing(16 + nesting, 0);
         }
         if (isOrdered) {
           final base = widthBuilder(16, count);
-          return HorizontalSpacing(base, 0);
+          return HorizontalSpacing(base + nesting, 0);
         }
         if (isBullet) {
-          return HorizontalSpacing(24, 0);
+          return HorizontalSpacing(24 + nesting, 0);
         }
-        return HorizontalSpacing(36, 0);
+        return HorizontalSpacing(36 + nesting, 0);
       },
     ),
     quote: DefaultTextBlockStyle(
@@ -113,10 +126,7 @@ DefaultStyles getEditorStyles(BuildContext context) {
       ),
     ),
     code: DefaultTextBlockStyle(
-      GoogleFonts.jetBrainsMono(
-        fontSize: 14,
-        color: theme.colorScheme.onSurface,
-      ),
+      AppTypography.code(fontSize: 14, color: theme.colorScheme.onSurface),
       const HorizontalSpacing(0, 0),
       const VerticalSpacing(8, 8),
       const VerticalSpacing(0, 0),

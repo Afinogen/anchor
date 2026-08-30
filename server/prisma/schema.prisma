@@ -29,6 +29,24 @@ enum AttachmentType {
   audio
 }
 
+enum SyncEntityType {
+  note
+  tag
+  pin
+  attachments
+}
+
+enum SyncOp {
+  upsert
+  remove
+}
+
+enum RevisionCause {
+  edit
+  conflict
+  restore
+}
+
 model User {
   id                   String           @id @default(uuid())
   email                String           @unique
@@ -48,6 +66,9 @@ model User {
   refreshTokens        RefreshToken[]
   uploadedAttachments  NoteAttachment[]
   notePins             NotePin[]
+  syncState            SyncState?
+  changeLog            ChangeLog[]
+  noteRevisions        NoteRevision[]
 }
 
 model Settings {
@@ -65,17 +86,20 @@ model Note {
   isArchived  Boolean     @default(false)
   background  String?
   state       NoteState   @default(active)
+  version     Int         @default(1)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-  syncedAt    DateTime    @default(now())
+  stateChangedAt DateTime @default(now())
   userId      String
   user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   tags        Tag[]
   sharedWith  NoteShare[]
   attachments NoteAttachment[]
   pins        NotePin[]
+  revisions   NoteRevision[]
 
-  @@index([userId, syncedAt])
+  @@index([userId])
+  @@index([state, stateChangedAt])
 }
 
 model NotePin {
@@ -94,6 +118,7 @@ model Tag {
   name      String
   color     String?
   isDeleted Boolean   @default(false)
+  version   Int       @default(1)
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   userId    String
@@ -131,6 +156,47 @@ model RefreshToken {
 
   @@index([userId])
   @@index([token])
+}
+
+model SyncState {
+  userId           String @id
+  lastSeq          BigInt @default(0)
+  prunedThroughSeq BigInt @default(0)
+  user             User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // lastSeq is only advanced by next_sync_seq(uid, n).
+}
+
+model ChangeLog {
+  recipientUserId String
+  entityType      SyncEntityType
+  entityId        String
+  op              SyncOp
+  seq             BigInt
+  updatedAt       DateTime       @updatedAt
+  recipient       User           @relation(fields: [recipientUserId], references: [id], onDelete: Cascade)
+
+  // One row per (recipient, entity), re-stamped with a fresh seq on each
+  // change. No FK on entityId: rows outlive the entities they point at.
+  @@id([recipientUserId, entityType, entityId])
+  @@unique([recipientUserId, seq])
+  @@index([op, updatedAt])
+}
+
+model NoteRevision {
+  id           String        @id @default(uuid())
+  noteId       String
+  version      Int
+  title        String
+  content      String?
+  authorUserId String?
+  cause        RevisionCause
+  createdAt    DateTime      @default(now())
+  note         Note          @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  author       User?         @relation(fields: [authorUserId], references: [id], onDelete: SetNull)
+
+  @@index([noteId, createdAt(sort: Desc)])
+  @@index([createdAt])
 }
 
 model NoteAttachment {

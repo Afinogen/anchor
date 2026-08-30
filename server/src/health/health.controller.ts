@@ -1,8 +1,11 @@
 import { Controller, Get } from '@nestjs/common';
 import * as path from 'path';
 import * as fs from 'fs';
+import { SUPPORTED_PROTOCOLS } from '../common/protocol/protocol.constants';
+import { SkipProtocolGate } from '../common/protocol/skip-protocol-gate.decorator';
 
 @Controller('api/health')
+@SkipProtocolGate()
 export class HealthController {
   @Get()
   check() {
@@ -24,6 +27,7 @@ export class HealthController {
       status: 'ok',
       app: 'anchor',
       version,
+      protocols: SUPPORTED_PROTOCOLS,
       timestamp: new Date().toISOString(),
     };
   }

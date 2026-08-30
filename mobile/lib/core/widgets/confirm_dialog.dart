@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../theme/context_extensions.dart';
+import '../theme/tokens/app_opacity.dart';
+import 'app_bottom_sheet.dart';
+
+/// Dialog with a large tinted icon and one or two actions.
 class ConfirmDialog extends StatelessWidget {
   final IconData icon;
   final Color? iconColor;
   final String title;
   final String message;
-  final String cancelText;
+
+  final String? cancelText;
+
   final String confirmText;
   final Color? confirmColor;
   final VoidCallback onConfirm;
@@ -23,88 +30,64 @@ class ConfirmDialog extends StatelessWidget {
     required this.onConfirm,
   });
 
+  static const double _iconChipSize = 64;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final effectiveIconColor = iconColor ?? theme.colorScheme.primary;
-    final effectiveConfirmColor = confirmColor ?? theme.colorScheme.primary;
-
-    // Calculate contrasting text color based on confirm button background
-    final confirmTextColor = effectiveConfirmColor.computeLuminance() > 0.5
-        ? Colors.black
-        : Colors.white;
 
     return Dialog(
-      backgroundColor: theme.colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(dims.xl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: _iconChipSize,
+              height: _iconChipSize,
               decoration: BoxDecoration(
-                color: effectiveIconColor.withValues(alpha: 0.12),
+                color: effectiveIconColor.withValues(
+                  alpha: AppOpacity.subtleFill,
+                ),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, color: effectiveIconColor, size: 32),
+              child: Icon(
+                icon,
+                color: effectiveIconColor,
+                size: _iconChipSize / 2,
+              ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: dims.lg),
             Text(
               title,
+              textAlign: TextAlign.center,
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: dims.xs),
             Text(
               message,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                color: theme.colorScheme.onSurface.withValues(
+                  alpha: AppOpacity.secondary,
+                ),
                 height: 1.4,
               ),
             ),
-            const SizedBox(height: 24),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: () => context.pop(false),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      side: BorderSide(
-                        color: theme.colorScheme.outline.withValues(alpha: 0.3),
-                      ),
-                    ),
-                    child: Text(cancelText),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      backgroundColor: effectiveConfirmColor,
-                      foregroundColor: confirmTextColor,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                    ),
-                    onPressed: () {
-                      context.pop(true);
-                      onConfirm();
-                    },
-                    child: Text(confirmText),
-                  ),
-                ),
-              ],
+            SizedBox(height: dims.xl),
+            SheetActionButtons(
+              cancelText: cancelText,
+              confirmText: confirmText,
+              confirmColor: confirmColor,
+              onCancel: cancelText == null ? null : () => context.pop(false),
+              onConfirm: () {
+                context.pop(true);
+                onConfirm();
+              },
             ),
           ],
         ),
@@ -118,7 +101,7 @@ class ConfirmDialog extends StatelessWidget {
     Color? iconColor,
     required String title,
     required String message,
-    String cancelText = 'Cancel',
+    String? cancelText = 'Cancel',
     required String confirmText,
     Color? confirmColor,
   }) {

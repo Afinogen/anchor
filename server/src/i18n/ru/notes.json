@@ -1,5 +1,6 @@
 {
   "noteNotFound": "Заметка не найдена",
+  "revisionNotFound": "Версия не найдена",
   "userNotFound": "Пользователь не найден",
   "shareNotFound": "Доступ не найден",
   "onlyOwnerCanShare": "Делиться заметкой может только её владелец",

@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Check,
   Eye,
+  History,
   Loader2,
   Pin,
   PinOff,
@@ -45,6 +46,7 @@ interface NoteEditorHeaderProps {
   onRestoreClick: () => void;
   onPermanentDeleteClick: () => void;
   onShareClick?: () => void;
+  onHistoryClick?: () => void;
   restorePending?: boolean;
   permanentDeletePending?: boolean;
 }
@@ -70,6 +72,7 @@ export function NoteEditorHeader({
   onRestoreClick,
   onPermanentDeleteClick,
   onShareClick,
+  onHistoryClick,
   restorePending = false,
   permanentDeletePending = false,
 }: NoteEditorHeaderProps) {
@@ -185,6 +188,24 @@ export function NoteEditorHeader({
                 </TooltipContent>
               </Tooltip>
             </>
+          )}
+
+          {!isNew && onHistoryClick && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={onHistoryClick}
+                  className="h-9 w-9 rounded-xl"
+                >
+                  <History className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">
+                {t("notes.history.versionHistory")}
+              </TooltipContent>
+            </Tooltip>
           )}
 
           {!isNew && isOwner && !isTrashed && onShareClick && (

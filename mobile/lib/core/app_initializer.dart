@@ -5,16 +5,17 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:home_widget/home_widget.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../features/settings/data/repository/preferences_repository.dart';
 import 'home_widget/home_widget_payload.dart';
 import 'logging/app_logger.dart';
 import 'router/app_routes.dart';
+import 'theme/tokens/app_dimensions.dart';
 
-const _themeModeKey = 'theme_mode';
 const _serverUrlKey = 'server_url';
 const _accessTokenKey = 'access_token';
-const _localeKey = 'app_locale';
 const _storage = FlutterSecureStorage();
 
 /// Locales the app ships translations for.
@@ -42,6 +43,10 @@ Locale resolveSupportedLocale(String languageCode) {
   }
   return const Locale('en');
 }
+
+/// Holds the initial display density loaded before the app starts
+/// This is set by [initializeApp] and read by the density provider
+DisplayDensity initialDisplayDensity = DisplayDensity.standard;
 
 /// Holds the initial user ID loaded before the app starts
 /// This is set by [initializeApp] and read by [ActiveUserId] provider
@@ -77,8 +82,8 @@ Future<void> initializeApp() async {
     return false;
   };
 
-  // Load saved theme preference
-  final savedTheme = await _storage.read(key: _themeModeKey);
+  // Load saved appearance preferences
+  final savedTheme = await _storage.read(key: PreferenceKeys.themeMode);
   if (savedTheme != null) {
     initialThemeMode = ThemeMode.values.firstWhere(
       (mode) => mode.name == savedTheme,
@@ -87,7 +92,7 @@ Future<void> initializeApp() async {
   }
 
   // Load saved locale preference, or auto-detect from the device on first run.
-  final savedLocale = await _storage.read(key: _localeKey);
+  final savedLocale = await _storage.read(key: PreferenceKeys.locale);
   if (savedLocale != null && savedLocale.isNotEmpty) {
     initialLocale = resolveSupportedLocale(savedLocale);
   } else {
@@ -96,6 +101,16 @@ Future<void> initializeApp() async {
     );
   }
   currentAppLocale = initialLocale;
+  // Date symbols for every shipped locale; DateFormat needs them before it can
+  // format dates in anything but en_US.
+  await initializeDateFormatting();
+  final savedDensity = await _storage.read(key: PreferenceKeys.displayDensity);
+  if (savedDensity != null) {
+    initialDisplayDensity = DisplayDensity.values.firstWhere(
+      (density) => density.name == savedDensity,
+      orElse: () => DisplayDensity.standard,
+    );
+  }
 
   // User id for per-user database selection, read from the persisted user json.
   final userData = await _storage.read(key: 'user_data');

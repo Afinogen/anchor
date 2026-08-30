@@ -7,6 +7,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:anchor/core/network/connectivity_provider.dart';
+import 'package:anchor/core/theme/context_extensions.dart';
+import 'package:anchor/core/theme/tokens/app_icon_sizes.dart';
+import 'package:anchor/core/theme/tokens/app_radius.dart';
 import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/image_shimmer.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
@@ -50,6 +53,7 @@ class _NoteAttachmentsGalleryState
   Widget build(BuildContext context) {
     final repo = ref.watch(noteAttachmentsRepositoryProvider);
     final isOnline = ref.watch(isOnlineProvider);
+    final dims = context.dims;
 
     return StreamBuilder<List<NoteAttachment>>(
       stream: repo.watchAttachments(widget.noteId),
@@ -63,7 +67,11 @@ class _NoteAttachmentsGalleryState
         final audios = attachments.where((a) => a.isAudio).toList();
 
         return Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 8),
+          padding: EdgeInsets.only(
+            left: dims.editorPadding.left,
+            right: dims.editorPadding.right,
+            top: dims.md,
+          ),
           child: GestureDetector(
             onTap: () {}, // Prevent taps in gallery area from focusing editor
             behavior: HitTestBehavior.opaque,
@@ -79,10 +87,10 @@ class _NoteAttachmentsGalleryState
                     isOnline: isOnline,
                   ),
                 if (audios.isNotEmpty) ...[
-                  if (images.isNotEmpty) const SizedBox(height: 16),
+                  if (images.isNotEmpty) SizedBox(height: dims.md),
                   ...audios.map(
                     (a) => Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: EdgeInsets.only(bottom: dims.xs),
                       child: AudioPlayerRow(
                         attachment: a,
                         localPath: a.localPath,
@@ -386,6 +394,7 @@ class _ImageTileState extends ConsumerState<_ImageTile> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
 
     // Auto-retry when connection is restored
     ref.listen(connectivityStreamProvider, (previous, next) {
@@ -413,9 +422,9 @@ class _ImageTileState extends ConsumerState<_ImageTile> {
             Icon(
               widget.isOnline ? LucideIcons.imageOff : LucideIcons.cloudOff,
               color: theme.colorScheme.onSurfaceVariant,
-              size: 24,
+              size: AppIconSizes.lg,
             ),
-            const SizedBox(height: 4),
+            SizedBox(height: dims.xxs),
             Text(
               context.l10n.availableWhenOnline,
               style: theme.textTheme.labelSmall?.copyWith(
@@ -471,13 +480,13 @@ class _ImageTileState extends ConsumerState<_ImageTile> {
                 top: 8,
                 left: 8,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 4,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: dims.xs,
+                    vertical: dims.xxs,
                   ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: AppRadius.xsBorder,
                     border: Border.all(
                       color: theme.colorScheme.outlineVariant.withValues(
                         alpha: 0.2,
@@ -492,7 +501,7 @@ class _ImageTileState extends ConsumerState<_ImageTile> {
                         size: 12,
                         color: theme.colorScheme.onSurface,
                       ),
-                      const SizedBox(width: 4),
+                      SizedBox(width: dims.xxs),
                       Text(
                         context.l10n.pending,
                         style: theme.textTheme.labelSmall?.copyWith(
@@ -541,14 +550,14 @@ class _ImageTileState extends ConsumerState<_ImageTile> {
                 child: GestureDetector(
                   onTap: _confirmDelete,
                   child: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: EdgeInsets.all(dims.xs),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
                     child: const Icon(
                       LucideIcons.x,
-                      size: 16,
+                      size: AppIconSizes.sm,
                       color: Colors.white,
                     ),
                   ),
@@ -772,7 +781,7 @@ class _ImageLightboxGalleryState extends ConsumerState<_ImageLightboxGallery> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(icon, color: Colors.white54, size: 48),
-          const SizedBox(height: 16),
+          SizedBox(height: context.dims.md),
           Text(label, style: const TextStyle(color: Colors.white54)),
         ],
       ),
@@ -782,6 +791,7 @@ class _ImageLightboxGalleryState extends ConsumerState<_ImageLightboxGallery> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final currentAttachment = widget.attachments[_currentIndex];
     final isOnline = ref.watch(isOnlineProvider);
 
@@ -827,7 +837,10 @@ class _ImageLightboxGalleryState extends ConsumerState<_ImageLightboxGallery> {
               left: 0,
               right: 0,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                padding: EdgeInsets.symmetric(
+                  horizontal: dims.xs,
+                  vertical: dims.xs,
+                ),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
@@ -844,7 +857,7 @@ class _ImageLightboxGalleryState extends ConsumerState<_ImageLightboxGallery> {
                       onPressed: () => context.pop(),
                       icon: const Icon(LucideIcons.x, color: Colors.white),
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: dims.xs),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

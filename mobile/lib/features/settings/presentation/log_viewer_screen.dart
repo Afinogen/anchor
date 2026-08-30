@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
@@ -15,6 +14,10 @@ import '../../../core/extensions/build_context_l10n.dart';
 import '../../../core/logging/app_logger.dart';
 import '../../../core/widgets/app_snackbar.dart';
 import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/theme/context_extensions.dart';
+import '../../../core/theme/app_typography.dart';
+import '../../../core/theme/tokens/app_icon_sizes.dart';
+import '../../../core/theme/tokens/app_radius.dart';
 
 class LogViewerScreen extends ConsumerStatefulWidget {
   const LogViewerScreen({super.key});
@@ -221,9 +224,9 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
         );
         if (!mounted) return;
         AppSnackbar.showError(
-        context,
-        message: context.l10n.exportFailed(e.toString()),
-      );
+          context,
+          message: context.l10n.exportFailed(e.toString()),
+        );
         return;
       }
     }
@@ -258,7 +261,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
 
     final visible = _visibleEntries;
 
@@ -269,15 +272,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
       },
       child: Scaffold(
         body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: isDark
-                  ? [const Color(0xFF1C1E26), const Color(0xFF262A36)]
-                  : [const Color(0xFFF8F9FC), const Color(0xFFEEF1F8)],
-            ),
-          ),
+          decoration: BoxDecoration(gradient: context.colorTokens.pageGradient),
           child: SafeArea(
             child: Column(
               children: [
@@ -297,9 +292,9 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
                         )
                       : ListView.separated(
                           controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: dims.md,
+                            vertical: dims.sm,
                           ),
                           itemCount: visible.length,
                           separatorBuilder: (_, _) => const SizedBox(height: 6),
@@ -332,15 +327,12 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
     bool destructive = false,
   }) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
     final fg = destructive
         ? theme.colorScheme.error
         : theme.colorScheme.onSurface;
     final bg = destructive
         ? theme.colorScheme.error.withValues(alpha: 0.1)
-        : (isDark
-              ? Colors.white.withValues(alpha: 0.06)
-              : Colors.white.withValues(alpha: 0.8));
+        : context.colorTokens.cardFill;
     final borderColor = destructive
         ? theme.colorScheme.error.withValues(alpha: 0.22)
         : theme.colorScheme.onSurface.withValues(alpha: 0.08);
@@ -351,17 +343,21 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
         color: Colors.transparent,
         child: InkWell(
           onTap: onPressed,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: AppRadius.buttonBorder,
           child: Container(
             width: 52,
             height: 52,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: bg,
-              borderRadius: BorderRadius.circular(14),
+              borderRadius: AppRadius.buttonBorder,
               border: Border.all(color: borderColor),
             ),
-            child: Icon(icon, size: 20, color: fg.withValues(alpha: 0.8)),
+            child: Icon(
+              icon,
+              size: AppIconSizes.md,
+              color: fg.withValues(alpha: 0.8),
+            ),
           ),
         ),
       ),
@@ -379,9 +375,9 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
         icon: Icon(icon, size: 18),
         label: Text(label),
         style: FilledButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+          padding: EdgeInsets.symmetric(vertical: context.dims.md),
+          shape: const RoundedRectangleBorder(
+            borderRadius: AppRadius.buttonBorder,
           ),
         ),
       ),
@@ -389,7 +385,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
   }
 
   Widget _buildBottomBar(BuildContext context, ThemeData theme) {
-    final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
 
     final List<Widget> children;
     if (_selectionMode) {
@@ -400,13 +396,13 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
           onPressed: _exitSelectionMode,
           tooltip: context.l10n.cancelSelection,
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: dims.sm),
         _iconAction(
           icon: LucideIcons.listChecks,
           onPressed: _selectAllVisible,
           tooltip: context.l10n.selectAll,
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: dims.sm),
         _primaryAction(
           icon: LucideIcons.copy,
           label: context.l10n.copyCount(count),
@@ -421,13 +417,13 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
           tooltip: context.l10n.clearLogsTooltip,
           destructive: true,
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: dims.sm),
         _iconAction(
           icon: LucideIcons.download,
           onPressed: _exportToFile,
           tooltip: context.l10n.exportToFile,
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: dims.sm),
         _primaryAction(
           icon: LucideIcons.copy,
           label: context.l10n.copyAll,
@@ -438,9 +434,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: isDark
-            ? Colors.white.withValues(alpha: 0.04)
-            : Colors.white.withValues(alpha: 0.6),
+        color: context.colorTokens.inputFill,
         border: Border(
           top: BorderSide(
             color: theme.colorScheme.onSurface.withValues(alpha: 0.06),
@@ -448,37 +442,38 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        padding: EdgeInsets.fromLTRB(dims.md, dims.sm, dims.md, dims.md),
         child: Row(children: children),
       ),
     );
   }
 
   Widget _buildHeader(BuildContext context, ThemeData theme) {
+    final dims = context.dims;
     if (_selectionMode) {
       return Padding(
-        padding: const EdgeInsets.fromLTRB(8, 8, 16, 4),
+        padding: EdgeInsets.fromLTRB(dims.xs, dims.xs, dims.md, dims.xxs),
         child: Row(
           children: [
             IconButton(
               icon: Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(dims.xs),
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface.withValues(alpha: 0.8),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: AppRadius.smBorder,
                 ),
                 child: Icon(
                   LucideIcons.x,
-                  size: 20,
+                  size: AppIconSizes.md,
                   color: theme.colorScheme.onSurface,
                 ),
               ),
               onPressed: _exitSelectionMode,
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: dims.xxs),
             Text(
               '${_selected.length} selected',
-              style: GoogleFonts.playfairDisplay(
+              style: AppTypography.serif(
                 fontSize: 22,
                 fontWeight: FontWeight.bold,
                 color: theme.colorScheme.onSurface,
@@ -490,19 +485,19 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
       );
     }
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 16, 4),
+      padding: EdgeInsets.fromLTRB(dims.xs, dims.xs, dims.md, dims.xxs),
       child: Row(
         children: [
           IconButton(
             icon: Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(dims.xs),
               decoration: BoxDecoration(
                 color: theme.colorScheme.surface.withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.smBorder,
               ),
               child: Icon(
                 LucideIcons.arrowLeft,
-                size: 20,
+                size: AppIconSizes.md,
                 color: theme.colorScheme.onSurface,
               ),
             ),
@@ -511,7 +506,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
           if (Platform.isIOS) const Spacer(),
           Text(
             context.l10n.logs,
-            style: GoogleFonts.playfairDisplay(
+            style: AppTypography.serif(
               fontSize: 24,
               fontWeight: FontWeight.bold,
               color: theme.colorScheme.onSurface,
@@ -523,16 +518,16 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
                 ? context.l10n.hideSearch
                 : context.l10n.search,
             icon: Container(
-              padding: const EdgeInsets.all(8),
+              padding: EdgeInsets.all(dims.xs),
               decoration: BoxDecoration(
                 color: _searchVisible
                     ? theme.colorScheme.primary.withValues(alpha: 0.15)
                     : theme.colorScheme.surface.withValues(alpha: 0.8),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: AppRadius.smBorder,
               ),
               child: Icon(
                 _searchVisible ? LucideIcons.x : LucideIcons.search,
-                size: 20,
+                size: AppIconSizes.md,
                 color: _searchVisible
                     ? theme.colorScheme.primary
                     : theme.colorScheme.onSurface,
@@ -546,9 +541,9 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
   }
 
   Widget _buildToolbar(BuildContext context, ThemeData theme) {
-    final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      padding: EdgeInsets.fromLTRB(dims.md, dims.xxs, dims.md, dims.xs),
       child: Column(
         children: [
           if (_searchVisible) ...[
@@ -572,28 +567,26 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
                         },
                       ),
                 filled: true,
-                fillColor: isDark
-                    ? Colors.white.withValues(alpha: 0.06)
-                    : Colors.white.withValues(alpha: 0.8),
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
+                fillColor: context.colorTokens.inputFill,
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: dims.sm,
                   vertical: 10,
                 ),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppRadius.buttonBorder,
                   borderSide: BorderSide(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
                   ),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: AppRadius.buttonBorder,
                   borderSide: BorderSide(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.08),
                   ),
                 ),
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: dims.xs),
           ],
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
@@ -607,7 +600,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: dims.xs),
           Row(
             children: [
               Icon(
@@ -635,7 +628,7 @@ class _LogViewerScreenState extends ConsumerState<LogViewerScreen> {
   Widget _filterChip(String label, LogLevel? level, ThemeData theme) {
     final selected = _filter == level;
     return Padding(
-      padding: const EdgeInsets.only(right: 8),
+      padding: EdgeInsets.only(right: context.dims.xs),
       child: ChoiceChip(
         label: Text(label),
         selected: selected,
@@ -675,7 +668,7 @@ class _LogTileState extends State<_LogTile> {
       case LogLevel.info:
         return cs.primary;
       case LogLevel.warn:
-        return Colors.orange.shade700;
+        return context.colorTokens.warning;
       case LogLevel.error:
         return cs.error;
     }
@@ -704,17 +697,12 @@ class _LogTileState extends State<_LogTile> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
+    final dims = context.dims;
     final color = _levelColor(widget.entry.level, theme.colorScheme);
 
-    final Color background;
-    if (widget.selected) {
-      background = theme.colorScheme.primary.withValues(alpha: 0.18);
-    } else if (isDark) {
-      background = Colors.white.withValues(alpha: 0.04);
-    } else {
-      background = Colors.white.withValues(alpha: 0.7);
-    }
+    final background = widget.selected
+        ? theme.colorScheme.primary.withValues(alpha: 0.18)
+        : context.colorTokens.cardFill;
 
     return Material(
       color: Colors.transparent,
@@ -729,7 +717,7 @@ class _LogTileState extends State<_LogTile> {
         },
         onLongPress: widget.onLongPress,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          padding: EdgeInsets.symmetric(horizontal: dims.sm, vertical: 10),
           decoration: BoxDecoration(
             color: background,
             borderRadius: BorderRadius.circular(10),
@@ -781,7 +769,7 @@ class _LogTileState extends State<_LogTile> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: dims.xs),
                         Text(
                           _shortTime(widget.entry.timestamp),
                           style: theme.textTheme.labelSmall?.copyWith(
@@ -791,7 +779,7 @@ class _LogTileState extends State<_LogTile> {
                             ),
                           ),
                         ),
-                        const SizedBox(width: 8),
+                        SizedBox(width: dims.xs),
                         Flexible(
                           child: Text(
                             widget.entry.tag,
@@ -806,7 +794,7 @@ class _LogTileState extends State<_LogTile> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: dims.xxs),
                     Text(
                       widget.entry.message,
                       style: theme.textTheme.bodySmall?.copyWith(
@@ -816,7 +804,7 @@ class _LogTileState extends State<_LogTile> {
                       overflow: _expanded ? null : TextOverflow.ellipsis,
                     ),
                     if (_expanded && widget.entry.error != null) ...[
-                      const SizedBox(height: 4),
+                      SizedBox(height: dims.xxs),
                       Text(
                         'error: ${widget.entry.error}',
                         style: theme.textTheme.labelSmall?.copyWith(
@@ -826,7 +814,7 @@ class _LogTileState extends State<_LogTile> {
                       ),
                     ],
                     if (_expanded && widget.entry.stackTrace != null) ...[
-                      const SizedBox(height: 4),
+                      SizedBox(height: dims.xxs),
                       Text(
                         widget.entry.stackTrace.toString(),
                         style: theme.textTheme.labelSmall?.copyWith(

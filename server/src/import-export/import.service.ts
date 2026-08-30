@@ -1,13 +1,29 @@
-import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import {
+  Inject,
+  BadRequestException,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
+import type { ConfigType } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { NoteAccessService } from '../notes/services/note-access.service';
-import { AttachmentType, NoteState } from 'src/generated/prisma/enums';
+import { NoteState } from 'src/generated/prisma/enums';
+import { StorageConfig } from '../config/configuration';
+import { deleteFileIfExists } from '../common/utils/file-system.util';
 import {
-  ATTACHMENT_ALLOWED_MIME_TYPES,
-  ATTACHMENT_MAX_FILE_SIZE,
-  ATTACHMENTS_BASE_DIR,
-} from '../notes/constants/notes.constants';
+  assertValidAttachmentFile,
+  attachmentTypeForMime,
+  writeAttachmentFile,
+} from '../notes/utils/attachment-storage.util';
 import { toAttachmentResponse } from '../notes/dto/attachment-response.dto';
+import {
+  SyncEmitterService,
+  SyncEmission,
+  noteEmissions,
+  pinEmission,
+  tagEmission,
+  attachmentsEmissions,
+} from '../sync/sync-emitter.service';
 import { IMPORT_ALLOWED_BACKGROUNDS } from './constants/import.constants';
 import {
   ImportNoteItemDto,
@@ -16,8 +32,6 @@ import {
   ImportNotesResponse,
 } from './dto/import-notes.dto';
 import { t } from '../i18n/i18n.util';
-import * as crypto from 'crypto';
-import * as fs from 'fs/promises';
 import * as path from 'path';
 
 /**
@@ -35,6 +49,9 @@ export class ImportService {
   constructor(
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
+    private syncEmitter: SyncEmitterService,
+    @Inject(StorageConfig.KEY)
+    private storageConfig: ConfigType<typeof StorageConfig>,
   ) {}
 
   async importNotes(
@@ -72,6 +89,30 @@ export class ImportService {
           tagResolution.idByName,
         ),
       );
+    }
+
+    // Notes are committed one by one above, so their index rows land together
+    // in a single trailing transaction.
+    const emissions: SyncEmission[] = tagResolution.createdIds.map((tagId) =>
+      tagEmission(userId, tagId),
+    );
+    results.forEach((result, index) => {
+      if (
+        result.status === 'failed' ||
+        result.status === 'skipped' ||
+        !result.noteId
+      ) {
+        return;
+      }
+      emissions.push(...noteEmissions([userId], result.noteId));
+      if (dto.notes[index].isPinned === true) {
+        emissions.push(pinEmission(userId, result.noteId, true));
+      }
+    });
+    if (emissions.length) {
+      await this.prisma.$transaction(async (tx) => {
+        await this.syncEmitter.emit(tx, emissions);
+      });
     }
 
     return {
@@ -115,7 +156,7 @@ export class ImportService {
       .filter((id): id is string => Boolean(id));
 
     const isTrashed = item.isTrashed === true;
-    // Preserve the backup's modified time; the syncedAt trigger handles sync visibility and the trash purge window.
+    // Timestamps come from the backup; stateChangedAt starts fresh.
     const createdAt = item.createdAt
       ? truncateToSeconds(item.createdAt)
       : undefined;
@@ -223,6 +264,7 @@ export class ImportService {
     palette: { name: string; color?: string }[],
   ): Promise<{
     idByName: Map<string, string>;
+    createdIds: string[];
     created: number;
     reused: number;
   }> {
@@ -233,7 +275,7 @@ export class ImportService {
     // "Tag" and "tag" to coexist, so import must not merge them.
     const names = [...new Set([...tagNames, ...palette.map((t) => t.name)])];
     if (!names.length) {
-      return { idByName: new Map(), created: 0, reused: 0 };
+      return { idByName: new Map(), createdIds: [], created: 0, reused: 0 };
     }
 
     const existing = await this.prisma.tag.findMany({
@@ -259,9 +301,13 @@ export class ImportService {
       where: { userId, name: { in: names }, isDeleted: false },
       select: { id: true, name: true },
     });
+    const missingNames = new Set(missing);
 
     return {
       idByName: new Map(all.map((tag) => [tag.name, tag.id])),
+      createdIds: all
+        .filter((tag) => missingNames.has(tag.name))
+        .map((tag) => tag.id),
       created: missing.length,
       reused: existing.length,
     };
@@ -281,61 +327,44 @@ export class ImportService {
   ) {
     await this.noteAccessService.verifyNoteOwnership(userId, noteId);
 
-    if (!file) {
-      throw new BadRequestException(t('notes.noFileProvided'));
-    }
-    if (!ATTACHMENT_ALLOWED_MIME_TYPES.has(file.mimetype)) {
-      throw new BadRequestException(
-        t('notes.fileTypeNotAllowed', { type: file.mimetype }),
-      );
-    }
-    if (file.size > ATTACHMENT_MAX_FILE_SIZE) {
-      throw new BadRequestException(
-        t('notes.fileTooLarge', {
-          size: ATTACHMENT_MAX_FILE_SIZE / 1024 / 1024,
-        }),
-      );
-    }
+    assertValidAttachmentFile(file);
 
-    const noteDir = path.join(ATTACHMENTS_BASE_DIR, noteId);
-    await fs.mkdir(noteDir, { recursive: true });
+    const noteDir = path.join(this.storageConfig.attachmentsDir, noteId);
 
-    const ext = path.extname(file.originalname).toLowerCase();
-    const storedFilename = `${crypto.randomUUID()}-${Date.now()}${ext}`;
-    const filePath = path.join(noteDir, storedFilename);
-
-    const attachmentType: AttachmentType = file.mimetype.startsWith('image/')
-      ? AttachmentType.image
-      : AttachmentType.audio;
-
-    let fileSaved = false;
+    let stored: { storedFilename: string; filePath: string } | null = null;
     try {
-      await fs.writeFile(filePath, file.buffer);
-      fileSaved = true;
+      stored = await writeAttachmentFile(
+        noteDir,
+        file.originalname,
+        file.buffer,
+      );
+      const { storedFilename } = stored;
 
-      const attachment = await this.prisma.noteAttachment.create({
-        data: {
-          noteId,
-          uploadedByUserId: userId,
-          type: attachmentType,
-          originalFilename: file.originalname,
-          storedFilename,
-          mimeType: file.mimetype,
-          fileSize: file.size,
-          position,
-        },
+      const attachment = await this.prisma.$transaction(async (tx) => {
+        const created = await tx.noteAttachment.create({
+          data: {
+            noteId,
+            uploadedByUserId: userId,
+            type: attachmentTypeForMime(file.mimetype),
+            originalFilename: file.originalname,
+            storedFilename,
+            mimeType: file.mimetype,
+            fileSize: file.size,
+            position,
+          },
+        });
+        const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
+        await this.syncEmitter.emit(
+          tx,
+          attachmentsEmissions(recipients, noteId),
+        );
+        return created;
       });
 
       return toAttachmentResponse(attachment);
     } catch {
-      if (fileSaved) {
-        try {
-          await fs.unlink(filePath);
-        } catch {
-          this.logger.error(
-            `Failed to delete file after DB error: ${filePath}`,
-          );
-        }
+      if (stored) {
+        await deleteFileIfExists(stored.filePath, this.logger);
       }
       throw new BadRequestException(t('import.attachmentFailed'));
     }

@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:anchor/core/theme/context_extensions.dart';
+import 'package:anchor/core/theme/tokens/app_icon_sizes.dart';
+import 'package:anchor/core/theme/tokens/app_radius.dart';
 import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'package:anchor/core/widgets/confirm_dialog.dart';
@@ -130,7 +133,10 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
       await _player.play();
     } else if (widget.onDownload != null) {
       if (!widget.isOnline) {
-        AppSnackbar.showInfo(context, message: context.l10n.availableWhenOnline);
+        AppSnackbar.showInfo(
+          context,
+          message: context.l10n.availableWhenOnline,
+        );
         return;
       }
       setState(() => _isLoading = true);
@@ -181,6 +187,7 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final name = widget.attachment.originalFilename;
     final truncated = name.length > 30 ? '${name.substring(0, 27)}...' : name;
 
@@ -188,12 +195,12 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
       onTap: _isLoading ? null : _togglePlay, // Tap the card to play/pause
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(horizontal: dims.md, vertical: 14),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHighest.withValues(
             alpha: 0.5,
           ),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: AppRadius.lgBorder,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -211,7 +218,7 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
                       color: _isPlaying
                           ? theme.colorScheme.primary
                           : theme.colorScheme.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(14),
+                      borderRadius: AppRadius.buttonBorder,
                     ),
                     child: _isLoading
                         ? Center(
@@ -232,7 +239,7 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
                                 : _isCompleted
                                 ? LucideIcons.rotateCcw
                                 : LucideIcons.play,
-                            size: 24,
+                            size: AppIconSizes.lg,
                             color: _isPlaying
                                 ? theme.colorScheme.onPrimary
                                 : theme.colorScheme.primary,
@@ -240,7 +247,7 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
                   ),
                 ),
 
-                const SizedBox(width: 16),
+                SizedBox(width: dims.md),
 
                 // Filename and waveform icon
                 Expanded(
@@ -260,7 +267,7 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
                           ),
                           if (widget.attachment.isPendingUpload)
                             Container(
-                              margin: const EdgeInsets.only(left: 8),
+                              margin: EdgeInsets.only(left: dims.xs),
                               padding: const EdgeInsets.symmetric(
                                 horizontal: 6,
                                 vertical: 2,
@@ -279,7 +286,7 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
                                     size: 10,
                                     color: theme.colorScheme.primary,
                                   ),
-                                  const SizedBox(width: 4),
+                                  SizedBox(width: dims.xxs),
                                   Text(
                                     context.l10n.pending,
                                     style: theme.textTheme.labelSmall?.copyWith(
@@ -292,7 +299,7 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
                             ),
                         ],
                       ),
-                      const SizedBox(height: 4),
+                      SizedBox(height: dims.xxs),
                       Text(
                         _isCompleted
                             ? context.l10n.tapToReplay
@@ -310,7 +317,7 @@ class _AudioPlayerRowState extends State<AudioPlayerRow> {
 
                 // Delete button
                 if (widget.canDelete) ...[
-                  const SizedBox(width: 8),
+                  SizedBox(width: dims.xs),
                   IconButton(
                     onPressed: _confirmDelete,
                     icon: Icon(

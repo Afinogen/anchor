@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:anchor/core/theme/context_extensions.dart';
+import 'package:anchor/core/theme/tokens/app_radius.dart';
 import 'package:anchor/core/extensions/build_context_l10n.dart';
 import 'package:anchor/core/widgets/app_snackbar.dart';
 import 'auth_controller.dart';
 import '../data/repository/auth_repository.dart';
+import 'package:anchor/core/theme/tokens/app_opacity.dart';
 
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
@@ -76,6 +79,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(authControllerProvider);
     final isLoading = state.isLoading;
+    final dims = context.dims;
 
     ref.listen(authControllerProvider, (previous, next) {
       if (next.hasError) {
@@ -93,7 +97,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(dims.xl),
           child: AutofillGroup(
             child: Form(
               key: _formKey,
@@ -108,11 +112,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: dims.xs),
                   Text(
                     context.l10n.startCapturingIdeas,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Theme.of(context).hintColor,
+                      color: Theme.of(context).colorScheme.onSurface.withValues(
+                        alpha: AppOpacity.secondary,
+                      ),
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -125,8 +131,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     decoration: InputDecoration(
                       labelText: context.l10n.name,
                       prefixIcon: const Icon(LucideIcons.user),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                      border: const OutlineInputBorder(
+                        borderRadius: AppRadius.mdBorder,
                       ),
                     ),
                     validator: (value) {
@@ -139,7 +145,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: dims.md),
                   TextFormField(
                     controller: _emailController,
                     autofillHints: const [AutofillHints.email],
@@ -148,8 +154,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     decoration: InputDecoration(
                       labelText: context.l10n.email,
                       prefixIcon: const Icon(LucideIcons.mail),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                      border: const OutlineInputBorder(
+                        borderRadius: AppRadius.mdBorder,
                       ),
                     ),
                     validator: (value) {
@@ -159,7 +165,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: dims.md),
                   TextFormField(
                     controller: _passwordController,
                     onChanged: (_) => setState(() {}),
@@ -185,8 +191,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 });
                               },
                             ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                      border: const OutlineInputBorder(
+                        borderRadius: AppRadius.mdBorder,
                       ),
                     ),
                     obscureText: !_isPasswordVisible,
@@ -200,7 +206,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: dims.md),
                   TextFormField(
                     controller: _confirmPasswordController,
                     onChanged: (_) => setState(() {}),
@@ -228,8 +234,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 });
                               },
                             ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
+                      border: const OutlineInputBorder(
+                        borderRadius: AppRadius.mdBorder,
                       ),
                     ),
                     obscureText: !_isConfirmPasswordVisible,
@@ -240,13 +246,13 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  SizedBox(height: dims.xl),
                   FilledButton(
                     onPressed: isLoading ? null : _register,
                     style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                      padding: EdgeInsets.symmetric(vertical: dims.md),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: AppRadius.buttonBorder,
                       ),
                     ),
                     child: isLoading

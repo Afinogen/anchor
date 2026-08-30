@@ -19,10 +19,16 @@ Nest.js backend for Anchor application.
     Copy `.env.example` to `.env` (if it exists) or ensure `.env` has:
 
     ```env
-    DATABASE_URL="postgresql://anchor:password@localhost:5432/anchor?schema=public"
-    JWT_SECRET="supersecretkey"
     PORT=3001
+    DATABASE_URL="postgresql://anchor:password@localhost:5432/anchor?schema=public"
+    JWT_SECRET="anchor-local-development-secret"
     ```
+
+    Environment variables are validated at startup (see `src/config/`), so the
+    app fails fast with a clear message if a required value is missing or
+    invalid. `DATABASE_URL` and `JWT_SECRET` are required; `JWT_SECRET` must be
+    at least 16 characters. Optional: `APP_URL`, `DATA_DIR` (uploads root,
+    defaults to `/data`), `CORS_ORIGINS` (comma-separated allowlist).
 
 3.  Start Database:
     From the project root:
@@ -110,7 +116,6 @@ go in `test/` and are reused across specs.
 - `GET /api/notes/:id` - Get a specific note
 - `PATCH /api/notes/:id` - Update a note
 - `DELETE /api/notes/:id` - Delete a note (soft delete)
-- `POST /api/notes/sync` - Sync notes with client
 - `PATCH /api/notes/:id/restore` - Restore a note from trash
 - `DELETE /api/notes/:id/permanent` - Permanently delete a note
 - `POST /api/notes/bulk/delete` - Bulk delete notes
@@ -145,7 +150,11 @@ go in `test/` and are reused across specs.
 - `GET /api/tags/:id/notes` - Get all notes with a specific tag
 - `PATCH /api/tags/:id` - Update a tag
 - `DELETE /api/tags/:id` - Delete a tag
-- `POST /api/tags/sync` - Sync tags with client
+
+### Sync
+
+- `POST /api/sync` - Combined push + pull: applies client changes, returns the change feed past a cursor
+- `GET /api/sync/events` - SSE stream of `{ seq }` pokes telling clients when to pull
 
 ### Admin (requires admin privileges)
 

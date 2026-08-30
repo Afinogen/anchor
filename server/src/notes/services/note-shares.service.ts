@@ -7,7 +7,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ShareNoteDto } from '../dto/share-note.dto';
 import { UpdateNoteSharePermissionDto } from '../dto/update-share-permission.dto';
 import { NoteAccessService } from './note-access.service';
-import { SHARED_WITH_USER_SELECT } from '../constants/notes.constants';
+import {
+  SyncEmitterService,
+  noteEmissions,
+  attachmentsEmissions,
+} from '../../sync/sync-emitter.service';
+import {
+  SHARED_WITH_USER_SELECT,
+} from '../constants/notes.constants';
 import { t } from '../../i18n/i18n.util';
 
 @Injectable()
@@ -15,6 +22,7 @@ export class NoteSharesService {
   constructor(
     private prisma: PrismaService,
     private noteAccessService: NoteAccessService,
+    private syncEmitter: SyncEmitterService,
   ) {}
 
   async shareNote(ownerId: string, noteId: string, shareNoteDto: ShareNoteDto) {
@@ -43,49 +51,51 @@ export class NoteSharesService {
       },
     });
 
-    if (existingShare) {
-      const updated = await this.prisma.noteShare.update({
-        where: { id: existingShare.id },
-        data: {
-          permission,
-          isDeleted: false, // Reactivate if it was soft-deleted
-        },
-        include: {
-          sharedWithUser: {
-            select: SHARED_WITH_USER_SELECT,
-          },
-        },
-      });
+    const share = await this.prisma.$transaction(async (tx) => {
+      const written = existingShare
+        ? await tx.noteShare.update({
+            where: { id: existingShare.id },
+            data: {
+              permission,
+              isDeleted: false, // Reactivate if it was soft-deleted
+            },
+            include: {
+              sharedWithUser: {
+                select: SHARED_WITH_USER_SELECT,
+              },
+            },
+          })
+        : await tx.noteShare.create({
+            data: {
+              noteId,
+              sharedWithUserId,
+              permission,
+              sharedByUserId: ownerId,
+            },
+            include: {
+              sharedWithUser: {
+                select: SHARED_WITH_USER_SELECT,
+              },
+            },
+          });
 
-      return {
-        id: updated.id,
-        sharedWithUser: updated.sharedWithUser,
-        permission: updated.permission,
-        createdAt: updated.createdAt.toISOString(),
-        updatedAt: updated.updatedAt.toISOString(),
-      };
-    }
+      // Resolved after the write so the new sharee is included; they also get
+      // the attachments index for their first pull.
+      const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
+      await this.syncEmitter.emit(tx, [
+        ...noteEmissions(recipients, noteId),
+        ...attachmentsEmissions([sharedWithUserId], noteId),
+      ]);
 
-    const created = await this.prisma.noteShare.create({
-      data: {
-        noteId,
-        sharedWithUserId,
-        permission,
-        sharedByUserId: ownerId,
-      },
-      include: {
-        sharedWithUser: {
-          select: SHARED_WITH_USER_SELECT,
-        },
-      },
+      return written;
     });
 
     return {
-      id: created.id,
-      sharedWithUser: created.sharedWithUser,
-      permission: created.permission,
-      createdAt: created.createdAt.toISOString(),
-      updatedAt: created.updatedAt.toISOString(),
+      id: share.id,
+      sharedWithUser: share.sharedWithUser,
+      permission: share.permission,
+      createdAt: share.createdAt.toISOString(),
+      updatedAt: share.updatedAt.toISOString(),
     };
   }
 
@@ -135,14 +145,19 @@ export class NoteSharesService {
       throw new NotFoundException(t('notes.shareNotFound'));
     }
 
-    const updated = await this.prisma.noteShare.update({
-      where: { id: shareId },
-      data: { permission: updateDto.permission },
-      include: {
-        sharedWithUser: {
-          select: SHARED_WITH_USER_SELECT,
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const written = await tx.noteShare.update({
+        where: { id: shareId },
+        data: { permission: updateDto.permission },
+        include: {
+          sharedWithUser: {
+            select: SHARED_WITH_USER_SELECT,
+          },
         },
-      },
+      });
+      const recipients = await this.syncEmitter.noteRecipients(tx, noteId);
+      await this.syncEmitter.emit(tx, noteEmissions(recipients, noteId));
+      return written;
     });
 
     return {
@@ -169,13 +184,25 @@ export class NoteSharesService {
       throw new NotFoundException(t('notes.shareNotFound'));
     }
 
-    await this.prisma.noteShare.update({
-      where: { id: shareId },
-      data: { isDeleted: true },
-    });
+    await this.prisma.$transaction(async (tx) => {
+      await tx.noteShare.update({
+        where: { id: shareId },
+        data: { isDeleted: true },
+      });
 
-    await this.prisma.notePin.deleteMany({
-      where: { noteId, userId: share.sharedWithUserId },
+      await tx.notePin.deleteMany({
+        where: { noteId, userId: share.sharedWithUserId },
+      });
+
+      // The revoked sharee gets a note remove; the rest re-pull so their share
+      // lists stay fresh.
+      const remaining = await this.syncEmitter.noteRecipients(tx, noteId);
+      await this.syncEmitter.removeNote(
+        tx,
+        [share.sharedWithUserId],
+        noteId,
+        noteEmissions(remaining, noteId),
+      );
     });
 
     return { success: true };

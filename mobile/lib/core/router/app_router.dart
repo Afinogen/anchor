@@ -8,6 +8,8 @@ import '../../features/auth/presentation/edit_profile_screen.dart';
 import '../../features/notes/domain/note.dart';
 import '../../features/notes/presentation/notes_list_screen.dart';
 import '../../features/notes/presentation/note_edit_screen.dart';
+import '../../features/notes/presentation/note_history_screen.dart';
+import '../../features/notes/presentation/note_revision_screen.dart';
 import '../../features/notes/presentation/trash_screen.dart';
 import '../../features/notes/presentation/archive_screen.dart';
 import '../app_initializer.dart';
@@ -82,6 +84,22 @@ GoRouter goRouter(Ref ref) {
                 child: NoteEditScreen(noteId: id, note: note),
               );
             },
+            routes: [
+              GoRoute(
+                path: AppRoutes.noteHistory,
+                builder: (context, state) =>
+                    NoteHistoryScreen(noteId: state.pathParameters['id']!),
+                routes: [
+                  GoRoute(
+                    path: AppRoutes.noteRevision,
+                    builder: (context, state) => NoteRevisionScreen(
+                      noteId: state.pathParameters['id']!,
+                      revisionId: state.pathParameters['revisionId']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
           GoRoute(
             path: AppRoutes.trash,

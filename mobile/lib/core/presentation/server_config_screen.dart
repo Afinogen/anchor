@@ -1,17 +1,22 @@
 import 'package:anchor/core/router/app_routes.dart';
 import 'package:anchor/features/auth/presentation/providers/oidc_config_provider.dart';
 import 'package:anchor/features/auth/presentation/providers/registration_mode_provider.dart';
+import 'package:anchor/features/settings/data/server_info_provider.dart';
+import 'package:anchor/features/sync/data/sync_compatibility.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../extensions/build_context_l10n.dart';
 import '../network/dio_provider.dart';
 import '../network/server_config_provider.dart';
+import '../theme/context_extensions.dart';
+import '../theme/tokens/app_icon_sizes.dart';
+import '../theme/tokens/app_radius.dart';
 import '../widgets/app_snackbar.dart';
 import '../widgets/anchor_icon.dart';
+import '../widgets/confirm_dialog.dart';
 import '../widgets/language_toggle_button.dart';
 
 class ServerConfigScreen extends ConsumerStatefulWidget {
@@ -105,11 +110,22 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
 
       if (response.statusCode == 200 && response.data['app'] == 'anchor') {
         final version = response.data['version'] ?? 'Unknown';
+        final compatibility = _compatibilityOf(response);
         if (mounted) {
-          AppSnackbar.showSuccess(
-            context,
-            message: context.l10n.serverRunningVersion(version.toString()),
-          );
+          if (compatibility.isMismatch) {
+            AppSnackbar.showWarning(
+              context,
+              message: context.l10n.serverVersionMismatch(
+                version.toString(),
+                compatibility.localizedMessage(context.l10n) ?? '',
+              ),
+            );
+          } else {
+            AppSnackbar.showSuccess(
+              context,
+              message: context.l10n.serverRunningVersion(version.toString()),
+            );
+          }
         }
       } else {
         setState(() {
@@ -141,6 +157,12 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
       final response = await dio.get('$url/api/health');
 
       if (response.statusCode == 200 && response.data['app'] == 'anchor') {
+        final compatibility = _compatibilityOf(response);
+        if (compatibility.isMismatch &&
+            !await _confirmMismatch(compatibility)) {
+          return;
+        }
+
         final shouldPop = widget.initialUrl != null;
         final notifier = ref.read(serverConfigProvider.notifier);
 
@@ -155,6 +177,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
         await notifier.setServerUrl(url);
         ref.invalidate(oidcConfigProvider);
         ref.invalidate(registrationModeProvider);
+        ref.invalidate(serverInfoProvider);
       } else {
         setState(() {
           _error = context.l10n.invalidServerResponse;
@@ -169,6 +192,26 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
         });
       }
     }
+  }
+
+  SyncCompatibility _compatibilityOf(Response<dynamic> response) {
+    final protocols =
+        (response.data['protocols'] as List?)?.whereType<int>().toList() ??
+        const <int>[];
+    return compatibilityFor(protocols);
+  }
+
+  Future<bool> _confirmMismatch(SyncCompatibility compatibility) async {
+    if (!mounted) return false;
+    final confirmed = await ConfirmDialog.show(
+      context: context,
+      icon: LucideIcons.triangleAlert,
+      iconColor: Theme.of(context).colorScheme.error,
+      title: compatibility.localizedTitle(context.l10n)!,
+      message: compatibility.localizedMessage(context.l10n)!,
+      confirmText: context.l10n.connectAnyway,
+    );
+    return confirmed ?? false;
   }
 
   String? _validateUrl(String? value) {
@@ -196,6 +239,7 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final dims = context.dims;
     final allowSelfSigned =
         ref.watch(allowSelfSignedCertProvider).value ?? false;
 
@@ -203,215 +247,219 @@ class _ServerConfigScreenState extends ConsumerState<ServerConfigScreen> {
       body: SafeArea(
         child: Stack(
           children: [
-            Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: const LanguageToggleButton(),
-              ),
-            ),
             Center(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(dims.xl),
                 child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Center(child: AnchorIcon(size: 100)),
-                  const SizedBox(height: 48),
-
-                  // Title
-                  Text(
-                    context.l10n.connectToServer,
-                    style: GoogleFonts.playfairDisplay(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Subtitle
-                  Text(
-                    context.l10n.enterServerUrl,
-                    style: GoogleFonts.dmSans(
-                      fontSize: 16,
-                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 40),
-
-                  // URL Input
-                  TextFormField(
-                    controller: _urlController,
-                    decoration: InputDecoration(
-                      labelText: context.l10n.serverUrl,
-                      hintText: context.l10n.serverUrlHint,
-                      prefixIcon: const Icon(LucideIcons.globe),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      helperText: context.l10n.serverUrlHelper,
-                    ),
-                    keyboardType: TextInputType.url,
-                    autocorrect: false,
-                    validator: _validateUrl,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Self-signed certificate toggle
-                  Row(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Icon(
-                        LucideIcons.shieldOff,
-                        size: 18,
-                        color: allowSelfSigned
-                            ? theme.colorScheme.error
-                            : theme.colorScheme.onSurface.withValues(
-                                alpha: 0.5,
-                              ),
+                      const Center(child: AnchorIcon(size: 100)),
+                      const SizedBox(height: 48),
+
+                      // Title
+                      Text(
+                        context.l10n.connectToServer,
+                        style: theme.textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.l10n.allowSelfSigned,
-                              style: theme.textTheme.bodyMedium,
+                      SizedBox(height: dims.xs),
+
+                      // Subtitle
+                      Text(
+                        context.l10n.enterServerUrl,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 40),
+
+                      // URL Input
+                      TextFormField(
+                        controller: _urlController,
+                        decoration: InputDecoration(
+                          labelText: context.l10n.serverUrl,
+                          hintText: context.l10n.serverUrlHint,
+                          prefixIcon: const Icon(LucideIcons.globe),
+                          border: const OutlineInputBorder(
+                            borderRadius: AppRadius.mdBorder,
+                          ),
+                          helperText: context.l10n.serverUrlHelper,
+                        ),
+                        keyboardType: TextInputType.url,
+                        autocorrect: false,
+                        validator: _validateUrl,
+                      ),
+                      SizedBox(height: dims.xs),
+
+                      // Self-signed certificate toggle
+                      Row(
+                        children: [
+                          Icon(
+                            LucideIcons.shieldOff,
+                            size: 18,
+                            color: allowSelfSigned
+                                ? theme.colorScheme.error
+                                : theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.5,
+                                  ),
+                          ),
+                          SizedBox(width: dims.xs),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  context.l10n.allowSelfSigned,
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                                if (allowSelfSigned)
+                                  Text(
+                                    context.l10n.selfSignedWarning,
+                                    style: TextStyle(
+                                      color: theme.colorScheme.error,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                              ],
                             ),
-                            if (allowSelfSigned)
-                              Text(
-                                context.l10n.selfSignedWarning,
-                                style: TextStyle(
-                                  color: theme.colorScheme.error,
-                                  fontSize: 12,
+                          ),
+                          Switch.adaptive(
+                            value: allowSelfSigned,
+                            onChanged: (value) {
+                              ref
+                                  .read(allowSelfSignedCertProvider.notifier)
+                                  .toggle(value);
+                              if (value && mounted) {
+                                AppSnackbar.showWarning(
+                                  context,
+                                  message: context.l10n.selfSignedSnackbar,
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+
+                      // Error message
+                      if (_error != null) ...[
+                        SizedBox(height: dims.xs),
+                        Text(
+                          _error!,
+                          style: TextStyle(
+                            color: theme.colorScheme.error,
+                            fontSize: 14,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                      SizedBox(height: dims.xl),
+
+                      // Actions
+                      Row(
+                        children: [
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: _isLoading ? null : _testConnection,
+                              icon: _isTesting
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  : const Icon(LucideIcons.wifi),
+                              label: Text(context.l10n.test),
+                              style: OutlinedButton.styleFrom(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: dims.md,
+                                ),
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: AppRadius.buttonBorder,
                                 ),
                               ),
+                            ),
+                          ),
+                          SizedBox(width: dims.md),
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: _isLoading ? null : _connect,
+                              icon: _isConnecting
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(LucideIcons.arrowRight),
+                              label: Text(context.l10n.connect),
+                              style: FilledButton.styleFrom(
+                                padding: EdgeInsets.symmetric(
+                                  vertical: dims.md,
+                                ),
+                                shape: const RoundedRectangleBorder(
+                                  borderRadius: AppRadius.buttonBorder,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: dims.xxl),
+
+                      // Info text
+                      Container(
+                        padding: EdgeInsets.all(dims.md),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.5),
+                          borderRadius: AppRadius.smBorder,
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              LucideIcons.info,
+                              size: AppIconSizes.md,
+                              color: theme.colorScheme.primary,
+                            ),
+                            SizedBox(width: dims.sm),
+                            Expanded(
+                              child: Text(
+                                context.l10n.selfHostedInfo,
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  fontSize: 13,
+                                  color: theme.colorScheme.onSurface.withValues(
+                                    alpha: 0.8,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                      Switch.adaptive(
-                        value: allowSelfSigned,
-                        onChanged: (value) {
-                          ref
-                              .read(allowSelfSignedCertProvider.notifier)
-                              .toggle(value);
-                          if (value && mounted) {
-                            AppSnackbar.showWarning(
-                              context,
-                              message: context.l10n.selfSignedSnackbar,
-                            );
-                          }
-                        },
-                      ),
                     ],
                   ),
-
-                  // Error message
-                  if (_error != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      _error!,
-                      style: TextStyle(
-                        color: theme.colorScheme.error,
-                        fontSize: 14,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                  const SizedBox(height: 24),
-
-                  // Actions
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: _isLoading ? null : _testConnection,
-                          icon: _isTesting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                  ),
-                                )
-                              : const Icon(LucideIcons.wifi),
-                          label: Text(context.l10n.test),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: _isLoading ? null : _connect,
-                          icon: _isConnecting
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: Colors.white,
-                                  ),
-                                )
-                              : const Icon(LucideIcons.arrowRight),
-                          label: Text(context.l10n.connect),
-                          style: FilledButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Info text
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.surfaceContainerHighest
-                          .withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          LucideIcons.info,
-                          size: 20,
-                          color: theme.colorScheme.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            context.l10n.selfHostedInfo,
-                            style: GoogleFonts.dmSans(
-                              fontSize: 13,
-                              color: theme.colorScheme.onSurface.withValues(
-                                alpha: 0.8,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
+            Align(
+              alignment: Alignment.topRight,
+              child: Padding(
+                padding: EdgeInsets.all(dims.sm),
+                child: const LanguageToggleButton(),
+              ),
+            ),
           ],
         ),
       ),

@@ -732,7 +732,8 @@ class AppLocalizationsRu extends AppLocalizations {
   String get notSharedYet => 'Доступ ещё не открыт';
 
   @override
-  String get searchToInvite => 'Найдите по имени или эл. почте, чтобы пригласить';
+  String get searchToInvite =>
+      'Найдите по имени или эл. почте, чтобы пригласить';
 
   @override
   String get collaborators => 'Участники';
@@ -1093,19 +1094,6 @@ class AppLocalizationsRu extends AppLocalizations {
   }
 
   @override
-  String logEntriesCopied(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Скопировано $count записи',
-      many: 'Скопировано $count записей',
-      few: 'Скопировано $count записи',
-      one: 'Скопирована $count запись',
-    );
-    return '$_temp0';
-  }
-
-  @override
   String sharedWithCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -1114,6 +1102,19 @@ class AppLocalizationsRu extends AppLocalizations {
       many: 'Доступ у $count человек',
       few: 'Доступ у $count человек',
       one: 'Доступ у $count человека',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String logEntriesCopied(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Скопировано $count записи',
+      many: 'Скопировано $count записей',
+      few: 'Скопировано $count записи',
+      one: 'Скопирована $count запись',
     );
     return '$_temp0';
   }
@@ -1163,4 +1164,143 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get logLevelError => 'Ошибка';
+
+  @override
+  String get today => 'Сегодня';
+
+  @override
+  String get yesterday => 'Вчера';
+
+  @override
+  String dayAtTime(String day, String time) {
+    return '$day, $time';
+  }
+
+  @override
+  String get revisionCauseEdit => 'Прежняя версия';
+
+  @override
+  String get revisionCauseConflict => 'Не сохранено';
+
+  @override
+  String get revisionCauseRestore => 'До восстановления';
+
+  @override
+  String get revisionHintConflict =>
+      'Не сохранено: заметка к тому моменту уже изменилась.';
+
+  @override
+  String get revisionHintRestore => 'Что было в заметке до восстановления.';
+
+  @override
+  String get revisionAuthorSomeone => 'Кто-то';
+
+  @override
+  String get revisionAuthorYou => 'Вы';
+
+  @override
+  String get history => 'История';
+
+  @override
+  String get currentVersion => 'Текущая версия';
+
+  @override
+  String get historyUnreadFailed =>
+      'Не удалось получить версии с других ваших устройств.';
+
+  @override
+  String get historyRetention => 'Правки старше 90 дней удаляются.';
+
+  @override
+  String get tryAgain => 'Повторить';
+
+  @override
+  String get historyCheckFailed => 'Не удалось получить прежние версии';
+
+  @override
+  String get historyEmpty => 'Прежних версий пока нет';
+
+  @override
+  String get historyOfflineHint =>
+      'Для версий с других устройств нужно подключение.';
+
+  @override
+  String get historyEmptyHint =>
+      'Правки заметки хранятся здесь — всегда можно вернуться назад.';
+
+  @override
+  String get restoreVersionTitle => 'Восстановить эту версию?';
+
+  @override
+  String get restoreVersionMessage =>
+      'Заметка вернётся к этой версии. Текущий текст сохранится в истории.';
+
+  @override
+  String get versionRestored => 'Версия восстановлена';
+
+  @override
+  String get versionRestoreFailed => 'Не удалось восстановить версию';
+
+  @override
+  String get versionSameAsNext => 'Текст совпадает со следующей версией.';
+
+  @override
+  String get versionSameAsCurrent => 'Текст совпадает с текущей заметкой.';
+
+  @override
+  String get versionNoText => 'В этой версии нет текста.';
+
+  @override
+  String get versionTitle => 'Версия';
+
+  @override
+  String get versionGone => 'Этой версии больше нет.';
+
+  @override
+  String get serverNeedsUpdatingTitle => 'Нужно обновить сервер';
+
+  @override
+  String get appNeedsUpdatingTitle => 'Нужно обновить приложение';
+
+  @override
+  String get serverNeedsUpdatingMessage =>
+      'Версия сервера Anchor слишком старая для синхронизации с этим приложением. Обновите сервер.';
+
+  @override
+  String get appNeedsUpdatingMessage =>
+      'Версия приложения слишком старая для синхронизации с вашим сервером Anchor. Обновите приложение.';
+
+  @override
+  String get syncWarningNotesStay =>
+      'Заметки на этом устройстве всё это время остаются доступны.';
+
+  @override
+  String get gotIt => 'Понятно';
+
+  @override
+  String get connectAnyway => 'Всё равно подключиться';
+
+  @override
+  String serverVersionMismatch(String version, String reason) {
+    return 'Anchor v$version. $reason';
+  }
+
+  @override
+  String get syncPausedIncompatible =>
+      'Синхронизация приостановлена: версии несовместимы';
+
+  @override
+  String get displayDensity => 'Плотность интерфейса';
+
+  @override
+  String get densityStandard => 'Обычная';
+
+  @override
+  String get densityCompact => 'Компактная';
+
+  @override
+  String get densityStandardSubtitle => 'Больше воздуха';
+
+  @override
+  String get densityCompactSubtitle => 'Больше помещается на экране';
 }
