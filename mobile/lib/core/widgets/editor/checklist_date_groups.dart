@@ -253,7 +253,16 @@ Delta? buildChecklistDateGroupDelta(
         ..insert('\n'),
     );
     index += 1;
-    (groupStart, groupEnd) = dateGroupBounds(doc, lines, index);
+    // Not re-derived via dateGroupBounds: the insertion above landed exactly
+    // at lines[groupStart].startOffset, so the group still starts there. But
+    // if that first line was itself a date header, the new header now sits
+    // directly above it, and dateGroupBounds only extends over a header when
+    // a checklist line follows — an old header does not qualify. Re-deriving
+    // here would shrink groupStart back past the very line just inserted,
+    // leaving it ungrouped and making dateGroupedItems emit a second
+    // NewHeader for the same day. We know exactly what changed, so adjust
+    // arithmetically instead: one line was inserted at the top of the group.
+    groupEnd += 1;
     items = dateGroupedItems(doc, lines, groupStart, groupEnd, index, today);
   }
 

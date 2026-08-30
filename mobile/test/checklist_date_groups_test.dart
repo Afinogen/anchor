@@ -258,6 +258,40 @@ void main() {
       );
     });
 
+    test('inserts a new header above a group that already starts with one', () {
+      expect(
+        applied([
+          ('30.08.2026', null),
+          ('y', 'checked'),
+          ('z', 'checked'),
+        ], 2, '31.08.2026'),
+        [
+          ('31.08.2026', null, true),
+          ('z', 'checked', false),
+          ('30.08.2026', null, false),
+          ('y', 'checked', false),
+        ],
+      );
+    });
+
+    test(
+      'creates a new header and drops an old one emptied by the same toggle',
+      () {
+        expect(
+          applied([
+            ('a', 'unchecked'),
+            ('30.08.2026', null),
+            ('b', 'checked'),
+          ], 2, '31.08.2026'),
+          [
+            ('a', 'unchecked', false),
+            ('31.08.2026', null, true),
+            ('b', 'checked', false),
+          ],
+        );
+      },
+    );
+
     test('handles a group that ends the document', () {
       expect(
         applied([('a', 'checked'), ('b', 'unchecked')], 0, '30.08.2026'),
