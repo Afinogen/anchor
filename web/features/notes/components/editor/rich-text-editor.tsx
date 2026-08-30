@@ -14,6 +14,7 @@ import type { LinkRange, QuillDelta, QuillInstance } from "@/features/notes";
 import {
   createChecklistSortDelta,
   didChangeChecklistItemState,
+  formatDateKey,
   getToggledLinePosition,
   isLikelyUrl,
   linkAtIndex,
@@ -105,6 +106,9 @@ export const RichTextEditor = forwardRef<
     const sortChecklistItems = usePreferencesStore(
       (state) => state.editor.sortChecklistItems,
     );
+    const groupCheckedByDate = usePreferencesStore(
+      (state) => state.editor.groupCheckedByDate,
+    );
 
     const getQuill = useCallback(
       () => (quillRef.current?.getEditor?.() as QuillInstance | null) ?? null,
@@ -158,6 +162,7 @@ export const RichTextEditor = forwardRef<
               const moveDelta = createChecklistSortDelta(
                 togglePosition,
                 latestDelta,
+                groupCheckedByDate ? formatDateKey(new Date()) : undefined,
               );
 
               if (moveDelta) {
@@ -175,7 +180,7 @@ export const RichTextEditor = forwardRef<
         onChange(currentStr);
         setToolbarUpdateKey((k) => k + 1);
       },
-      [onChange, readOnly, sortChecklistItems],
+      [onChange, readOnly, sortChecklistItems, groupCheckedByDate],
     );
     const handleSelectionChange = useCallback(
       (range: { index: number; length: number } | null) => {

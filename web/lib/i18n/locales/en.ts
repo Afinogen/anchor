@@ -116,6 +116,11 @@ export const en = {
       sortChecklist: "Sort checklist items",
       sortChecklistHint:
         "Automatically move checked checklist items to the bottom of the list",
+      groupCheckedByDate: "Group checked items by date",
+      groupCheckedByDateHint:
+        "Move a checked item under a heading with the day it was checked",
+      groupCheckedByDateDisabledHint:
+        "Turn on sorting to group checked items by date",
     },
     language: {
       title: "Language",

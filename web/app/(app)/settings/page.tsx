@@ -521,6 +521,31 @@ export default function SettingsPage() {
               }
             />
           </div>
+
+          {/* Group checked items by date */}
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label
+                htmlFor="group-checked-by-date"
+                className="text-base font-medium"
+              >
+                {t("settings.editor.groupCheckedByDate")}
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                {editorPrefs.sortChecklistItems
+                  ? t("settings.editor.groupCheckedByDateHint")
+                  : t("settings.editor.groupCheckedByDateDisabledHint")}
+              </p>
+            </div>
+            <Switch
+              id="group-checked-by-date"
+              disabled={!editorPrefs.sortChecklistItems}
+              checked={editorPrefs.groupCheckedByDate}
+              onCheckedChange={(checked) =>
+                setEditorPreference("groupCheckedByDate", checked)
+              }
+            />
+          </div>
         </CardContent>
       </Card>
 

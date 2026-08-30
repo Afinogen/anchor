@@ -18,6 +18,8 @@ export interface NotesPreferences {
 
 export interface EditorPreferences {
   sortChecklistItems: boolean;
+  /** Group checked items under a header with the day they were checked. */
+  groupCheckedByDate: boolean;
 }
 
 interface PreferencesState {
@@ -55,6 +57,7 @@ const defaultNotesPreferences: NotesPreferences = {
 
 const defaultEditorPreferences: EditorPreferences = {
   sortChecklistItems: true,
+  groupCheckedByDate: false,
 };
 
 const initialState = {

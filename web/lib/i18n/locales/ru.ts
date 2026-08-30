@@ -120,6 +120,11 @@ export const ru: Dictionary = {
       sortChecklist: "Сортировать пункты списка",
       sortChecklistHint:
         "Автоматически перемещать отмеченные пункты вниз списка",
+      groupCheckedByDate: "Группировать выполненные по дате",
+      groupCheckedByDateHint:
+        "Отмеченный пункт уезжает под заголовок с датой, когда его отметили",
+      groupCheckedByDateDisabledHint:
+        "Включите сортировку, чтобы группировать выполненные по дате",
     },
     language: {
       title: "Язык",
