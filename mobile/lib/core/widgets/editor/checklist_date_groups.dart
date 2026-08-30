@@ -287,11 +287,24 @@ Delta? buildChecklistDateGroupDelta(
     }
     apply(step);
     index -= stale.where((i) => i < index).length;
-    (groupStart, groupEnd) = dateGroupBounds(doc, lines, index);
+    // Not re-derived via dateGroupBounds, for the same reason as phase A:
+    // when the header phase A just inserted sits directly above another
+    // header (rather than a checklist line), dateGroupBounds refuses to
+    // extend the group back over it, which would drop the fresh header out
+    // of bounds and make dateGroupedItems emit a second NewHeader for it.
+    // All of `stale` lies inside the group and nothing above groupStart
+    // moves, so the bounds shrink by exactly the number of deleted lines.
+    groupEnd -= stale.length;
     items = dateGroupedItems(doc, lines, groupStart, groupEnd, index, today);
   }
 
   // Phase C: permute the group into the target order.
+  // Защитный выход: если сюда дошёл NewHeader — значит, нарушен инвариант,
+  // который должны были обеспечить фазы A и B. Собирать дельту из
+  // недоделанного списка хуже, чем ничего не делать, а вернуть `total` здесь
+  // означало бы применить незавершённую перестройку без переупорядочивания.
+  // Лучше молча ничего не менять, чем уронить редактор на телефоне юзера.
+  if (items.any((item) => item is NewHeader)) return null;
   final order = [
     for (final item in items) (item as ExistingLine).index,
   ];

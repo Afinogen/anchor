@@ -292,6 +292,26 @@ void main() {
       },
     );
 
+    test(
+      'inserts a new header above two headers, one of which empties',
+      () {
+        expect(
+          applied([
+            ('30.08.2026', null),
+            ('y', 'checked'),
+            ('29.08.2026', null),
+            ('b', 'checked'),
+          ], 3, '31.08.2026'),
+          [
+            ('31.08.2026', null, true),
+            ('b', 'checked', false),
+            ('30.08.2026', null, false),
+            ('y', 'checked', false),
+          ],
+        );
+      },
+    );
+
     test('handles a group that ends the document', () {
       expect(
         applied([('a', 'checked'), ('b', 'unchecked')], 0, '30.08.2026'),
