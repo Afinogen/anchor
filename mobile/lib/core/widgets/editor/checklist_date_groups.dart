@@ -240,7 +240,17 @@ Delta? buildChecklistDateGroupDelta(
   var items = dateGroupedItems(doc, lines, groupStart, groupEnd, index, today);
 
   // Phase A: write today's header at the top of the group.
+  // More than one NewHeader here means dateGroupedItems produced two dates
+  // with no existing header line — every key but `today` should already
+  // have one via `headerLine`. Doing nothing beats crashing the editor
+  // under the user's finger; the assert makes the same case fail loudly in
+  // development, where a silent no-op would hide the regression.
   final missing = items.whereType<NewHeader>().toList();
+  assert(
+    missing.length <= 1,
+    'dateGroupedItems produced more than one NewHeader',
+  );
+  if (missing.length > 1) return null;
   if (missing.isNotEmpty) {
     apply(
       Delta()
