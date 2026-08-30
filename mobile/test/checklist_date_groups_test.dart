@@ -70,4 +70,129 @@ void main() {
       expect(keys, ['31.12.2025', '29.08.2026', '01.09.2026']);
     });
   });
+
+  group('dateGroupBounds', () {
+    test('covers a plain contiguous checklist', () {
+      final doc = makeDocument([
+        ('intro', null),
+        ('a', 'unchecked'),
+        ('b', 'checked'),
+        ('outro', null),
+      ]);
+      expect(dateGroupBounds(doc, parseDocumentLines(doc), 1), (1, 2));
+    });
+
+    test('extends over a date header followed by a checklist line', () {
+      final doc = makeDocument([
+        ('a', 'unchecked'),
+        ('30.08.2026', null),
+        ('b', 'checked'),
+      ]);
+      expect(dateGroupBounds(doc, parseDocumentLines(doc), 0), (0, 2));
+    });
+
+    test('stops before a trailing header with nothing under it', () {
+      final doc = makeDocument([
+        ('a', 'unchecked'),
+        ('30.08.2026', null),
+        ('some note', null),
+      ]);
+      expect(dateGroupBounds(doc, parseDocumentLines(doc), 0), (0, 0));
+    });
+
+    test('walks up from a line below a header', () {
+      final doc = makeDocument([
+        ('a', 'unchecked'),
+        ('30.08.2026', null),
+        ('b', 'checked'),
+      ]);
+      expect(dateGroupBounds(doc, parseDocumentLines(doc), 2), (0, 2));
+    });
+  });
+
+  group('dateGroupedItems', () {
+    List<GroupItem> layout(
+      List<(String, String?)> source,
+      int toggled,
+      String today,
+    ) {
+      final doc = makeDocument(source);
+      final lines = parseDocumentLines(doc);
+      final (start, end) = dateGroupBounds(doc, lines, toggled);
+      return dateGroupedItems(doc, lines, start, end, toggled, today);
+    }
+
+    test("creates today's header for the toggled item", () {
+      expect(
+        layout([('a', 'unchecked'), ('b', 'checked')], 1, '30.08.2026'),
+        [
+          const ExistingLine(0),
+          const NewHeader('30.08.2026'),
+          const ExistingLine(1),
+        ],
+      );
+    });
+
+    test('reuses an existing header for the same day', () {
+      expect(
+        layout([
+          ('a', 'unchecked'),
+          ('30.08.2026', null),
+          ('b', 'checked'),
+          ('c', 'checked'),
+        ], 3, '30.08.2026'),
+        [
+          const ExistingLine(0),
+          const ExistingLine(1),
+          const ExistingLine(2),
+          const ExistingLine(3),
+        ],
+      );
+    });
+
+    test('orders dates newest first, under the unchecked items', () {
+      expect(
+        layout([
+          ('29.08.2026', null),
+          ('old', 'checked'),
+          ('a', 'unchecked'),
+          ('new', 'checked'),
+        ], 3, '30.08.2026'),
+        [
+          const ExistingLine(2),
+          const NewHeader('30.08.2026'),
+          const ExistingLine(3),
+          const ExistingLine(0),
+          const ExistingLine(1),
+        ],
+      );
+    });
+
+    test('drops a header left with nothing under it', () {
+      expect(
+        layout([
+          ('a', 'unchecked'),
+          ('29.08.2026', null),
+          ('b', 'unchecked'),
+        ], 2, '30.08.2026'),
+        [const ExistingLine(0), const ExistingLine(2)],
+      );
+    });
+
+    test('keeps undated checked items as a tail below every date', () {
+      expect(
+        layout([
+          ('a', 'unchecked'),
+          ('stale', 'checked'),
+          ('fresh', 'checked'),
+        ], 2, '30.08.2026'),
+        [
+          const ExistingLine(0),
+          const NewHeader('30.08.2026'),
+          const ExistingLine(2),
+          const ExistingLine(1),
+        ],
+      );
+    });
+  });
 }
