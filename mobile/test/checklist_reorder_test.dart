@@ -5,10 +5,17 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Minimal host so the mixin can be exercised without rendering QuillEditor.
 class _SortHost extends StatefulWidget {
-  const _SortHost({required this.controller, this.sortEnabled = true});
+  const _SortHost({
+    required this.controller,
+    this.sortEnabled = true,
+    this.groupByDate = false,
+    this.now,
+  });
 
   final QuillController controller;
   final bool sortEnabled;
+  final bool groupByDate;
+  final DateTime? now;
 
   @override
   State<_SortHost> createState() => _SortHostState();
@@ -20,6 +27,12 @@ class _SortHostState extends State<_SortHost> with ChecklistReorderMixin {
 
   @override
   bool get sortChecklistItems => widget.sortEnabled;
+
+  @override
+  bool get groupCheckedByDate => widget.groupByDate;
+
+  @override
+  DateTime get checklistNow => widget.now ?? DateTime.now();
 
   @override
   void initState() {
@@ -380,5 +393,36 @@ void main() {
       ('b', 'unchecked'),
       ('c', 'unchecked'),
     ]);
+  });
+
+  testWidgets('groups checked items under a date header', (tester) async {
+    final controller = makeController([('a', 'unchecked'), ('b', 'unchecked')]);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: _SortHost(
+          controller: controller,
+          groupByDate: true,
+          now: DateTime(2026, 8, 30),
+        ),
+      ),
+    );
+
+    // Document is "a\nb\n"; the newline of the second item sits at offset 3.
+    controller.formatText(3, 1, Attribute.checked);
+    await tester.pump();
+
+    expect(controller.document.toPlainText(), 'a\n30.08.2026\nb\n');
+  });
+
+  testWidgets('leaves the document alone when grouping is off', (tester) async {
+    final controller = makeController([('a', 'unchecked'), ('b', 'unchecked')]);
+    await tester.pumpWidget(
+      MaterialApp(home: _SortHost(controller: controller)),
+    );
+
+    controller.formatText(3, 1, Attribute.checked);
+    await tester.pump();
+
+    expect(controller.document.toPlainText(), 'a\nb\n');
   });
 }

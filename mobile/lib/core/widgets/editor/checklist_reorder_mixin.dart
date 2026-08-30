@@ -4,6 +4,7 @@ import 'package:dart_quill_delta/dart_quill_delta.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 
+import 'checklist_date_groups.dart';
 import 'checklist_lines.dart';
 
 /// Keeps checklists sorted: unchecked items on top, checked items at the
@@ -15,6 +16,13 @@ mixin ChecklistReorderMixin<T extends StatefulWidget> on State<T> {
 
   /// Override to check if sorting is enabled
   bool get sortChecklistItems;
+
+  /// Override to group checked items under a header with the day they were
+  /// checked. Off by default so existing hosts need no change.
+  bool get groupCheckedByDate => false;
+
+  /// Override to pin "now" in tests.
+  DateTime get checklistNow => DateTime.now();
 
   StreamSubscription<DocChange>? _changesSub;
   bool _isSorting = false;
@@ -78,6 +86,23 @@ mixin ChecklistReorderMixin<T extends StatefulWidget> on State<T> {
 
     final line = lines[lineIndex];
     if (!line.isChecklist) return;
+
+    if (groupCheckedByDate && line.indent == 0) {
+      final grouped = buildChecklistDateGroupDelta(
+        controller.document,
+        lineIndex,
+        formatDateKey(checklistNow),
+      );
+      if (grouped != null) {
+        _isSorting = true;
+        try {
+          controller.compose(grouped, controller.selection, ChangeSource.local);
+        } finally {
+          _isSorting = false;
+        }
+      }
+      return;
+    }
 
     var groupStart = lineIndex;
     var groupEnd = lineIndex;
