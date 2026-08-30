@@ -299,11 +299,15 @@ Delta? buildChecklistDateGroupDelta(
   }
 
   // Phase C: permute the group into the target order.
-  // Защитный выход: если сюда дошёл NewHeader — значит, нарушен инвариант,
-  // который должны были обеспечить фазы A и B. Собирать дельту из
-  // недоделанного списка хуже, чем ничего не делать, а вернуть `total` здесь
-  // означало бы применить незавершённую перестройку без переупорядочивания.
-  // Лучше молча ничего не менять, чем уронить редактор на телефоне юзера.
+  // A NewHeader here means phases A and B failed to uphold their invariant.
+  // Returning `total` would apply a half-finished rebuild without the
+  // reordering, so drop everything: doing nothing beats crashing the editor
+  // under the user's finger. The assert makes the same case fail loudly in
+  // development, where a silent no-op would hide the regression.
+  assert(
+    items.every((item) => item is ExistingLine),
+    'a NewHeader survived phases A and B',
+  );
   if (items.any((item) => item is NewHeader)) return null;
   final order = [
     for (final item in items) (item as ExistingLine).index,

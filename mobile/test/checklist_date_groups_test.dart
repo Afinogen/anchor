@@ -343,10 +343,13 @@ void main() {
     });
   });
 
-  group('buildChecklistDateGroupDelta: свойства', () {
-    // Два падения подряд (NewHeader доживал до фазы C) прошли мимо примеров,
-    // потому что примеры пишут под уже понятый случай. Перебор коротких
-    // документов ловит те формы, о которых никто не подумал.
+  group('buildChecklistDateGroupDelta properties', () {
+    // Two crashes in a row (a NewHeader surviving into phase C) slipped past
+    // the examples, because examples get written for the case already
+    // understood. Sweeping every short document catches the shapes nobody
+    // thought of. Header kinds carry no index suffix: `29.08.20260` is not a
+    // date the parser accepts, and a sweep whose headers are not headers
+    // cannot reach the code it exists to guard.
     const kinds = <(String, String?)>[
       ('u', 'unchecked'),
       ('c', 'checked'),
@@ -355,7 +358,7 @@ void main() {
       ('txt', null),
     ];
 
-    test('никогда не падает и не теряет строк чек-листа', () {
+    test('never throws and never loses a checklist line', () {
       final failures = <String>[];
       var combos = <List<int>>[[]];
       for (var length = 1; length <= 4; length++) {
@@ -366,7 +369,12 @@ void main() {
         for (final combo in combos) {
           final spec = [
             for (var i = 0; i < combo.length; i++)
-              ('${kinds[combo[i]].$1}$i', kinds[combo[i]].$2),
+              (
+                kinds[combo[i]].$2 == null
+                    ? kinds[combo[i]].$1
+                    : '${kinds[combo[i]].$1}$i',
+                kinds[combo[i]].$2,
+              ),
           ];
           for (var toggled = 0; toggled < spec.length; toggled++) {
             if (spec[toggled].$2 == null) continue;
@@ -383,12 +391,12 @@ void main() {
             for (final line in spec) {
               if (line.$2 == null) continue;
               final seen = RegExp(
-                '(^|\n)${line.$1}(\n|\$)',
+                '(^|\n)${RegExp.escape(line.$1)}(\n|\$)',
               ).allMatches(text).length;
               if (seen != 1) {
                 failures.add(
-                  '$spec toggled=$toggled: "${line.$1}" встретилась $seen раз '
-                  'в "${text.replaceAll('\n', '|')}"',
+                  '$spec toggled=$toggled: "${line.$1}" seen $seen times '
+                  'in "${text.replaceAll('\n', '|')}"',
                 );
               }
             }
